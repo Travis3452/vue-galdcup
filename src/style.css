@@ -1,0 +1,85 @@
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 링크 스타일 유지 */
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+}
+
+/* ====== 수정된 body: 중앙 정렬 제거, 전체 높이 유지 ====== */
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  /* display:flex; place-items:center; 제거 — 내부 컨테이너가 폭을 채우도록 함 */
+  background-color: inherit;
+  color: inherit;
+}
+
+/* 전역 버튼 스타일을 범위로 제한 (Tailwind 버튼과 충돌 방지) */
+/* 기존 전역 button 규칙을 제거하거나 아래처럼 .plain-button으로 네임스페이스화 권장 */
+.plain-button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+.plain-button:hover {
+  border-color: #646cff;
+}
+.plain-button:focus,
+.plain-button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+/* 카드, 레이아웃 컨테이너 */
+.card {
+  padding: 2em;
+}
+
+/* #app: 가운데 정렬 대신 폭을 채우고 내부는 좌측 정렬 */
+#app {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: left; /* 가운데 정렬 해제 */
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 라이트 모드 색상 전환 유지 */
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  /* 전역 .plain-button 배경만 변경 (Tailwind 버튼은 영향 없음) */
+  .plain-button {
+    background-color: #f9f9f9;
+  }
+}
