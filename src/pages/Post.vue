@@ -35,23 +35,26 @@
         
         <!-- 댓글 목록 -->
         <div v-if="comments.length > 0" class="space-y-4 mb-6">
-          <div 
-            v-for="comment in comments" 
-            :key="comment.id" 
-            class="border rounded p-4 bg-white cursor-pointer"
-            @click="toggleReplyBox(comment.id)"
-          >
+          <div v-for="comment in comments" :key="comment.id" class="border rounded p-4 bg-white">
             <div class="flex justify-between text-sm text-gray-600 mb-2">
               <span>👤 {{ comment.authorNickname }}</span>
               <div class="flex items-center space-x-2">
                 <span>{{ formatDate(comment.createdAt) }}</span>
                 <template v-if="store.id && comment.authorId === store.id">
-                  <button @click.stop="editComment(comment)" class="px-2 py-1 bg-yellow-500 text-white rounded text-xs">수정</button>
-                  <button @click.stop="deleteComment(comment.id)" class="px-2 py-1 bg-red-500 text-white rounded text-xs">삭제</button>
+                  <button @click="editComment(comment)" class="px-2 py-1 bg-yellow-500 text-white rounded text-xs">수정</button>
+                  <button @click="deleteComment(comment.id)" class="px-2 py-1 bg-red-500 text-white rounded text-xs">삭제</button>
                 </template>
               </div>
             </div>
             <p class="text-gray-800 mb-2">{{ comment.content }}</p>
+
+            <!-- 답글 달기 버튼 -->
+            <button 
+              @click="toggleReplyBox(comment.id)" 
+              class="text-xs text-indigo-600 hover:underline"
+            >
+              ↳ 답글 달기
+            </button>
 
             <!-- 대댓글 목록 -->
             <div v-if="replies[comment.id]" class="ml-6 space-y-2 mt-2">
@@ -61,8 +64,8 @@
                   <div class="flex items-center space-x-2">
                     <span>{{ formatDate(reply.createdAt) }}</span>
                     <template v-if="store.id && reply.authorId === store.id">
-                      <button @click.stop="editReply(reply)" class="px-2 py-1 bg-yellow-500 text-white rounded text-xs">수정</button>
-                      <button @click.stop="deleteReply(reply.id)" class="px-2 py-1 bg-red-500 text-white rounded text-xs">삭제</button>
+                      <button @click="editReply(reply)" class="px-2 py-1 bg-yellow-500 text-white rounded text-xs">수정</button>
+                      <button @click="deleteReply(reply.id)" class="px-2 py-1 bg-red-500 text-white rounded text-xs">삭제</button>
                     </template>
                   </div>
                 </div>
@@ -70,7 +73,7 @@
               </div>
             </div>
 
-            <!-- 대댓글 입력창: 댓글 클릭 시 표시 -->
+            <!-- 대댓글 입력창 -->
             <div v-if="activeReplyBox === comment.id" class="mt-2 ml-6 bg-white border rounded p-3">
               <textarea
                 v-model="newReplies[comment.id]"
@@ -80,7 +83,7 @@
               ></textarea>
               <div class="flex justify-end mt-1">
                 <button
-                  @click.stop="createReply(comment.id)"
+                  @click="createReply(comment.id)"
                   class="px-2 py-1 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700"
                 >
                   등록
