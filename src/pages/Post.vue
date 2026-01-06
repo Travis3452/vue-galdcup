@@ -48,12 +48,12 @@
             </div>
             <p class="text-gray-800 mb-2">{{ comment.content }}</p>
 
-            <!-- 답글 달기 버튼 -->
+            <!-- 대댓글 달기 버튼 -->
             <button 
               @click="toggleReplyBox(comment.id)" 
               class="text-xs text-indigo-600 hover:underline"
             >
-              ↳ 답글 달기
+              ↳ 대댓글 달기
             </button>
 
             <!-- 대댓글 목록 -->

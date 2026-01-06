@@ -37,7 +37,7 @@
             class="px-4 py-2 rounded font-medium transition-colors
                    bg-indigo-600 text-white hover:bg-indigo-700"
           >
-            새로운 게시판 만들기
+            갈드컵 생성
           </router-link>
         </div>
         
