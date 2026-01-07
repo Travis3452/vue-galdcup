@@ -15,11 +15,11 @@ const routes = [
   { path: '/', name: 'Home', component: Home },
   { path: '/auth/callback/google', name: 'GoogleCallback', component: GoogleCallback },
   { path: '/boards/create', name: 'CreateBoard', component: CreateBoard },
-  { path: '/boards/:id', name: 'Board', component: Board },
+  { path: '/boards/:boardId', name: 'Board', component: Board },
   { path: '/boards/:boardId/posts/create', name: 'CreatePost', component: CreatePost },
   { path: '/boards/:boardId/posts/:postId', name: 'Post', component: Post },
   { path: '/boards/:boardId/posts/:postId/update', name: 'UpdatePost', component: UpdatePost },
-  { path: '/boards/:boardId/votesession/create', name: 'CreateVoteSession', component: CreateVoteSession },
+  { path: '/boards/:boardId/createVoteSession', name: 'CreateVoteSession', component: CreateVoteSession },
   { path: '/mypage', name: 'MyPage', component: MyPage },
   { 
     path: '/role-approval', 

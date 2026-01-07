@@ -25,6 +25,7 @@
 </template>
 
 <script setup>
+import { onMounted } from 'vue'
 import useUpdatePost from '@/pages/scripts/UpdatePost.js'
 
 const {
@@ -39,9 +40,10 @@ const {
   loadPost
 } = useUpdatePost()
 
-// 초기화
-initQuill()
-loadPost()
+onMounted(() => {
+  initQuill()
+  loadPost()
+})
 </script>
 
 <style scoped>

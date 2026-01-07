@@ -24,10 +24,16 @@ export default function useCreateBoard() {
         topic: topic.value.trim(),
         description: description.value.trim()
       }
-      await api.post('/boards', payload, {
+      // 게시판 생성 요청
+      const res = await api.post('/boards', payload, {
         headers: { Authorization: `Bearer ${store.accessToken}` }
       })
-      router.push('/')
+
+      // 응답에서 생성된 게시판 ID 추출
+      const boardId = res.data.id
+
+      // ✅ 생성 성공 시 해당 게시판의 createVoteSession 페이지로 이동
+      router.push(`/boards/${boardId}/createVoteSession`)
     } catch (err) {
       console.error('게시판 생성 실패:', err)
       errorMessage.value = '게시판 생성에 실패했습니다.'

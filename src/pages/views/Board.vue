@@ -17,7 +17,7 @@
         </div>
       </div>
 
-      <!-- 투표 정보 -->
+      <!-- 투표 정보 (아직 구현 X, 그대로 둠) -->
       <div v-if="voteSession" class="px-6 py-6 border-b-2 border-gray-200 bg-yellow-50 text-center">
         <h2 class="text-lg font-semibold text-indigo-700 mb-4">⚔️ 투표</h2>
         <p class="text-sm text-gray-700 mb-4">
@@ -33,6 +33,7 @@
           </template>
         </div>
         <div class="flex justify-center mt-6">
+          <!-- 투표하기 라우트는 아직 구현되지 않았으므로 그대로 둠 -->
           <router-link :to="`/boards/${route.params.id}/vote-session/${voteSession.id}/participate`"
             class="inline-block px-6 py-3 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition text-sm font-semibold">
             투표하기
@@ -43,7 +44,7 @@
       <!-- 게시글 목록 -->
       <div class="flex justify-between items-center px-6 py-3 border-b-2 border-gray-300 bg-gray-50">
         <h2 class="text-base font-semibold text-gray-700">게시글 목록</h2>
-        <router-link :to="`/boards/${route.params.id}/posts/create`"
+        <router-link :to="`/boards/${route.params.boardId}/posts/create`"
           class="px-3 py-1 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 transition">
           글쓰기
         </router-link>
@@ -60,7 +61,7 @@
         <tbody>
           <tr v-for="post in posts" :key="post.id" class="border-b border-gray-200 hover:bg-gray-50">
             <td class="px-4 py-2 truncate">
-              <router-link :to="`/boards/${route.params.id}/posts/${post.id}`" class="text-gray-800 hover:text-indigo-600">
+              <router-link :to="`/boards/${route.params.boardId}/posts/${post.id}`" class="text-gray-800 hover:text-indigo-600">
                 {{ post.title }}
               </router-link>
             </td>
@@ -103,7 +104,7 @@ const {
   board, posts, voteSession, pageInfo,
   visiblePages, currentBlock,
   fetchBoard, fetchVoteSession, fetchPosts, goToBlock, formatDate
-} = useBoard(route.params.id)
+} = useBoard(route.params.boardId)
 
 onMounted(async () => {
   await fetchBoard()

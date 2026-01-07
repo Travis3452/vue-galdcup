@@ -1,45 +1,30 @@
 <template>
-  <div class="min-h-screen bg-indigo-50 flex items-center justify-center">
-    <div class="max-w-2xl w-full bg-white shadow rounded-lg p-10">
-      <h1 class="text-2xl font-bold text-indigo-700 mb-3">새 게시판 생성</h1>
-      <p class="text-base text-gray-600 mb-8">
-        주제와 설명을 입력해 새로운 토론 공간을 만들어보세요.
-      </p>
+  <div class="page-wrap">
+    <div class="container">
+      <h1 class="title">게시판 생성</h1>
 
-      <form @submit.prevent="createBoard" class="space-y-6">
-        <div>
-          <label class="block text-gray-700 text-sm mb-2">주제</label>
-          <input
-            v-model="topic"
-            type="text"
-            class="w-full border rounded px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            placeholder="게시판 주제를 입력하세요"
-            required
-          />
-        </div>
+      <input
+        v-model="topic"
+        class="title-input"
+        placeholder="토픽을 입력하세요."
+        aria-label="토픽 입력"
+      />
 
-        <div>
-          <label class="block text-gray-700 text-sm mb-2">설명 (선택)</label>
-          <textarea
-            v-model="description"
-            rows="6"
-            class="w-full border rounded px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            placeholder="간단한 설명을 입력하세요"
-          ></textarea>
-        </div>
+      <textarea
+        v-model="description"
+        class="editor"
+        placeholder="게시판 설명을 입력하세요."
+        aria-label="게시판 설명 입력"
+      ></textarea>
 
-        <button
-          type="submit"
-          class="w-full bg-indigo-600 text-white py-3 rounded font-semibold hover:bg-indigo-700 transition disabled:opacity-50"
-          :disabled="loading"
-        >
-          {{ loading ? '생성 중...' : '게시판 생성하기' }}
+      <div class="actions">
+        <button class="btn primary" @click="createBoard" :disabled="submitting">
+          {{ submitting ? '생성 중...' : '생성완료' }}
         </button>
-      </form>
-
-      <div v-if="errorMessage" class="mt-6 bg-red-100 text-red-700 px-4 py-2 rounded">
-        {{ errorMessage }}
+        <router-link to="/" class="btn secondary">취소</router-link>
       </div>
+
+      <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
     </div>
   </div>
 </template>
@@ -47,5 +32,94 @@
 <script setup>
 import useCreateBoard from '@/pages/scripts/CreateBoard.js'
 
-const { topic, description, errorMessage, loading, createBoard } = useCreateBoard()
+const {
+  topic,
+  description,
+  errorMessage,
+  submitting,
+  createBoard
+} = useCreateBoard()
 </script>
+
+<style scoped>
+.page-wrap {
+  background: #eef2ff;
+  padding: 48px 16px;
+  box-sizing: border-box;
+}
+
+.container {
+  max-width: 980px;
+  margin: 0 auto;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 8px 24px rgba(79, 70, 229, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.08);
+  box-sizing: border-box;
+}
+
+.title {
+  margin: 0 0 18px;
+  font-size: 24px;
+  font-weight: 700;
+  color: #3730a3;
+}
+
+.title-input,
+.editor {
+  width: 100%;
+  padding: 14px 16px;
+  font-size: 16px;
+  border: 1px solid #e6e9ff;
+  border-radius: 10px;
+  margin-bottom: 18px;
+  background: #fbfbff;
+}
+.title-input:focus,
+.editor:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 6px rgba(99,102,241,0.06);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.btn {
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn.primary {
+  background: linear-gradient(180deg, #4f46e5, #4338ca);
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.18);
+}
+.btn.primary:disabled {
+  background: linear-gradient(180deg, #a5b4fc, #8b9cff);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.btn.secondary {
+  background: #f3f4ff;
+  color: #3730a3;
+  border: 1px solid #e6e9ff;
+}
+
+.error {
+  color: #dc2626;
+  margin-top: 12px;
+  font-weight: 600;
+}
+</style>

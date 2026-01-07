@@ -1,11 +1,14 @@
 import { ref, computed } from 'vue'
 import axios from 'axios'
 import { useUserStore } from '@/stores/user'
+import { useRoute, useRouter } from 'vue-router'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 export default function usePost() {
   const store = useUserStore()
+  const route = useRoute()
+  const router = useRouter()
 
   // 상태 관리
   const post = ref(null)
@@ -148,9 +151,11 @@ export default function usePost() {
   }
 
   // 게시글 수정/삭제
-  async function editPost() {
-    // 라우터 이동은 Vue 컴포넌트에서 처리하는 게 더 자연스럽습니다.
-    alert('게시글 수정 페이지로 이동하세요.')
+  function editPost() {
+    const boardId = route.params.boardId
+    const postId = post.value?.id
+    if (!postId) return
+    router.push(`/boards/${boardId}/posts/${postId}/update`)
   }
 
   async function deletePost() {
@@ -159,6 +164,7 @@ export default function usePost() {
       headers: { Authorization: `Bearer ${store.accessToken}` }
     })
     alert('게시글이 삭제되었습니다.')
+    router.push(`/boards/${route.params.boardId}`)
   }
 
   // 좋아요/싫어요

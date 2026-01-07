@@ -13,7 +13,7 @@
       <div ref="editorRef" class="editor" aria-label="게시글 내용 에디터"></div>
 
       <div class="actions">
-        <button class="btn primary" @click="submitPost" :disabled="submitting">
+        <button class="btn primary" @click="createPost" :disabled="submitting">
           {{ submitting ? '작성 중...' : '작성완료' }}
         </button>
         <router-link :to="`/boards/${boardId}`" class="btn secondary">취소</router-link>
@@ -25,7 +25,8 @@
 </template>
 
 <script setup>
-import userCreatePost from '@/pages/scripts/CreatePost.js'
+import { onMounted } from 'vue'
+import useCreatePost from '@/pages/scripts/CreatePost.js'
 
 const {
   title,
@@ -33,12 +34,14 @@ const {
   boardId,
   submitting,
   errorMessage,
-  submitPost,
+  createPost,
   initQuill
-} = userCreatePost()
+} = useCreatePost()
 
-// Quill 초기화
-initQuill()
+// Quill 초기화는 DOM이 준비된 뒤 실행
+onMounted(() => {
+  initQuill()
+})
 </script>
 
 <style scoped>
