@@ -179,4 +179,12 @@ const {
   deletePost,
   reactToPost
 } = usePost()
+
+onMounted(() => {
+  const boardId = route.params.boardId
+  const postId = route.params.postId
+  fetchPost(boardId, postId)
+  fetchComments(boardId, postId)
+})
+
 </script>
