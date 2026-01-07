@@ -4,13 +4,11 @@
       
       <!-- 사이트 소개 -->
       <section class="rounded-2xl shadow-xl overflow-hidden">
-        <!-- 배너 이미지 -->
         <img
           src="/images/debate-banner.jpg"
           alt="갈드컵 배너"
           class="w-full h-64 md:h-80 lg:h-96 object-cover"
         />
-        <!-- 소개 텍스트 -->
         <div class="bg-indigo-900 text-center px-10 py-12">
           <h2 class="text-3xl md:text-4xl font-extrabold text-white mb-6">
             ✨ 갈드컵은 팬심에서 시작된다
@@ -27,7 +25,6 @@
 
       <!-- 진행 중인 갈드컵 -->
       <section class="bg-white rounded-2xl shadow-lg p-10">
-        <!-- 헤더 + 게시판 생성 버튼 -->
         <div class="flex justify-between items-center mb-10 border-b pb-4">
           <h3 class="text-2xl font-bold text-indigo-700">
             🔥 진행 중인 갈드컵
@@ -79,53 +76,15 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import axios from 'axios'
-import { useRouter } from 'vue-router'
+import useHome from '@/pages/scripts/Home.js'
 
-const boards = ref([])
-const page = ref(0)
-const size = 10
-const totalPages = ref(1)
-const router = useRouter()
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
-
-async function fetchBoards() {
-  try {
-    const res = await axios.get(`${API_BASE_URL}/api/boards?page=${page.value}&size=${size}`)
-    boards.value = res.data.content
-    totalPages.value = res.data.totalPages
-  } catch (err) {
-    console.error('API 호출 실패:', err)
-  }
-}
-
-function formatDate(dateString) {
-  const date = new Date(dateString)
-  const year = String(date.getFullYear()).slice(2)
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
-function goToBoard(boardId) {
-  router.push(`/boards/${boardId}`)
-}
-
-function nextPage() {
-  if (page.value < totalPages.value - 1) {
-    page.value++
-    fetchBoards()
-  }
-}
-
-function prevPage() {
-  if (page.value > 0) {
-    page.value--
-    fetchBoards()
-  }
-}
-
-onMounted(fetchBoards)
+const {
+  boards,
+  page,
+  totalPages,
+  formatDate,
+  goToBoard,
+  nextPage,
+  prevPage
+} = useHome()
 </script>

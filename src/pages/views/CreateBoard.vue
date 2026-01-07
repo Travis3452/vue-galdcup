@@ -45,42 +45,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import axios from 'axios'
-import { useRouter } from 'vue-router'
-import { useUserStore } from '@/stores/user'
+import useCreateBoard from '@/pages/scripts/CreateBoard.js'
 
-const topic = ref('')
-const description = ref('')
-const errorMessage = ref('')
-const loading = ref(false)
-const store = useUserStore()
-const router = useRouter()
-
-async function createBoard() {
-  errorMessage.value = ''
-  loading.value = true
-  try {
-    const response = await axios.post(
-      `${import.meta.env.VITE_API_BASE_URL}/api/boards`,
-      {
-        topic: topic.value,
-        description: description.value?.trim() || null,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${store.accessToken}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    )
-
-    const boardId = response.data.id
-    router.push(`/boards/${boardId}/votesession/create`)
-  } catch (e) {
-    errorMessage.value = '게시판 생성에 실패했습니다.'
-  } finally {
-    loading.value = false
-  }
-}
+const { topic, description, errorMessage, loading, createBoard } = useCreateBoard()
 </script>
