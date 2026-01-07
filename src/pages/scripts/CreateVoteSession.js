@@ -11,14 +11,16 @@ export default function useCreateVoteSession() {
 
   const boardTitle = ref('')
 
-  // 기본값: 내일 0시
+  // 기본값: 내일 0시 (Asia/Seoul 기준)
   function getTomorrowMidnight() {
     const now = new Date()
     now.setDate(now.getDate() + 1)
-    const year = now.getFullYear()
-    const month = String(now.getMonth() + 1).padStart(2, '0')
-    const day = String(now.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}T00:00`
+    // 한국 시간 기준으로 문자열 생성
+    return new Date(
+      `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
+        now.getDate()
+      ).padStart(2, '0')}T00:00:00+09:00`
+    ).toISOString()
   }
 
   const startTime = ref(getTomorrowMidnight())
@@ -46,9 +48,12 @@ export default function useCreateVoteSession() {
     }
   }
 
-  function toLocalDateTimeString(dtLocalValue) {
+  // LocalDateTime → OffsetDateTime(+09:00) 변환
+  function toSeoulOffsetDateTime(dtLocalValue) {
     if (!dtLocalValue) return null
-    return dtLocalValue.length === 16 ? `${dtLocalValue}:00` : dtLocalValue
+    // "YYYY-MM-DDTHH:mm" → "YYYY-MM-DDTHH:mm:00+09:00"
+    const normalized = dtLocalValue.length === 16 ? `${dtLocalValue}:00` : dtLocalValue
+    return new Date(normalized + '+09:00').toISOString()
   }
 
   async function onImageUpload(event, idx) {
@@ -65,8 +70,8 @@ export default function useCreateVoteSession() {
   async function createVoteSession() {
     const boardId = route.params.boardId
     const payload = {
-      startTime: toLocalDateTimeString(startTime.value),
-      endTime: toLocalDateTimeString(endTime.value),
+      startTime: toSeoulOffsetDateTime(startTime.value),
+      endTime: toSeoulOffsetDateTime(endTime.value),
       options: options.value.filter(o => o.trim() !== ''),
       optionImages: optionImages.value.filter(img => img)
     }

@@ -6,8 +6,8 @@
       <input
         v-model="topic"
         class="title-input"
-        placeholder="토픽을 입력하세요."
-        aria-label="토픽 입력"
+        placeholder="갈드컵 주제를 입력하세요."
+        aria-label="갈드컵 주제 입력"
       />
 
       <textarea
@@ -76,6 +76,11 @@ const {
   margin-bottom: 18px;
   background: #fbfbff;
 }
+
+.editor {
+  min-height: 350px;
+}
+
 .title-input:focus,
 .editor:focus {
   outline: none;
