@@ -1,11 +1,15 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import Home from '@/pages/Home.vue'
-import GoogleCallback from '@/pages/GoogleCallback.vue'
-import CreateBoard from '@/pages/CreateBoard.vue'
-import Board from '@/pages/Board.vue'
-import CreatePost from '@/pages/CreatePost.vue'
-import Post from '@/pages/Post.vue'
-import CreateVoteSession from '@/pages/CreateVoteSession.vue'
+
+import Home from '@/pages/views/Home.vue'
+import GoogleCallback from '@/pages/views/GoogleCallback.vue'
+import CreateBoard from '@/pages/views/CreateBoard.vue'
+import Board from '@/pages/views/Board.vue'
+import CreatePost from '@/pages/views/CreatePost.vue'
+import Post from '@/pages/views/Post.vue'
+import UpdatePost from '@/pages/views/UpdatePost.vue'
+import CreateVoteSession from '@/pages/views/CreateVoteSession.vue'
+import MyPage from '@/pages/views/MyPage.vue'
+import RoleApproval from '@/pages/views/RoleApproval.vue'
 
 const routes = [
   { path: '/', name: 'Home', component: Home },
@@ -14,7 +18,15 @@ const routes = [
   { path: '/boards/:id', name: 'Board', component: Board },
   { path: '/boards/:boardId/posts/create', name: 'CreatePost', component: CreatePost },
   { path: '/boards/:boardId/posts/:postId', name: 'Post', component: Post },
+  { path: '/boards/:boardId/posts/:postId/update', name: 'UpdatePost', component: UpdatePost },
   { path: '/boards/:boardId/votesession/create', name: 'CreateVoteSession', component: CreateVoteSession },
+  { path: '/mypage', name: 'MyPage', component: MyPage },
+  { 
+    path: '/role-approval', 
+    name: 'RoleApproval', 
+    component: RoleApproval,
+    meta: { noLayout: true }
+  }
 ]
 
 export default createRouter({
