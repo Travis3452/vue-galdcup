@@ -8,13 +8,14 @@
         <div class="flex items-center space-x-4">
           <!-- 프로필 박스 -->
           <div
-            class="flex items-center space-x-2 bg-white border border-gray-200 rounded-lg px-3 py-1 shadow-sm hover:shadow-md transition"
+            class="flex items-center space-x-2 bg-white border border-gray-200 rounded-lg px-3 py-1 shadow-sm hover:shadow-md transition cursor-pointer"
+            @click="goToMyPage"
           >
             <!-- 닉네임 첫 글자 아이콘 -->
             <div class="w-8 h-8 flex items-center justify-center rounded-full bg-indigo-500 text-white font-bold">
               {{ nickname.charAt(0) }}
             </div>
-            <!-- 닉네임 텍스트 (강조) -->
+            <!-- 닉네임 텍스트 -->
             <span class="text-black text-lg font-bold tracking-wide hover:text-indigo-600 transition">
               {{ nickname }}
             </span>
@@ -45,7 +46,7 @@
 import { computed, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { useRouter } from 'vue-router'
-import axios from '@/api'
+import api from '@/axios'   // ✅ axios 인스턴스 사용
 
 const store = useUserStore()
 const router = useRouter()
@@ -53,17 +54,10 @@ const router = useRouter()
 const isLoggedIn = computed(() => !!store.accessToken)
 const nickname = computed(() => store.nickname || '')
 
-onMounted(async () => {
+onMounted(() => {
+  // ✅ 스토어 복원만 수행
+  // refresh는 axios.js 인터셉터가 자동 처리하므로 여기서 직접 호출할 필요 없음
   store.restore()
-
-  if (!store.accessToken) {
-    try {
-      const res = await axios.post('/auth/refresh', {}, { withCredentials: true })
-      store.login(res.data.accessToken, res.data.nickname)
-    } catch {
-      // refresh 실패 → 로그인 필요
-    }
-  }
 })
 
 function loginWithGoogle() {
@@ -72,29 +66,30 @@ function loginWithGoogle() {
   const scope = "openid email profile"
 
   const googleAuthUrl =
-  "https://accounts.google.com/o/oauth2/v2/auth?" +
-  new URLSearchParams({
-    client_id: clientId,
-    redirect_uri: redirectUri,
-    response_type: "code",
-    scope,
-    prompt: "select_account"
-  })
+    "https://accounts.google.com/o/oauth2/v2/auth?" +
+    new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      response_type: "code",
+      scope,
+      prompt: "select_account"
+    })
 
   window.location.href = googleAuthUrl
 }
 
 async function logout() {
   try {
-    await axios.delete('/auth/logout', {
-      headers: { Authorization: `Bearer ${store.accessToken}` },
-      withCredentials: true,
-    })
+    await api.delete('/auth/logout')   // ✅ api 인스턴스 사용
   } catch (err) {
     console.error('서버 로그아웃 실패:', err)
   } finally {
     store.logout()
     router.push('/')
   }
+}
+
+function goToMyPage() {
+  router.push('/mypage')
 }
 </script>
