@@ -1,6 +1,13 @@
 <template>
   <header class="bg-white shadow-md p-6 flex justify-between items-center">
-    <h1 class="text-3xl font-bold text-indigo-700">Galdcup</h1>
+    <!-- 제목을 클릭하면 홈으로 이동 -->
+    <router-link 
+      to="/" 
+      class="text-3xl font-bold text-indigo-700 hover:text-indigo-900 transition"
+    >
+      Galdcup
+    </router-link>
+
     <nav class="space-x-6 flex items-center">
       <router-link to="/" class="text-gray-600 hover:text-indigo-600">홈</router-link>
 
