@@ -1,5 +1,7 @@
 import { ref, computed } from 'vue'
 import api from '@/axios'
+import { useRouter } from 'vue-router'
+import { useUserStore } from '@/stores/user'
 
 export default function useBoard(boardId) {
   const board = ref(null)
@@ -52,9 +54,54 @@ export default function useBoard(boardId) {
     return date.toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' })
   }
 
+  const router = useRouter()
+  const store = useUserStore()
+
+  async function deleteBoard() {
+    if (!confirm('정말 이 게시판을 삭제하시겠습니까?')) return
+    try {
+      await api.delete(`/boards/${boardId}`, {
+        headers: { Authorization: `Bearer ${store.accessToken}` }
+      })
+      router.push('/')
+    } catch (err) {
+      console.error('게시판 삭제 실패', err)
+      if (err.response && err.response.data && err.response.data.message) {
+        alert(`${err.response.data.message}`)
+      } else {
+        alert('알 수 없는 오류가 발생했습니다.')
+      }
+    }
+  }
+
+  function openVoteWindow(voteSessionId) {
+    const url = `/boards/${boardId}/vote-session/${voteSessionId}/vote`
+    window.open(url, '_blank', 'width=800,height=600,scrollbars=yes')
+  }
+
+  function openVoteStatusWindow(boardId) {
+  const url = `/boards/${boardId}/vote-status`
+  window.open(url, '_blank', 'width=800,height=600,scrollbars=yes')
+}
+
+  async function applyForBoardManager() {
+    try {
+      await api.post(`/board-manager-requests/${boardId}/apply`, {}, {
+        headers: { Authorization: `Bearer ${store.accessToken}` }
+      })
+      alert('권한 위임 신청이 접수되었습니다.')
+    } catch (err) {
+      console.error('권한 위임 신청 실패', err)
+      alert('권한 위임 신청 중 오류가 발생했습니다.')
+    }
+  }
+
   return {
     board, posts, voteSession, pageInfo,
     visiblePages, currentBlock,
-    fetchBoard, fetchVoteSession, fetchPosts, goToBlock, formatDate
+    fetchBoard, fetchVoteSession, fetchPosts, goToBlock, formatDate,
+    deleteBoard,
+    openVoteWindow, openVoteStatusWindow,
+    applyForBoardManager
   }
 }
