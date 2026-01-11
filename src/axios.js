@@ -23,9 +23,9 @@ api.interceptors.response.use(
   async err => {
     const store = useUserStore();
 
+    // AccessToken 만료 → RefreshToken으로 재발급 시도
     if (err.response?.status === 401 && !err.config.__isRetryRequest) {
       try {
-        // RefreshToken으로 새 AccessToken 요청
         const refreshRes = await axios.post(
           `${API_BASE_URL}/api/auth/refresh`,
           {},
@@ -46,9 +46,11 @@ api.interceptors.response.use(
         err.config.headers.Authorization = `Bearer ${newToken}`;
         return api(err.config);
       } catch (refreshErr) {
-        // RefreshToken도 만료 → 로그아웃 처리
+        // ✅ RefreshToken도 만료 → 자동 로그아웃 + 안내 메시지
+        alert("로그인 세션이 만료되었습니다. 다시 로그인해주세요.");
         store.logout();
         window.location.href = "/";
+        return Promise.reject(refreshErr);
       }
     }
 

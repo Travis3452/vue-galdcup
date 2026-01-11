@@ -8,6 +8,8 @@
           <span>{{ board?.topic }}</span>
         </h1>
         <p class="text-base text-gray-700 mt-2 italic text-center">{{ board?.description }}</p>
+
+        <!-- 상태 + 생성일 -->
         <div class="text-sm text-gray-500 mt-2 text-center">
           상태:
           <span :class="board?.status === 'OPEN' ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'">
@@ -15,9 +17,36 @@
           </span>
           · 생성일: {{ formatDate(board?.createdAt) }}
         </div>
+
+        <!-- 관리자 표시 -->
+        <div v-if="board?.boardManagerNickname" class="text-sm text-gray-700 mt-2 text-center">
+          관리자:
+          <span class="font-semibold text-indigo-700">{{ board.boardManagerNickname }}</span>
+        </div>
+
+        <!-- 권한 위임 신청 버튼: boardManager가 null일 때 -->
+        <div class="flex justify-center gap-4 mt-6">
+          <button
+            v-if="!board?.boardManagerNickname"
+            @click="applyForBoardManager"
+            class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition text-sm font-semibold"
+          >
+            권한 위임 신청
+          </button>
+
+          <!-- 게시판 삭제 버튼: 관리자만 보이게 -->
+          <button
+            v-if="board && currentUserId && board.boardManagerId === currentUserId"
+            @click="deleteBoard"
+            class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition text-sm font-semibold"
+          >
+            게시판 삭제
+          </button>
+        </div>
+
       </div>
 
-      <!-- 투표 정보 (아직 구현 X, 그대로 둠) -->
+      <!-- 투표 정보 -->
       <div v-if="voteSession" class="px-6 py-6 border-b-2 border-gray-200 bg-yellow-50 text-center">
         <h2 class="text-lg font-semibold text-indigo-700 mb-4">⚔️ 투표</h2>
         <p class="text-sm text-gray-700 mb-4">
@@ -26,18 +55,28 @@
         <div class="flex items-center justify-center gap-6" :class="voteSession.options.length === 2 ? 'flex-row' : 'flex-wrap'">
           <template v-for="(opt, idx) in voteSession.options" :key="idx">
             <div class="flex flex-col items-center w-40">
-              <img :src="voteSession.optionImages?.[idx] || 'https://via.placeholder.com/150'" class="w-32 h-32 object-cover rounded border mb-2" />
-              <span class="text-gray-800 font-semibold">{{ opt }}</span>
+              <img :src="opt.imageUrl || 'https://via.placeholder.com/150'" 
+                  class="w-32 h-32 object-cover rounded border mb-2" />
+              <span class="text-gray-800 font-semibold">{{ opt.label }}</span>
             </div>
             <div v-if="idx < voteSession.options.length - 1" class="text-2xl font-bold text-red-600">VS</div>
           </template>
         </div>
-        <div class="flex justify-center mt-6">
-          <!-- 투표하기 라우트는 아직 구현되지 않았으므로 그대로 둠 -->
-          <router-link :to="`/boards/${route.params.id}/vote-session/${voteSession.id}/participate`"
-            class="inline-block px-6 py-3 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition text-sm font-semibold">
+        <div class="flex justify-center mt-6 gap-4">
+          <button
+            @click="openVoteWindow"
+            class="inline-block px-6 py-3 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition text-sm font-semibold"
+          >
             투표하기
-          </router-link>
+          </button>
+
+          <button
+            v-if="voteSession"
+            @click="openVoteStatusWindow(route.params.boardId)"
+            class="inline-block px-6 py-3 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition text-sm font-semibold"
+          >
+            투표 현황 보기
+          </button>
         </div>
       </div>
 
@@ -98,13 +137,21 @@
 import { onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import useBoard from '@/pages/scripts/Board.js'
+import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
+const store = useUserStore()
+
 const {
   board, posts, voteSession, pageInfo,
   visiblePages, currentBlock,
-  fetchBoard, fetchVoteSession, fetchPosts, goToBlock, formatDate
+  fetchBoard, fetchVoteSession, fetchPosts, goToBlock, formatDate,
+  deleteBoard,
+  openVoteWindow, openVoteStatusWindow,
+  applyForBoardManager
 } = useBoard(route.params.boardId)
+
+const currentUserId = store.id
 
 onMounted(async () => {
   await fetchBoard()

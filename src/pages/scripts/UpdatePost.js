@@ -2,7 +2,7 @@ import { ref, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Quill from 'quill'
 import 'quill/dist/quill.snow.css'
-import api from '@/axios'   // ✅ axios 대신 api 사용
+import api from '@/axios'
 import { uploadImage } from '@/services/uploadImage'
 import { useUserStore } from '@/stores/user'
 
@@ -74,7 +74,13 @@ export default function useUpdatePost() {
       quill.root.innerHTML = data.content
     } catch (err) {
       console.error('게시글 불러오기 실패', err)
-      errorMessage.value = '게시글을 불러오지 못했습니다.'
+      if (err.response && err.response.data && err.response.data.message) {
+        errorMessage.value = err.response.data.message
+        alert(`${err.response.data.message}`)
+      } else {
+        errorMessage.value = '게시글을 불러오지 못했습니다.'
+        alert('게시글을 불러오지 못했습니다.')
+      }
     }
   }
 
@@ -100,7 +106,13 @@ export default function useUpdatePost() {
       router.push(`/boards/${boardId}/posts/${postId}`)
     } catch (err) {
       console.error('게시글 수정 실패', err)
-      errorMessage.value = '게시글 수정에 실패했습니다.'
+      if (err.response && err.response.data && err.response.data.message) {
+        errorMessage.value = err.response.data.message
+        alert(`${err.response.data.message}`)
+      } else {
+        errorMessage.value = '게시글 수정에 실패했습니다.'
+        alert('게시글 수정에 실패했습니다.')
+      }
     } finally {
       submitting.value = false
     }

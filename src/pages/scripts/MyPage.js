@@ -18,14 +18,22 @@ export default function useMyPage() {
 
   async function fetchUser() {
     try {
-      const res = await api.get('/users/me')
+      const res = await api.get('/users/me', {
+        headers: { Authorization: `Bearer ${store.accessToken}` }
+      })
       user.value = res.data
       errorMessage.value = ''
+
+      store.nickname = res.data.nickname
+      if (res.data.nickname) {
+        localStorage.setItem('nickname', res.data.nickname)
+      }
     } catch (err) {
       console.error('유저 정보 불러오기 실패:', err)
-      errorMessage.value = '유저 정보를 불러오지 못했습니다.'
+      errorMessage.value = err.response?.data?.message || '유저 정보를 불러오지 못했습니다.'
     }
   }
+
 
   async function changeNickname() {
     if (!newNickname.value.trim()) {
@@ -33,15 +41,19 @@ export default function useMyPage() {
       return
     }
     try {
-      await api.put(`/users/${user.value.id}`, { nickname: newNickname.value.trim() })
+      await api.put(`/users/${user.value.id}`, { nickname: newNickname.value.trim() }, {
+        headers: { Authorization: `Bearer ${store.accessToken}` }
+      })
       alert('닉네임이 변경되었습니다.')
       await fetchUser()
       newNickname.value = ''
     } catch (err) {
       console.error('닉네임 변경 실패:', err)
-      errorMessage.value = '닉네임 변경에 실패했습니다.'
+      errorMessage.value = err.response?.data?.message || '닉네임 변경에 실패했습니다.'
     }
   }
+
+
 
   async function deleteAccount() {
     if (confirmEmail.value.trim() !== user.value.email) {
@@ -56,7 +68,13 @@ export default function useMyPage() {
       router.push('/')
     } catch (err) {
       console.error('회원 탈퇴 실패:', err)
-      errorMessage.value = '회원 탈퇴에 실패했습니다.'
+      if (err.response && err.response.data && err.response.data.message) {
+        errorMessage.value = err.response.data.message
+        alert(`${err.response.data.message}`)
+      } else {
+        errorMessage.value = '회원 탈퇴에 실패했습니다.'
+        alert('회원 탈퇴에 실패했습니다.')
+      }
     }
   }
 
@@ -67,7 +85,13 @@ export default function useMyPage() {
       errorMessage.value = ''
     } catch (err) {
       console.error('권한 신청 실패:', err)
-      errorMessage.value = '권한 신청에 실패했습니다.'
+      if (err.response && err.response.data && err.response.data.message) {
+        errorMessage.value = err.response.data.message
+        alert(`${err.response.data.message}`)
+      } else {
+        errorMessage.value = '권한 신청에 실패했습니다.'
+        alert('권한 신청에 실패했습니다.')
+      }
     }
   }
 

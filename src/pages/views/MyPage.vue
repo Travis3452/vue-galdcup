@@ -1,6 +1,6 @@
 <template>
   <div class="mypage max-w-3xl mx-auto p-6">
-    <h1 class="text-3xl font-bold text-indigo-700 mb-6">마이페이지</h1>
+    <h1 class="text-3xl font-bold text-indigo-700 mb-6">내 정보</h1>
 
     <!-- 탭 메뉴 -->
     <div class="flex space-x-4 border-b mb-6">

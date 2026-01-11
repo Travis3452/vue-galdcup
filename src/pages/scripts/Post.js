@@ -21,11 +21,12 @@ export default function usePost() {
   const hasNextPage = ref(false)
   const activeReplyBox = ref(null)
 
-  // 페이지네이션 표시
+  // 페이지네이션 표시 (최대 5개)
   const visiblePages = computed(() => {
     const pages = []
-    const start = Math.max(1, currentPage.value + 1 - 2)
-    const end = Math.min(totalPages.value, start + 4)
+    const maxVisible = 5
+    const start = Math.max(1, currentPage.value + 1 - Math.floor(maxVisible / 2))
+    const end = Math.min(totalPages.value, start + maxVisible - 1)
     for (let i = start; i <= end; i++) pages.push(i)
     return pages
   })
@@ -39,78 +40,74 @@ export default function usePost() {
 
   // 게시글 단건 조회
   async function fetchPost(postId) {
-    const res = await axios.get(`${API_BASE_URL}/api/posts/${postId}`)
-    post.value = res.data
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/posts/${postId}`)
+      post.value = res.data
+    } catch (err) {
+      console.error('게시글 조회 실패:', err)
+      alert(err.response?.data?.message || '게시글을 불러오는 중 오류가 발생했습니다.')
+    }
   }
 
   // 댓글 조회
   async function fetchComments(postId) {
-    const res = await axios.get(`${API_BASE_URL}/api/comments/post/${postId}`, {
-      params: { size: 30, page: currentPage.value }
-    })
-    comments.value = res.data.content || res.data
-    totalPages.value = res.data.totalPages || 1
-    hasNextPage.value = !res.data.last
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/comments/post/${postId}`, {
+        params: { size: 30, page: currentPage.value }
+      })
 
-    // 각 댓글의 대댓글 조회
-    for (const comment of comments.value) {
-      const replyRes = await axios.get(`${API_BASE_URL}/api/replies/comment/${comment.id}`)
-      replies.value[comment.id] = replyRes.data
+      comments.value = res.data.content ?? res.data
+      totalPages.value = res.data.totalPages ?? 1
+      hasNextPage.value = !res.data.last
+
+      // 각 댓글의 대댓글 조회 (리액티브 갱신 보장)
+      const newRepliesMap = { ...replies.value }
+      for (const comment of comments.value) {
+        const replyRes = await axios.get(`${API_BASE_URL}/api/replies/comment/${comment.id}`)
+        newRepliesMap[comment.id] = replyRes.data
+      }
+      replies.value = newRepliesMap
+    } catch (err) {
+      console.error('댓글 조회 실패:', err)
+      alert(err.response?.data?.message || '댓글을 불러오는 중 오류가 발생했습니다.')
     }
   }
 
   // 댓글 작성
   async function createComment() {
     if (!newComment.value.trim()) return
-    await axios.post(`${API_BASE_URL}/api/comments`, {
-      postId: post.value.id,
-      content: newComment.value.trim()
-    }, {
-      headers: { Authorization: `Bearer ${store.accessToken}` }
-    })
-    newComment.value = ''
-    await fetchComments(post.value.id)
+    try {
+      await axios.post(`${API_BASE_URL}/api/comments`, {
+        postId: post.value.id,
+        content: newComment.value.trim()
+      }, {
+        headers: { Authorization: `Bearer ${store.accessToken}` }
+      })
+      newComment.value = ''
+      await fetchComments(post.value.id)
+    } catch (err) {
+      console.error('댓글 작성 실패:', err)
+      alert(err.response?.data?.message || '댓글 작성 중 오류가 발생했습니다.')
+    }
   }
 
   // 대댓글 작성
   async function createReply(commentId) {
     const content = newReplies.value[commentId]
     if (!content || !content.trim()) return
-    await axios.post(`${API_BASE_URL}/api/replies`, {
-      commentId,
-      content: content.trim()
-    }, {
-      headers: { Authorization: `Bearer ${store.accessToken}` }
-    })
-    newReplies.value[commentId] = ''
-    activeReplyBox.value = null
-    await fetchComments(post.value.id)
-  }
-
-  // 대댓글 입력창 토글
-  function toggleReplyBox(commentId) {
-    activeReplyBox.value = activeReplyBox.value === commentId ? null : commentId
-  }
-
-  // 페이지네이션 이동
-  function prevPage() {
-    if (currentPage.value > 0) {
-      currentPage.value--
-      fetchComments(post.value.id)
-    }
-  }
-
-  function nextPage() {
-    if (currentPage.value < totalPages.value - 1) {
-      currentPage.value++
-      fetchComments(post.value.id)
-    }
-  }
-
-  function goToPage(pageIndex) {
-    if (pageIndex >= 0 && pageIndex < totalPages.value) {
-      currentPage.value = pageIndex
-      fetchComments(post.value.id)
+    try {
+      await axios.post(`${API_BASE_URL}/api/replies`, {
+        commentId,
+        content: content.trim()
+      }, {
+        headers: { Authorization: `Bearer ${store.accessToken}` }
+      })
+      newReplies.value[commentId] = ''
+      activeReplyBox.value = null
+      await fetchComments(post.value.id)
+    } catch (err) {
+      console.error('대댓글 작성 실패:', err)
+      alert(err.response?.data?.message || '대댓글 작성 중 오류가 발생했습니다.')
     }
   }
 
@@ -118,36 +115,56 @@ export default function usePost() {
   async function editComment(comment) {
     const newContent = prompt('댓글 수정:', comment.content)
     if (!newContent) return
-    await axios.put(`${API_BASE_URL}/api/comments/${comment.id}`, { content: newContent }, {
-      headers: { Authorization: `Bearer ${store.accessToken}` }
-    })
-    await fetchComments(post.value.id)
+    try {
+      await axios.put(`${API_BASE_URL}/api/comments/${comment.id}`, { content: newContent }, {
+        headers: { Authorization: `Bearer ${store.accessToken}` }
+      })
+      await fetchComments(post.value.id)
+    } catch (err) {
+      console.error('댓글 수정 실패:', err)
+      alert(err.response?.data?.message || '댓글 수정 중 오류가 발생했습니다.')
+    }
   }
 
   async function deleteComment(commentId) {
     if (!confirm('댓글을 삭제하시겠습니까?')) return
-    await axios.delete(`${API_BASE_URL}/api/comments/${commentId}`, {
-      headers: { Authorization: `Bearer ${store.accessToken}` }
-    })
-    await fetchComments(post.value.id)
+    try {
+      await axios.delete(`${API_BASE_URL}/api/comments/${commentId}`, {
+        headers: { Authorization: `Bearer ${store.accessToken}` }
+      })
+      await fetchComments(post.value.id)
+    } catch (err) {
+      console.error('댓글 삭제 실패:', err)
+      alert(err.response?.data?.message || '댓글 삭제 중 오류가 발생했습니다.')
+    }
   }
 
   // 대댓글 수정/삭제
   async function editReply(reply) {
     const newContent = prompt('대댓글 수정:', reply.content)
     if (!newContent) return
-    await axios.put(`${API_BASE_URL}/api/replies/${reply.id}`, { content: newContent }, {
-      headers: { Authorization: `Bearer ${store.accessToken}` }
-    })
-    await fetchComments(post.value.id)
+    try {
+      await axios.put(`${API_BASE_URL}/api/replies/${reply.id}`, { content: newContent }, {
+        headers: { Authorization: `Bearer ${store.accessToken}` }
+      })
+      await fetchComments(post.value.id)
+    } catch (err) {
+      console.error('대댓글 수정 실패:', err)
+      alert(err.response?.data?.message || '대댓글 수정 중 오류가 발생했습니다.')
+    }
   }
 
   async function deleteReply(replyId) {
     if (!confirm('대댓글을 삭제하시겠습니까?')) return
-    await axios.delete(`${API_BASE_URL}/api/replies/${replyId}`, {
-      headers: { Authorization: `Bearer ${store.accessToken}` }
-    })
-    await fetchComments(post.value.id)
+    try {
+      await axios.delete(`${API_BASE_URL}/api/replies/${replyId}`, {
+        headers: { Authorization: `Bearer ${store.accessToken}` }
+      })
+      await fetchComments(post.value.id)
+    } catch (err) {
+      console.error('대댓글 삭제 실패:', err)
+      alert(err.response?.data?.message || '대댓글 삭제 중 오류가 발생했습니다.')
+    }
   }
 
   // 게시글 수정/삭제
@@ -160,20 +177,52 @@ export default function usePost() {
 
   async function deletePost() {
     if (!confirm('게시글을 삭제하시겠습니까?')) return
-    await axios.delete(`${API_BASE_URL}/api/posts/${post.value.id}`, {
-      headers: { Authorization: `Bearer ${store.accessToken}` }
-    })
-    alert('게시글이 삭제되었습니다.')
-    router.push(`/boards/${route.params.boardId}`)
+    try {
+      await axios.delete(`${API_BASE_URL}/api/posts/${post.value.id}`, {
+        headers: { Authorization: `Bearer ${store.accessToken}` }
+      })
+      alert('게시글이 삭제되었습니다.')
+      router.push(`/boards/${route.params.boardId}`)
+    } catch (err) {
+      console.error('게시글 삭제 실패:', err)
+      alert(err.response?.data?.message || '게시글 삭제 중 오류가 발생했습니다.')
+    }
   }
 
   // 좋아요/싫어요
   async function reactToPost(type) {
-    await axios.post(`${API_BASE_URL}/api/posts/${post.value.id}/reactions`, {}, {
-      params: { type },
-      headers: { Authorization: `Bearer ${store.accessToken}` }
-    })
-    await fetchPost(post.value.id)
+    try {
+      await axios.post(`${API_BASE_URL}/api/posts/${post.value.id}/reactions`, {}, {
+        params: { type },
+        headers: { Authorization: `Bearer ${store.accessToken}` }
+      })
+      await fetchPost(post.value.id)
+    } catch (err) {
+      console.error('게시글 반응 실패:', err)
+      alert(err.response?.data?.message || '게시글 반응 처리 중 오류가 발생했습니다.')
+    }
+  }
+
+  // 대댓글 입력창 토글
+  function toggleReplyBox(commentId) {
+    activeReplyBox.value = activeReplyBox.value === commentId ? null : commentId
+  }
+
+  // 페이지 이동
+  async function goToPage(page) {
+    if (page < 0 || page >= totalPages.value) return
+    currentPage.value = page
+    await fetchComments(post.value.id)
+  }
+
+  async function prevPage() {
+    if (currentPage.value === 0) return
+    await goToPage(currentPage.value - 1)
+  }
+
+  async function nextPage() {
+    if (!hasNextPage.value) return
+    await goToPage(currentPage.value + 1)
   }
 
   return {

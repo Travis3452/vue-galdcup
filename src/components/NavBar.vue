@@ -9,8 +9,6 @@
     </router-link>
 
     <nav class="space-x-6 flex items-center">
-      <router-link to="/" class="text-gray-600 hover:text-indigo-600">홈</router-link>
-
       <template v-if="isLoggedIn">
         <div class="flex items-center space-x-4">
           <!-- 프로필 박스 -->
@@ -53,7 +51,7 @@
 import { computed, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { useRouter } from 'vue-router'
-import api from '@/axios'   // ✅ axios 인스턴스 사용
+import api from '@/axios'
 
 const store = useUserStore()
 const router = useRouter()
@@ -62,8 +60,6 @@ const isLoggedIn = computed(() => !!store.accessToken)
 const nickname = computed(() => store.nickname || '')
 
 onMounted(() => {
-  // ✅ 스토어 복원만 수행
-  // refresh는 axios.js 인터셉터가 자동 처리하므로 여기서 직접 호출할 필요 없음
   store.restore()
 })
 
@@ -87,7 +83,7 @@ function loginWithGoogle() {
 
 async function logout() {
   try {
-    await api.delete('/auth/logout')   // ✅ api 인스턴스 사용
+    await api.delete('/auth/logout')
   } catch (err) {
     console.error('서버 로그아웃 실패:', err)
   } finally {

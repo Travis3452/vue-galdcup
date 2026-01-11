@@ -86,7 +86,13 @@ export default function useCreatePost() {
       router.push(`/boards/${boardId}`)
     } catch (err) {
       console.error('게시글 생성 실패', err)
-      errorMessage.value = '게시글 생성에 실패했습니다.'
+      if (err.response && err.response.data && err.response.data.message) {
+        errorMessage.value = err.response.data.message
+        alert(`${err.response.data.message}`)
+      } else {
+        errorMessage.value = '알 수 없는 오류가 발생했습니다.'
+        alert('알 수 없는 오류가 발생했습니다.')
+      }
     } finally {
       submitting.value = false
     }

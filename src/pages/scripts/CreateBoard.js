@@ -24,19 +24,22 @@ export default function useCreateBoard() {
         topic: topic.value.trim(),
         description: description.value.trim()
       }
-      // 게시판 생성 요청
       const res = await api.post('/boards', payload, {
         headers: { Authorization: `Bearer ${store.accessToken}` }
       })
 
-      // 응답에서 생성된 게시판 ID 추출
       const boardId = res.data.id
 
-      // ✅ 생성 성공 시 해당 게시판의 createVoteSession 페이지로 이동
       router.push(`/boards/${boardId}/createVoteSession`)
     } catch (err) {
       console.error('게시판 생성 실패:', err)
-      errorMessage.value = '게시판 생성에 실패했습니다.'
+      if (err.response && err.response.data && err.response.data.message) {
+        errorMessage.value = err.response.data.message
+        alert(`${err.response.data.message}`)
+      } else {
+        errorMessage.value = '알 수 없는 오류가 발생했습니다.'
+        alert('알 수 없는 오류가 발생했습니다.')
+      }
     } finally {
       submitting.value = false
     }

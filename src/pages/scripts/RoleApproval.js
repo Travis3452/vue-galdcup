@@ -14,6 +14,11 @@ export default function useRoleApproval() {
       requests.value = res.data
     } catch (err) {
       console.error('권한 요청 목록 불러오기 실패:', err)
+      if (err.response && err.response.data && err.response.data.message) {
+        alert(err.response.data.message)
+      } else {
+        alert('권한 요청 목록을 불러오는 중 오류가 발생했습니다.')
+      }
     }
   }
 
@@ -24,7 +29,11 @@ export default function useRoleApproval() {
       alert('요청을 승인했습니다.')
     } catch (err) {
       console.error('승인 실패:', err)
-      alert('승인에 실패했습니다.')
+      if (err.response && err.response.data && err.response.data.message) {
+        alert(err.response.data.message)
+      } else {
+        alert('승인에 실패했습니다.')
+      }
     }
   }
 
@@ -35,7 +44,11 @@ export default function useRoleApproval() {
       alert('요청을 거절했습니다.')
     } catch (err) {
       console.error('거절 실패:', err)
-      alert('거절에 실패했습니다.')
+      if (err.response && err.response.data && err.response.data.message) {
+        alert(err.response.data.message)
+      } else {
+        alert('거절에 실패했습니다.')
+      }
     }
   }
 
