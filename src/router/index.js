@@ -10,6 +10,8 @@ import UpdatePost from '@/pages/views/UpdatePost.vue'
 import CreateVoteSession from '@/pages/views/CreateVoteSession.vue'
 import MyPage from '@/pages/views/MyPage.vue'
 import RoleApproval from '@/pages/views/RoleApproval.vue'
+import Vote from '@/pages/views/Vote.vue'
+import VoteStatus from '@/pages/views/VoteStatus.vue'
 
 const routes = [
   { path: '/', name: 'Home', component: Home },
@@ -25,6 +27,18 @@ const routes = [
     path: '/role-approval', 
     name: 'RoleApproval', 
     component: RoleApproval,
+    meta: { noLayout: true }
+  },
+  { 
+    path: '/boards/:boardId/vote-session/:voteSessionId/vote', 
+    name: 'Vote', 
+    component: Vote,
+    meta: { noLayout: true }
+  },
+  { 
+    path: '/boards/:boardId/vote-status',
+    name: 'VoteStatus',
+    component: VoteStatus,
     meta: { noLayout: true }
   }
 ]
