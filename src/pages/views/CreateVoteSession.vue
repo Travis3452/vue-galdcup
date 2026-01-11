@@ -2,7 +2,7 @@
   <div class="max-w-2xl mx-auto bg-white shadow rounded-lg p-10 space-y-12">
     <!-- 투표 주제 영역 -->
     <div class="bg-indigo-50 rounded-lg p-6 space-y-4">
-      <h3 class="text-xl font-bold text-indigo-700">📝 투표 주제</h3>
+      <h3 class="text-xl font-bold text-indigo-700">📝 갈드컵 주제</h3>
       <input
         :value="boardTitle"
         type="text"
@@ -13,7 +13,7 @@
 
     <!-- 투표 선택지 영역 -->
     <div class="bg-gray-50 rounded-lg p-6">
-      <h3 class="text-xl font-bold text-indigo-700 mb-6">📌 투표 선택지</h3>
+      <h3 class="text-xl font-bold text-indigo-700 mb-6">📌 갈드컵 선택지</h3>
 
       <div class="space-y-6 w-full">
         <div
@@ -88,7 +88,7 @@
       @click.prevent="createVoteSession"
       class="w-full bg-indigo-600 text-white py-4 rounded font-semibold hover:bg-indigo-700 transition"
     >
-      대결 생성하기
+      갈드컵 생성하기
     </button>
   </div>
 </template>

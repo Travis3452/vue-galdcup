@@ -15,7 +15,6 @@ export default function useCreateVoteSession() {
   function getTomorrowMidnight() {
     const now = new Date()
     now.setDate(now.getDate() + 1)
-    // 한국 시간 기준으로 문자열 생성
     return new Date(
       `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
         now.getDate()
@@ -51,7 +50,6 @@ export default function useCreateVoteSession() {
   // LocalDateTime → OffsetDateTime(+09:00) 변환
   function toSeoulOffsetDateTime(dtLocalValue) {
     if (!dtLocalValue) return null
-    // "YYYY-MM-DDTHH:mm" → "YYYY-MM-DDTHH:mm:00+09:00"
     const normalized = dtLocalValue.length === 16 ? `${dtLocalValue}:00` : dtLocalValue
     return new Date(normalized + '+09:00').toISOString()
   }
@@ -73,7 +71,7 @@ export default function useCreateVoteSession() {
       startTime: toSeoulOffsetDateTime(startTime.value),
       endTime: toSeoulOffsetDateTime(endTime.value),
       options: options.value.filter(o => o.trim() !== ''),
-      optionImages: optionImages.value.filter(img => img)
+      optionImages: optionImages.value // ✅ filter 제거
     }
 
     await api.post(`/boards/${boardId}/vote-session`, payload, {
