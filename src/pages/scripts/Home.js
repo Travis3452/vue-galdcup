@@ -1,5 +1,5 @@
 import { ref, onMounted } from 'vue'
-import api from '@/axios'   // ✅ axios 대신 api 인스턴스 사용
+import api from '@/axios'
 import { useRouter } from 'vue-router'
 
 export default function useHome() {
@@ -13,7 +13,7 @@ export default function useHome() {
     try {
       const res = await api.get(`/boards?page=${page.value}&size=${size}`)
       boards.value = res.data.content
-      totalPages.value = res.data.totalPages
+      totalPages.value = Math.max(res.data.totalPages, 1)
     } catch (err) {
       console.error('API 호출 실패:', err)
     }
