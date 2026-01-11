@@ -7,7 +7,10 @@
       <div class="flex justify-between items-center text-sm text-gray-600 border-b pb-3 mb-6">
         <span>👤 {{ post?.authorNickname }}</span>
         <div class="flex items-center space-x-4">
-          <span>⏰ {{ formatDate(post?.createdAt) }}</span>
+          <span>
+            ⏰ {{ formatDate(post?.createdAt) }}
+            <span v-if="post?.updatedAt && post?.updatedAt !== post?.createdAt" class="text-xs text-gray-500">(수정됨)</span>
+          </span>
           <span>👁️ 조회수 {{ post?.view }}</span>
           <template v-if="store.id && post?.authorId === store.id">
             <button @click="editPost" class="px-3 py-1 bg-yellow-500 text-white rounded text-xs">수정</button>
@@ -38,7 +41,10 @@
             <div class="flex justify-between text-sm text-gray-600 mb-2">
               <span>👤 {{ comment.authorNickname }}</span>
               <div class="flex items-center space-x-2">
-                <span>{{ formatDate(comment.createdAt) }}</span>
+                <span>
+                  {{ formatDate(comment.createdAt) }}
+                  <span v-if="comment.updatedAt && comment.updatedAt !== comment.createdAt" class="text-xs text-gray-500">(수정됨)</span>
+                </span>
                 <template v-if="store.id && comment.authorId === store.id">
                   <button @click="editComment(comment)" class="px-2 py-1 bg-yellow-500 text-white rounded text-xs">수정</button>
                   <button @click="deleteComment(comment.id)" class="px-2 py-1 bg-red-500 text-white rounded text-xs">삭제</button>
@@ -56,7 +62,10 @@
                 <div class="flex justify-between text-xs text-gray-500">
                   <span>↳ {{ reply.authorNickname }}</span>
                   <div class="flex items-center space-x-2">
-                    <span>{{ formatDate(reply.createdAt) }}</span>
+                    <span>
+                      {{ formatDate(reply.createdAt) }}
+                      <span v-if="reply.updatedAt && reply.updatedAt !== reply.createdAt" class="text-xs text-gray-500">(수정됨)</span>
+                    </span>
                     <template v-if="store.id && reply.authorId === store.id">
                       <button @click="editReply(reply)" class="px-2 py-1 bg-yellow-500 text-white rounded text-xs">수정</button>
                       <button @click="deleteReply(reply.id)" class="px-2 py-1 bg-red-500 text-white rounded text-xs">삭제</button>
@@ -128,9 +137,9 @@ const {
   editPost, deletePost, reactToPost
 } = usePost()
 
-onMounted(() => {
+onMounted(async () => {
   const postId = route.params.postId
-  fetchPost(postId)
-  fetchComments(postId)
+  await fetchPost(postId)
+  await fetchComments(postId)
 })
 </script>
