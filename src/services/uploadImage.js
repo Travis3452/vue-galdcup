@@ -6,10 +6,14 @@ const supabase = createClient(
 )
 
 export async function uploadImage(file) {
-  const fileName = `${Date.now()}_${file.name}`
+  // 확장자 추출
+  const ext = file.name.split('.').pop()
+  // 안전한 파일명 생성 (UUID + 확장자)
+  const safeName = `${Date.now()}_${crypto.randomUUID()}.${ext}`
+
   const { error: uploadError } = await supabase.storage
     .from('post-images')
-    .upload(fileName, file, { cacheControl: '3600', upsert: false })
+    .upload(safeName, file, { cacheControl: '3600', upsert: false })
 
   if (uploadError) {
     throw uploadError
@@ -17,7 +21,7 @@ export async function uploadImage(file) {
 
   const { data } = supabase.storage
     .from('post-images')
-    .getPublicUrl(fileName)
+    .getPublicUrl(safeName)
 
   if (!data?.publicUrl) {
     throw new Error('Public URL 생성 실패')
