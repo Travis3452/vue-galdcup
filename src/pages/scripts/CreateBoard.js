@@ -15,7 +15,7 @@ export default function useCreateBoard() {
   async function createBoard() {
     errorMessage.value = ''
     if (!topic.value.trim()) {
-      errorMessage.value = '토픽을 입력하세요.'
+      errorMessage.value = '갈드컵 주제를 입력하세요.'
       return
     }
     submitting.value = true

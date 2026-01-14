@@ -11,7 +11,6 @@ export default function useCreateVoteSession() {
 
   const boardTitle = ref('')
 
-  // 기본값: 내일 0시 (Asia/Seoul 기준)
   function getTomorrowMidnight() {
     const now = new Date()
     now.setDate(now.getDate() + 1)
@@ -47,7 +46,6 @@ export default function useCreateVoteSession() {
     }
   }
 
-  // LocalDateTime → OffsetDateTime(+09:00) 변환
   function toSeoulOffsetDateTime(dtLocalValue) {
     if (!dtLocalValue) return null
     const normalized = dtLocalValue.length === 16 ? `${dtLocalValue}:00` : dtLocalValue
