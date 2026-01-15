@@ -13,7 +13,7 @@
         >
           <div>
             <p class="text-gray-700 font-semibold">
-              {{ req.nickname }} <span class="text-gray-500 text-sm">({{ req.email }})</span>
+              {{ req.nickname }}
             </p>
             <p class="text-gray-600 text-xs">
               요청 권한: <span class="font-bold">{{ req.requestedRole }}</span>
