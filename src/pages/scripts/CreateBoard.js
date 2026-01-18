@@ -29,13 +29,21 @@ export default function useCreateBoard() {
       })
 
       const boardId = res.data.id
-
       router.push(`/boards/${boardId}/createVoteSession`)
     } catch (err) {
       console.error('게시판 생성 실패:', err)
-      if (err.response && err.response.data && err.response.data.message) {
-        errorMessage.value = err.response.data.message
-        alert(`${err.response.data.message}`)
+      if (err.response && err.response.data) {
+        const data = err.response.data
+        // details가 있으면 필드별 메시지만 보여주기
+        if (data.details && typeof data.details === 'object') {
+          const detailMsgs = Object.values(data.details).join('\n')
+          errorMessage.value = detailMsgs
+          alert(detailMsgs)
+        } else {
+          // details가 없으면 기본 메시지 사용
+          errorMessage.value = data.message || '요청 처리 중 오류가 발생했습니다.'
+          alert(errorMessage.value)
+        }
       } else {
         errorMessage.value = '알 수 없는 오류가 발생했습니다.'
         alert('알 수 없는 오류가 발생했습니다.')
