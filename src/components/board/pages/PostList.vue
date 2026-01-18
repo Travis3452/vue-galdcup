@@ -67,6 +67,26 @@
         다음
       </button>
     </div>
+
+    <!-- 검색 영역 -->
+    <div class="flex justify-center items-center space-x-2 py-4 border-t border-gray-200">
+      <!-- 검색 모드 선택 -->
+      <select v-model="searchMode"
+        class="px-2 py-1 border border-gray-300 rounded text-sm text-gray-700 bg-white">
+        <option value="titleContent">제목+내용</option>
+        <option value="author">작성자</option>
+      </select>
+
+      <!-- 검색어 입력 -->
+      <input v-model="searchKeyword" type="text" placeholder="검색어 입력"
+        class="px-3 py-1 border border-gray-300 rounded text-sm w-64 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+
+      <!-- 검색 버튼 -->
+      <button @click="doSearch"
+        class="px-3 py-1 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 transition">
+        검색
+      </button>
+    </div>
   </div>
 </template>
 
@@ -85,14 +105,23 @@ const {
   visiblePages,
   fetchPosts,
   goToBlock,
-  formatDate
+  formatDate,
+  searchPosts   
 } = useBoardPosts(boardId)
 
 const activeTab = ref('latest')
 
+const searchMode = ref('titleContent')
+const searchKeyword = ref('')
+
 function switchTab(tab) {
   activeTab.value = tab
   fetchPosts(0, tab)
+}
+
+function doSearch() {
+  if (!searchKeyword.value) return
+  searchPosts(0, searchMode.value, searchKeyword.value)
 }
 
 onMounted(async () => {

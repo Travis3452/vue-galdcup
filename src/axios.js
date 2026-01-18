@@ -5,7 +5,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const api = axios.create({
   baseURL: `${API_BASE_URL}/api`,
-  withCredentials: true // ✅ RefreshToken 쿠키 자동 포함
+  withCredentials: true
 });
 
 // 요청 인터셉터: AccessToken을 Authorization 헤더에 추가
@@ -46,7 +46,6 @@ api.interceptors.response.use(
         err.config.headers.Authorization = `Bearer ${newToken}`;
         return api(err.config);
       } catch (refreshErr) {
-        // ✅ RefreshToken도 만료 → 자동 로그아웃 + 안내 메시지
         alert("로그인 세션이 만료되었습니다. 다시 로그인해주세요.");
         store.logout();
         window.location.href = "/";
