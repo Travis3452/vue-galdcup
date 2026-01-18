@@ -11,11 +11,29 @@ export default function useHome() {
 
   async function fetchBoards() {
     try {
-      const res = await api.get(`/boards?page=${page.value}&size=${size}`)
+      const res = await api.get(`/boards`, { params: { page: page.value, size } })
       boards.value = res.data.content
       totalPages.value = Math.max(res.data.totalPages, 1)
     } catch (err) {
       console.error('API 호출 실패:', err)
+    }
+  }
+
+  /**
+   * 🔍 게시판 주제 검색
+   * @param {number} pageNum - 페이지 번호
+   * @param {string} keyword - 검색어
+   */
+  async function searchBoards(pageNum, keyword) {
+    try {
+      const res = await api.get(`/boards/search`, {
+        params: { page: pageNum, size, keyword }
+      })
+      boards.value = res.data.content
+      page.value = res.data.number
+      totalPages.value = Math.max(res.data.totalPages, 1)
+    } catch (err) {
+      console.error('검색 API 호출 실패:', err)
     }
   }
 
@@ -54,6 +72,7 @@ export default function useHome() {
     formatDate,
     goToBoard,
     nextPage,
-    prevPage
+    prevPage,
+    searchBoards
   }
 }

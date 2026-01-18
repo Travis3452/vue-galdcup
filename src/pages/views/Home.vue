@@ -70,12 +70,23 @@
             다음
           </button>
         </div>
+
+        <!-- 🔍 검색 영역 -->
+        <div class="flex justify-center items-center space-x-2 py-6 border-t border-gray-200 mt-6">
+          <input v-model="searchKeyword" type="text" placeholder="게시판 주제 검색"
+            class="px-3 py-2 border border-gray-300 rounded text-sm w-64 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+          <button @click="doSearch"
+            class="px-4 py-2 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 transition">
+            검색
+          </button>
+        </div>
       </section>
     </div>
   </main>
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import useHome from '@/pages/scripts/Home.js'
 
 const {
@@ -85,6 +96,17 @@ const {
   formatDate,
   goToBoard,
   nextPage,
-  prevPage
+  prevPage,
+  searchBoards   
 } = useHome()
+
+// 검색 상태
+const searchKeyword = ref('')
+
+// 검색 실행
+function doSearch() {
+  if (!searchKeyword.value) return
+  searchBoards(0, searchKeyword.value)
+}
+
 </script>
