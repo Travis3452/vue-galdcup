@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 
 export default function useHome() {
   const boards = ref([])
+  const popularBoards = ref([])
   const page = ref(0)
   const size = 10
   const totalPages = ref(1)
@@ -19,11 +20,7 @@ export default function useHome() {
     }
   }
 
-  /**
-   * 🔍 게시판 주제 검색
-   * @param {number} pageNum - 페이지 번호
-   * @param {string} keyword - 검색어
-   */
+  // 게시판 검색
   async function searchBoards(pageNum, keyword) {
     try {
       const res = await api.get(`/boards/search`, {
@@ -37,6 +34,17 @@ export default function useHome() {
     }
   }
 
+  // 인기 게시판 조회
+  async function fetchPopularBoards() {
+    try {
+      const res = await api.get(`/boards/popular`)
+      popularBoards.value = res.data
+    } catch (err) {
+      console.error('인기 게시판 API 호출 실패:', err)
+    }
+  }
+
+  // 날짜 포맷
   function formatDate(dateString) {
     const date = new Date(dateString)
     const year = String(date.getFullYear()).slice(2)
@@ -45,10 +53,12 @@ export default function useHome() {
     return `${year}-${month}-${day}`
   }
 
+  // 게시판 이동
   function goToBoard(boardId) {
     router.push(`/boards/${boardId}`)
   }
 
+  // 최근 생성된 게시판 페이지네이션
   function nextPage() {
     if (page.value < totalPages.value - 1) {
       page.value++
@@ -63,16 +73,21 @@ export default function useHome() {
     }
   }
 
-  onMounted(fetchBoards)
+  onMounted(() => {
+    fetchBoards()
+    fetchPopularBoards()
+  })
 
   return {
     boards,
+    popularBoards,
     page,
     totalPages,
     formatDate,
     goToBoard,
     nextPage,
     prevPage,
-    searchBoards
+    searchBoards,
+    fetchPopularBoards
   }
 }

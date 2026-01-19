@@ -23,11 +23,53 @@
         </div>
       </section>
 
-      <!-- 진행 중인 갈드컵 -->
+      <!-- 인기 갈드컵 순위 -->
+      <section class="bg-white rounded-2xl shadow-lg p-10">
+        <div class="flex justify-between items-center mb-10 border-b pb-4">
+          <h3 class="text-2xl font-bold text-indigo-600">
+            ⭐ 인기 갈드컵 TOP 100
+          </h3>
+        </div>
+
+        <div class="grid grid-cols-2 gap-x-12 gap-y-4">
+          <div
+            v-for="(board, index) in pagedPopularBoards"
+            :key="board.id"
+            @click="goToBoard(board.id)"
+            class="flex items-center space-x-3 p-3 rounded-lg border border-indigo-100 bg-indigo-50 hover:bg-indigo-100 hover:shadow-md cursor-pointer transition"
+          >
+            <span class="w-8 h-8 flex items-center justify-center rounded-full bg-indigo-600 text-white font-bold text-sm">
+              {{ index + 1 + popularPage * popularPageSize }}
+            </span>
+            <span class="text-slate-800 font-medium truncate">{{ board.topic }}</span>
+          </div>
+        </div>
+
+        <!-- 페이지네이션 버튼 -->
+        <div class="flex justify-center items-center gap-4 mt-10">
+          <button
+            :disabled="popularPage === 0"
+            @click="prevPopularPage"
+            class="px-4 py-2 rounded bg-slate-200 hover:bg-slate-300 disabled:opacity-50"
+          >
+            이전
+          </button>
+          <span class="text-slate-600">페이지 {{ popularPage + 1 }} / {{ popularTotalPages }}</span>
+          <button
+            :disabled="popularPage >= popularTotalPages - 1"
+            @click="nextPopularPage"
+            class="px-4 py-2 rounded bg-slate-200 hover:bg-slate-300 disabled:opacity-50"
+          >
+            다음
+          </button>
+        </div>
+      </section>
+
+      <!-- 🆕 최근 생성된 갈드컵 -->
       <section class="bg-white rounded-2xl shadow-lg p-10">
         <div class="flex justify-between items-center mb-10 border-b pb-4">
           <h3 class="text-2xl font-bold text-indigo-700">
-            🔥 진행 중인 갈드컵
+            🆕 최근 생성된 갈드컵
           </h3>
           <router-link
             to="/boards/create"
@@ -52,7 +94,6 @@
           </div>
         </div>
 
-        <!-- 페이지네이션 -->
         <div class="flex justify-center items-center gap-4 mt-10">
           <button
             :disabled="page === 0"
@@ -71,9 +112,8 @@
           </button>
         </div>
 
-        <!-- 🔍 검색 영역 -->
         <div class="flex justify-center items-center space-x-2 py-6 border-t border-gray-200 mt-6">
-          <input v-model="searchKeyword" type="text" placeholder="게시판 주제 검색"
+          <input v-model="searchKeyword" type="text" placeholder="검색어 입력"
             class="px-3 py-2 border border-gray-300 rounded text-sm w-64 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
           <button @click="doSearch"
             class="px-4 py-2 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 transition">
@@ -86,7 +126,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import useHome from '@/pages/scripts/Home.js'
 
 const {
@@ -97,16 +137,37 @@ const {
   goToBoard,
   nextPage,
   prevPage,
-  searchBoards   
+  searchBoards,
+  popularBoards,
+  fetchPopularBoards
 } = useHome()
 
-// 검색 상태
 const searchKeyword = ref('')
-
-// 검색 실행
 function doSearch() {
   if (!searchKeyword.value) return
   searchBoards(0, searchKeyword.value)
 }
 
+const popularPage = ref(0)
+const popularPageSize = 10
+const popularTotalPages = computed(() =>
+  Math.ceil(popularBoards.value.length / popularPageSize)
+)
+const pagedPopularBoards = computed(() => {
+  const start = popularPage.value * popularPageSize
+  const end = start + popularPageSize
+  return popularBoards.value.slice(start, end)
+})
+function nextPopularPage() {
+  if (popularPage.value < popularTotalPages.value - 1) {
+    popularPage.value++
+  }
+}
+function prevPopularPage() {
+  if (popularPage.value > 0) {
+    popularPage.value--
+  }
+}
+
+fetchPopularBoards()
 </script>
