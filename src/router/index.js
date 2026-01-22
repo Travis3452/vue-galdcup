@@ -3,11 +3,6 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Home from '@/pages/views/Home.vue'
 import GoogleCallback from '@/pages/views/GoogleCallback.vue'
 import CreateBoard from '@/pages/views/CreateBoard.vue'
-import Board from '@/pages/views/Board.vue'
-import CreatePost from '@/pages/views/CreatePost.vue'
-import Post from '@/pages/views/Post.vue'
-import UpdatePost from '@/pages/views/UpdatePost.vue'
-import CreateVoteSession from '@/pages/views/CreateVoteSession.vue'
 import MyPage from '@/pages/views/MyPage.vue'
 import RoleApproval from '@/pages/views/RoleApproval.vue'
 import Vote from '@/pages/views/Vote.vue'
@@ -17,11 +12,19 @@ const routes = [
   { path: '/', name: 'Home', component: Home },
   { path: '/auth/callback/google', name: 'GoogleCallback', component: GoogleCallback },
   { path: '/boards/create', name: 'CreateBoard', component: CreateBoard },
-  { path: '/boards/:boardId', name: 'Board', component: Board },
-  { path: '/boards/:boardId/posts/create', name: 'CreatePost', component: CreatePost },
-  { path: '/boards/:boardId/posts/:postId', name: 'Post', component: Post },
-  { path: '/boards/:boardId/posts/:postId/update', name: 'UpdatePost', component: UpdatePost },
-  { path: '/boards/:boardId/createVoteSession', name: 'CreateVoteSession', component: CreateVoteSession },
+
+  {
+    path: '/boards/:boardId',
+    component: () => import('@/pages/views/BoardLayout.vue'),
+    children: [
+      { path: '', name: 'Board', component: () => import('@/pages/views/Board.vue') },
+      { path: 'posts/:postId', name: 'Post', component: () => import('@/pages/views/Post.vue') },
+      { path: 'posts/create', name: 'CreatePost', component: () => import('@/pages/views/CreatePost.vue') },
+      { path: 'posts/:postId/update', name: 'UpdatePost', component: () => import('@/pages/views/UpdatePost.vue') },
+      { path: 'createVoteSession', name: 'CreateVoteSession', component: () => import('@/pages/views/CreateVoteSession.vue') }
+    ]
+  },
+
   { path: '/mypage', name: 'MyPage', component: MyPage },
   { 
     path: '/role-approval', 

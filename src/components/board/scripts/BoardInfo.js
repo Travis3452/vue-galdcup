@@ -6,6 +6,9 @@ import { useUserStore } from '@/stores/user'
 export default function useBoardInfo(boardId) {
   const board = ref(null)
   const boardPolicy = ref(null)
+  const isBoardManager = ref(false)
+  const isSubManager = ref(false)
+
   const router = useRouter()
   const store = useUserStore()
 
@@ -18,8 +21,18 @@ export default function useBoardInfo(boardId) {
     try {
       const res = await api.get(`/boards/${boardId}/policy`)
       boardPolicy.value = res.data
+
+      const currentUserId = store.id
+
+      // 관리자 여부 확인
+      isBoardManager.value = boardPolicy.value?.boardManager?.id === currentUserId
+
+      // 서브 매니저 여부 확인
+      isSubManager.value = boardPolicy.value?.subManagers?.some(sm => sm.id === currentUserId) || false
     } catch {
       boardPolicy.value = null
+      isBoardManager.value = false
+      isSubManager.value = false
     }
   }
 
@@ -84,6 +97,8 @@ export default function useBoardInfo(boardId) {
   return {
     board,
     boardPolicy,
+    isBoardManager,
+    isSubManager,
     fetchBoard,
     fetchBoardPolicy,
     deleteBoard,

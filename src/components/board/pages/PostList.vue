@@ -19,7 +19,7 @@
         </button>
       </div>
 
-      <router-link :to="`/boards/${route.params.boardId}/posts/create`"
+      <router-link :to="`/boards/${boardId}/posts/create`"
         class="px-3 py-1 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 transition">
         글쓰기
       </router-link>
@@ -35,9 +35,26 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="post in posts" :key="post.id" class="border-b border-gray-200 hover:bg-gray-50">
+        <tr
+          v-for="post in posts"
+          :key="post.id"
+          class="border-b border-gray-200 hover:bg-gray-50"
+          :class="post.id === selectedPostId ? 'bg-indigo-100 font-bold text-indigo-700' : ''"
+        >
           <td class="px-4 py-2 truncate">
-            <router-link :to="`/boards/${route.params.boardId}/posts/${post.id}`" class="text-gray-800 hover:text-indigo-600">
+            <router-link
+              :to="{
+                name: 'Post',
+                params: { boardId: boardId, postId: post.id },
+                query: { 
+                  page: pageInfo.number, 
+                  tab: activeTab, 
+                  searchMode: searchMode, 
+                  searchKeyword: searchKeyword 
+                }
+              }"
+              class="text-gray-800 hover:text-indigo-600"
+            >
               {{ post.title }}
             </router-link>
           </td>
@@ -57,9 +74,13 @@
         class="px-3 py-1 border border-gray-300 rounded text-sm bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-50">
         이전
       </button>
-      <button v-for="page in visiblePages" :key="page" @click="fetchPosts(page - 1, activeTab)"
+      <button
+        v-for="page in visiblePages"
+        :key="page"
+        @click="fetchPosts(page - 1, activeTab)"
         class="px-3 py-1 border border-gray-300 rounded text-sm"
-        :class="pageInfo.number === page - 1 ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 hover:bg-gray-100'">
+        :class="pageInfo.number === page - 1 ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 hover:bg-gray-100'"
+      >
         {{ page }}
       </button>
       <button @click="goToBlock(currentBlock + 1, activeTab)" :disabled="pageInfo.number >= pageInfo.totalPages - 1"
@@ -70,18 +91,15 @@
 
     <!-- 검색 영역 -->
     <div class="flex justify-center items-center space-x-2 py-4 border-t border-gray-200">
-      <!-- 검색 모드 선택 -->
       <select v-model="searchMode"
         class="px-2 py-1 border border-gray-300 rounded text-sm text-gray-700 bg-white">
         <option value="titleContent">제목+내용</option>
         <option value="author">작성자</option>
       </select>
 
-      <!-- 검색어 입력 -->
       <input v-model="searchKeyword" type="text" placeholder="검색어 입력"
         class="px-3 py-1 border border-gray-300 rounded text-sm w-64 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
 
-      <!-- 검색 버튼 -->
       <button @click="doSearch"
         class="px-3 py-1 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 transition">
         검색
@@ -96,7 +114,14 @@ import { useRoute } from 'vue-router'
 import useBoardPosts from '@/components/board/scripts/PostList.js'
 
 const route = useRoute()
-const boardId = route.params.boardId
+
+const props = defineProps({
+  boardId: { type: String, default: null },
+  page: { type: Number, default: 0 },
+  selectedPostId: { type: Number, default: null }
+})
+
+const boardId = props.boardId || route.params.boardId
 
 const {
   posts,
@@ -109,8 +134,7 @@ const {
   searchPosts   
 } = useBoardPosts(boardId)
 
-const activeTab = ref('latest')
-
+const activeTab = ref(route.query.tab || 'latest')
 const searchMode = ref('titleContent')
 const searchKeyword = ref('')
 
@@ -121,10 +145,21 @@ function switchTab(tab) {
 
 function doSearch() {
   if (!searchKeyword.value) return
-  searchPosts(0, searchMode.value, searchKeyword.value)
+  searchPosts(0, searchMode.value, searchKeyword.value, activeTab.value)
 }
 
 onMounted(async () => {
-  await fetchPosts(0, activeTab.value)
+  if (route.query.searchMode && route.query.searchKeyword) {
+    await searchPosts(
+      props.page,
+      route.query.searchMode,
+      route.query.searchKeyword,
+      activeTab.value
+    )
+    searchMode.value = route.query.searchMode
+    searchKeyword.value = route.query.searchKeyword
+  } else {
+    await fetchPosts(props.page, activeTab.value)
+  }
 })
 </script>

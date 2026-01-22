@@ -1,9 +1,16 @@
 <template>
-  <div class="min-h-screen bg-indigo-50 py-10 flex justify-center">
-    <div class="w-[90%] max-w-4xl bg-white border-2 border-gray-200 rounded-lg shadow-md p-8">
+  <div class="min-h-screen bg-white">
+    <div class="w-full p-8">
       
-      <!-- 게시글 -->
-      <h1 class="text-2xl font-bold text-gray-800 mb-4">{{ post?.title }}</h1>
+      <!-- 게시글 제목 -->
+      <div class="bg-gray-100 px-4 py-3 rounded">
+        <h1 class="text-2xl font-bold text-gray-800">{{ post?.title }}</h1>
+      </div>
+
+      <!-- 제목 아래 구분선 -->
+      <div class="border-b border-gray-600 mb-6"></div>
+
+      <!-- 작성자/조회수 줄 -->
       <div class="flex justify-between items-center text-sm text-gray-600 border-b pb-3 mb-6">
         <span>👤 {{ post?.authorNickname }}</span>
         <div class="flex items-center space-x-4">
@@ -114,6 +121,15 @@
             class="px-3 py-1 bg-gray-300 rounded disabled:opacity-50">다음</button>
         </div>
       </div>
+
+      <!-- 아래 게시글 목록 -->
+      <div class="mt-12 border-t pt-6">
+        <PostList
+          :boardId="route.params.boardId"
+          :page="Number(route.query.page) || 0"
+          :selectedPostId="post?.id"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -122,6 +138,7 @@
 import { onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import usePost from '@/pages/scripts/Post.js'
+import PostList from '@/components/board/pages/PostList.vue'
 
 const route = useRoute()
 const {
