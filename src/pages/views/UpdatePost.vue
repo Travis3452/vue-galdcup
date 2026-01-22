@@ -47,7 +47,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* 기존 스타일 그대로 유지 */
 .page-wrap {
   background: #eef2ff;
   padding: 48px 16px;

@@ -1,26 +1,39 @@
 <template>
-  <div class="page-wrap">
-    <div class="container">
-      <h1 class="title">게시글 작성</h1>
+  <div class="min-h-screen bg-white flex flex-col p-8">
+    <!-- 제목 입력 -->
+    <input
+      v-model="title"
+      class="w-full p-4 text-lg border border-gray-300 rounded-lg mb-6 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+      placeholder="제목을 입력하세요."
+      aria-label="제목 입력"
+    />
 
-      <input
-        v-model="title"
-        class="title-input"
-        placeholder="제목을 입력하세요."
-        aria-label="제목 입력"
-      />
+    <!-- 에디터 -->
+    <div
+      ref="editorRef"
+      class="flex-1 border border-gray-300 rounded-lg shadow-md bg-white mb-6 overflow-y-auto"
+      aria-label="게시글 내용 에디터"
+    ></div>
 
-      <div ref="editorRef" class="editor" aria-label="게시글 내용 에디터"></div>
-
-      <div class="actions">
-        <button class="btn primary" @click="createPost" :disabled="submitting">
-          {{ submitting ? '작성 중...' : '작성완료' }}
-        </button>
-        <router-link :to="`/boards/${boardId}`" class="btn secondary">취소</router-link>
-      </div>
-
-      <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
+    <!-- 버튼 영역 -->
+    <div class="flex justify-end gap-3 mt-4">
+      <button
+        class="px-5 py-2 rounded-lg font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-md disabled:bg-indigo-300 disabled:shadow-none"
+        @click="createPost"
+        :disabled="submitting"
+      >
+        {{ submitting ? '작성 중...' : '작성완료' }}
+      </button>
+      <router-link
+        :to="`/boards/${boardId}`"
+        class="px-5 py-2 rounded-lg font-bold bg-gray-100 hover:bg-gray-200 text-indigo-700 border border-gray-300"
+      >
+        취소
+      </router-link>
     </div>
+
+    <!-- 에러 메시지 -->
+    <p v-if="errorMessage" class="text-red-600 mt-4 font-semibold">{{ errorMessage }}</p>
   </div>
 </template>
 
@@ -38,111 +51,25 @@ const {
   initQuill
 } = useCreatePost()
 
-// Quill 초기화는 DOM이 준비된 뒤 실행
 onMounted(() => {
   initQuill()
 })
 </script>
 
 <style scoped>
-/* 기존 스타일 그대로 유지 */
-.page-wrap {
-  background: #eef2ff;
-  padding: 48px 16px;
-  box-sizing: border-box;
+:deep(.ql-toolbar) {
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
 }
-.container {
-  max-width: 980px;
-  margin: 0 auto;
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 32px;
-  box-shadow: 0 8px 24px rgba(79, 70, 229, 0.08);
-  border: 1px solid rgba(99, 102, 241, 0.08);
-  box-sizing: border-box;
-}
-.title {
-  margin: 0 0 18px;
-  font-size: 24px;
-  font-weight: 700;
-  color: #3730a3;
-}
-.title-input {
-  width: 100%;
-  padding: 14px 16px;
-  font-size: 16px;
-  border: 1px solid #e6e9ff;
-  border-radius: 10px;
-  margin-bottom: 18px;
-  background: #fbfbff;
-}
-.title-input:focus {
-  outline: none;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 6px rgba(99,102,241,0.06);
-}
-.editor {
-  border: 1px solid #e6e9ff;
-  border-radius: 10px;
-  background: #ffffff;
-  margin-bottom: 18px;
-}
-.editor .ql-toolbar {
-  border-top-left-radius: 10px;
-  border-top-right-radius: 10px;
-  background: #f8f9ff;
-  border-bottom: 1px solid #eef0ff;
-}
-.editor .ql-container {
-  border-bottom-left-radius: 10px;
-  border-bottom-right-radius: 10px;
-}
-:deep(.ql-editor),
-:deep(.ql-editor.ql-blank),
+
 :deep(.ql-container .ql-editor) {
-  min-height: 520px !important;
-  max-height: 1000px !important;
-  overflow-y: auto !important;
-  padding: 18px !important;
-  font-size: 16px;
+  min-height: 400px;
+  overflow-y: auto;
+  padding: 1rem;
+  font-size: 1rem;
   line-height: 1.6;
   color: #111827;
-}
-.actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 8px;
-}
-.btn {
-  padding: 10px 18px;
-  border-radius: 10px;
-  font-weight: 700;
-  border: none;
-  cursor: pointer;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.btn.primary {
-  background: linear-gradient(180deg, #4f46e5, #4338ca);
-  color: #fff;
-  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.18);
-}
-.btn.primary:disabled {
-  background: linear-gradient(180deg, #a5b4fc, #8b9cff);
-  cursor: not-allowed;
-  box-shadow: none;
-}
-.btn.secondary {
-  background: #f3f4ff;
-  color: #3730a3;
-  border: 1px solid #e6e9ff;
-}
-.error {
-  color: #dc2626;
-  margin-top: 12px;
-  font-weight: 600;
 }
 </style>
