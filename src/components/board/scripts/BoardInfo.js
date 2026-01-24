@@ -2,15 +2,15 @@ import { ref } from 'vue'
 import api from '@/axios'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { useBoardStore } from '@/stores/board'
 
 export default function useBoardInfo(boardId) {
   const board = ref(null)
   const boardPolicy = ref(null)
-  const isBoardManager = ref(false)
-  const isSubManager = ref(false)
 
   const router = useRouter()
   const store = useUserStore()
+  const boardStore = useBoardStore()
 
   async function fetchBoard() {
     const res = await api.get(`/boards/${boardId}`)
@@ -24,20 +24,15 @@ export default function useBoardInfo(boardId) {
 
       const currentUserId = store.id
 
-      // 관리자 여부 확인
-      isBoardManager.value = boardPolicy.value?.boardManager?.id === currentUserId
-
-      // 서브 매니저 여부 확인
-      isSubManager.value = boardPolicy.value?.subManagers?.some(sm => sm.id === currentUserId) || false
+      boardStore.isBoardManager = boardPolicy.value?.boardManager?.id === currentUserId
+      boardStore.isSubManager = boardPolicy.value?.subManagers?.some(sm => sm.id === currentUserId) || false
     } catch {
-      boardPolicy.value = null
-      isBoardManager.value = false
-      isSubManager.value = false
+      boardStore.isBoardManager = false
+      boardStore.isSubManager = false
     }
   }
 
   async function deleteBoard() {
-    if (!confirm('정말 이 게시판을 삭제하시겠습니까?')) return
     try {
       await api.delete(`/boards/${boardId}`, {
         headers: { Authorization: `Bearer ${store.accessToken}` }
@@ -97,8 +92,6 @@ export default function useBoardInfo(boardId) {
   return {
     board,
     boardPolicy,
-    isBoardManager,
-    isSubManager,
     fetchBoard,
     fetchBoardPolicy,
     deleteBoard,

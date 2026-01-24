@@ -1,16 +1,15 @@
 import { ref, computed } from 'vue'
-import axios from 'axios'
 import { useUserStore } from '@/stores/user'
 import { useRoute, useRouter } from 'vue-router'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+import { useBoardStore } from '@/stores/board'
+import api from '@/axios'   // ✅ axios 대신 공통 인스턴스 사용
 
 export default function usePost() {
   const store = useUserStore()
   const route = useRoute()
   const router = useRouter()
+  const boardStore = useBoardStore()
 
-  // 상태 관리
   const post = ref(null)
   const comments = ref([])
   const replies = ref({})
@@ -21,7 +20,6 @@ export default function usePost() {
   const hasNextPage = ref(false)
   const activeReplyBox = ref(null)
 
-  // 페이지네이션 표시 (최대 5개)
   const visiblePages = computed(() => {
     const pages = []
     const maxVisible = 5
@@ -41,7 +39,7 @@ export default function usePost() {
   // 게시글 단건 조회
   async function fetchPost(postId) {
     try {
-      const res = await axios.get(`${API_BASE_URL}/api/posts/${postId}`)
+      const res = await api.get(`/posts/${postId}`)
       post.value = res.data
     } catch (err) {
       console.error('게시글 조회 실패:', err)
@@ -52,7 +50,7 @@ export default function usePost() {
   // 댓글 조회
   async function fetchComments(postId) {
     try {
-      const res = await axios.get(`${API_BASE_URL}/api/comments/post/${postId}`, {
+      const res = await api.get(`/comments/post/${postId}`, {
         params: { size: 30, page: currentPage.value }
       })
 
@@ -60,10 +58,9 @@ export default function usePost() {
       totalPages.value = res.data.totalPages ?? 1
       hasNextPage.value = !res.data.last
 
-      // 각 댓글의 대댓글 조회 (리액티브 갱신 보장)
       const newRepliesMap = { ...replies.value }
       for (const comment of comments.value) {
-        const replyRes = await axios.get(`${API_BASE_URL}/api/replies/comment/${comment.id}`)
+        const replyRes = await api.get(`/replies/comment/${comment.id}`)
         newRepliesMap[comment.id] = replyRes.data
       }
       replies.value = newRepliesMap
@@ -77,11 +74,9 @@ export default function usePost() {
   async function createComment() {
     if (!newComment.value.trim()) return
     try {
-      await axios.post(`${API_BASE_URL}/api/comments`, {
+      await api.post(`/comments`, {
         postId: post.value.id,
         content: newComment.value.trim()
-      }, {
-        headers: { Authorization: `Bearer ${store.accessToken}` }
       })
       newComment.value = ''
       await fetchComments(post.value.id)
@@ -96,11 +91,9 @@ export default function usePost() {
     const content = newReplies.value[commentId]
     if (!content || !content.trim()) return
     try {
-      await axios.post(`${API_BASE_URL}/api/replies`, {
+      await api.post(`/replies`, {
         commentId,
         content: content.trim()
-      }, {
-        headers: { Authorization: `Bearer ${store.accessToken}` }
       })
       newReplies.value[commentId] = ''
       activeReplyBox.value = null
@@ -116,9 +109,7 @@ export default function usePost() {
     const newContent = prompt('댓글 수정:', comment.content)
     if (!newContent) return
     try {
-      await axios.put(`${API_BASE_URL}/api/comments/${comment.id}`, { content: newContent }, {
-        headers: { Authorization: `Bearer ${store.accessToken}` }
-      })
+      await api.put(`/comments/${comment.id}`, { content: newContent })
       await fetchComments(post.value.id)
     } catch (err) {
       console.error('댓글 수정 실패:', err)
@@ -129,9 +120,7 @@ export default function usePost() {
   async function deleteComment(commentId) {
     if (!confirm('댓글을 삭제하시겠습니까?')) return
     try {
-      await axios.delete(`${API_BASE_URL}/api/comments/${commentId}`, {
-        headers: { Authorization: `Bearer ${store.accessToken}` }
-      })
+      await api.delete(`/comments/${commentId}`)
       await fetchComments(post.value.id)
     } catch (err) {
       console.error('댓글 삭제 실패:', err)
@@ -144,9 +133,7 @@ export default function usePost() {
     const newContent = prompt('대댓글 수정:', reply.content)
     if (!newContent) return
     try {
-      await axios.put(`${API_BASE_URL}/api/replies/${reply.id}`, { content: newContent }, {
-        headers: { Authorization: `Bearer ${store.accessToken}` }
-      })
+      await api.put(`/replies/${reply.id}`, { content: newContent })
       await fetchComments(post.value.id)
     } catch (err) {
       console.error('대댓글 수정 실패:', err)
@@ -157,9 +144,7 @@ export default function usePost() {
   async function deleteReply(replyId) {
     if (!confirm('대댓글을 삭제하시겠습니까?')) return
     try {
-      await axios.delete(`${API_BASE_URL}/api/replies/${replyId}`, {
-        headers: { Authorization: `Bearer ${store.accessToken}` }
-      })
+      await api.delete(`/replies/${replyId}`)
       await fetchComments(post.value.id)
     } catch (err) {
       console.error('대댓글 삭제 실패:', err)
@@ -178,9 +163,7 @@ export default function usePost() {
   async function deletePost() {
     if (!confirm('게시글을 삭제하시겠습니까?')) return
     try {
-      await axios.delete(`${API_BASE_URL}/api/posts/${post.value.id}`, {
-        headers: { Authorization: `Bearer ${store.accessToken}` }
-      })
+      await api.delete(`/posts/${post.value.id}`)
       alert('게시글이 삭제되었습니다.')
       router.push(`/boards/${route.params.boardId}`)
     } catch (err) {
@@ -189,13 +172,23 @@ export default function usePost() {
     }
   }
 
+  // ✅ 관리자 전용 게시글 삭제 (엔드포인트 수정)
+  async function adminDeletePost() {
+    if (!confirm('관리자 권한으로 게시글을 삭제하시겠습니까?')) return
+    try {
+      await api.delete(`/boards/${route.params.boardId}/posts/${post.value.id}/admin-delete`)
+      alert('관리자 권한으로 게시글이 삭제되었습니다.')
+      router.push(`/boards/${route.params.boardId}`)
+    } catch (err) {
+      console.error('관리자 게시글 삭제 실패:', err)
+      alert(err.response?.data?.message || '관리자 게시글 삭제 중 오류가 발생했습니다.')
+    }
+  }
+
   // 좋아요/싫어요
   async function reactToPost(type) {
     try {
-      await axios.post(`${API_BASE_URL}/api/posts/${post.value.id}/reactions`, {}, {
-        params: { type },
-        headers: { Authorization: `Bearer ${store.accessToken}` }
-      })
+      await api.post(`/posts/${post.value.id}/reactions`, {}, { params: { type } })
       await fetchPost(post.value.id)
     } catch (err) {
       console.error('게시글 반응 실패:', err)
@@ -235,6 +228,6 @@ export default function usePost() {
     prevPage, nextPage, goToPage,
     editComment, deleteComment,
     editReply, deleteReply,
-    editPost, deletePost, reactToPost
+    editPost, deletePost, adminDeletePost, reactToPost
   }
 }

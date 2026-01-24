@@ -11,7 +11,7 @@
       </router-link>
 
       <!-- 정책 변경 / 삭제 버튼 -->
-      <div v-if="isBoardManager" class="flex gap-2">
+      <div v-if="boardStore.isBoardManager" class="flex gap-2">
         <button
           @click="showPolicyModal = true"
           class="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition text-xs font-semibold"
@@ -63,15 +63,16 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import useBoardInfo from '@/components/board/scripts/BoardInfo.js'
+import { useBoardStore } from '@/stores/board'
 import BoardPolicyModal from '@/components/board/pages/BoardPolicy.vue'
 
 const route = useRoute()
 const boardId = route.params.boardId
+const boardStore = useBoardStore()
 
 const {
   board,
   boardPolicy,
-  isBoardManager,
   fetchBoard,
   fetchBoardPolicy,
   deleteBoard,
@@ -87,11 +88,15 @@ onMounted(async () => {
 })
 
 function confirmDeleteBoard() {
-  if (!confirm('정말 이 게시판을 삭제하시겠습니까?')) return
+  if (!confirm('정말 이 갈드컵을 삭제하시겠습니까?')) return
+
+  const input = prompt(`갈드컵을 삭제하려면 갈드컵 제목을 입력하세요\n ex) ${board.value?.topic}`)
+  if (input !== board.value?.topic) {11
+    alert('입력한 제목이 일치하지 않습니다. 삭제가 취소되었습니다.')
+    return
+  }
+
   deleteBoard()
 }
-</script>
 
-<style scoped>
-.z-60 { z-index: 60; }
-</style>
+</script>

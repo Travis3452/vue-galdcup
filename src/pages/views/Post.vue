@@ -19,9 +19,18 @@
             <span v-if="post?.updatedAt && post?.updatedAt !== post?.createdAt" class="text-xs text-gray-500">(수정됨)</span>
           </span>
           <span>👁️ 조회수 {{ post?.view }}</span>
+
+          <!-- 작성자 본인일 때 -->
           <template v-if="store.id && post?.authorId === store.id">
             <button @click="editPost" class="px-3 py-1 bg-yellow-500 text-white rounded text-xs">수정</button>
             <button @click="deletePost" class="px-3 py-1 bg-red-500 text-white rounded text-xs">삭제</button>
+          </template>
+
+          <!-- 관리자/서브매니저 전용 삭제 버튼 -->
+          <template v-if="boardStore.isBoardManager || boardStore.isSubManager">
+            <button @click="deletePost" class="px-3 py-1 bg-red-700 text-white rounded text-xs">
+              삭제(관리자)
+            </button>
           </template>
         </div>
       </div>
@@ -139,8 +148,11 @@ import { onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import usePost from '@/pages/scripts/Post.js'
 import PostList from '@/components/board/pages/PostList.vue'
+import { useBoardStore } from '@/stores/board'
 
 const route = useRoute()
+const boardStore = useBoardStore()
+
 const {
   store, post, comments, replies,
   newComment, newReplies,
@@ -158,5 +170,7 @@ onMounted(async () => {
   const postId = route.params.postId
   await fetchPost(postId)
   await fetchComments(postId)
+
+  await boardStore.fetchBoardPolicy(route.params.boardId)
 })
 </script>
