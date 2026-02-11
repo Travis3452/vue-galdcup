@@ -1,5 +1,5 @@
-// src/stores/user.js
 import { defineStore } from 'pinia'
+import api from '@/axios'
 
 function parseJwt(token) {
   try {
@@ -28,16 +28,11 @@ export const useUserStore = defineStore('user', {
   actions: {
     login(accessToken, nickname) {
       this.accessToken = accessToken
-
-      // JWT payload에서 사용자 ID와 role 추출
       const payload = parseJwt(accessToken)
       this.id = payload?.sub ? Number(payload.sub) : null
       this.role = payload?.roles ? payload.roles[0] : null
-
-      // 닉네임은 서버 응답에서 받아 저장
       this.nickname = nickname || null
 
-      // 로컬스토리지에 저장
       localStorage.setItem('accessToken', accessToken)
       if (this.id) localStorage.setItem('id', String(this.id))
       if (this.nickname) localStorage.setItem('nickname', this.nickname)
@@ -67,6 +62,20 @@ export const useUserStore = defineStore('user', {
         this.id = idStr ? Number(idStr) : null
         this.nickname = name || null
         this.role = roleStr || null
+      }
+    },
+
+    async reissue() {
+      try {
+        const response = await api.post('/auth/refresh')
+        const { accessToken, nickname } = response.data
+        
+        this.login(accessToken, nickname)
+        return true
+      } catch (error) {
+        console.error("토큰 재발급 실패:", error)
+        this.logout()
+        return false
       }
     }
   }

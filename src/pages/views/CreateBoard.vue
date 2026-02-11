@@ -30,6 +30,8 @@
 </template>
 
 <script setup>
+// 이전에 수정한 scripts/CreateBoard.js의 로직을 불러옵니다.
+// 이제 생성 완료 시 /boards/:id 로 바로 이동하게 됩니다.
 import useCreateBoard from '@/pages/scripts/CreateBoard.js'
 
 const {

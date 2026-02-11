@@ -29,7 +29,11 @@ export default function useCreateBoard() {
       })
 
       const boardId = res.data.id
-      router.push(`/boards/${boardId}/createVoteSession`)
+      
+      // [수정 포인트] 투표 생성 페이지로 가는 것이 아니라, 생성된 게시판 상세 페이지로 바로 이동합니다.
+      // 이후 Board.vue에서 관리자 권한을 체크하여 투표가 없을 시 생성 버튼을 보여주게 됩니다.
+      router.push(`/boards/${boardId}`)
+      
     } catch (err) {
       console.error('게시판 생성 실패:', err)
       if (err.response && err.response.data) {

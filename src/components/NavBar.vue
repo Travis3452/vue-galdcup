@@ -37,7 +37,7 @@
 
       <template v-else>
         <button
-          @click="loginWithGoogle"
+          @click="handleLogin"
           class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition"
         >
           Google 로그인
@@ -62,6 +62,13 @@ const nickname = computed(() => store.nickname || '')
 onMounted(() => {
   store.restore()
 })
+
+async function handleLogin() {
+  const success = await store.reissue()
+  if (success) return
+
+  loginWithGoogle()
+}
 
 function loginWithGoogle() {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID

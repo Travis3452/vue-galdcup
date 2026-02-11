@@ -8,7 +8,7 @@ const api = axios.create({
   withCredentials: true
 });
 
-// 요청 인터셉터: AccessToken을 Authorization 헤더에 추가
+// 요청 인터셉터
 api.interceptors.request.use(config => {
   const store = useUserStore();
   if (store.accessToken) {
@@ -17,36 +17,33 @@ api.interceptors.request.use(config => {
   return config;
 });
 
-// 응답 인터셉터: 401 발생 시 RefreshToken으로 AccessToken 갱신
+// 응답 인터셉터
 api.interceptors.response.use(
   res => res,
   async err => {
     const store = useUserStore();
+    const originalRequest = err.config;
 
-    // AccessToken 만료 → RefreshToken으로 재발급 시도
-    if (err.response?.status === 401 && !err.config.__isRetryRequest) {
+    // 401 에러 발생 시 (인증 만료)
+    if (err.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
       try {
+        // Refresh Token으로 새로운 Access Token 요청
         const refreshRes = await axios.post(
           `${API_BASE_URL}/api/auth/refresh`,
           {},
           { withCredentials: true }
         );
 
-        const newToken = refreshRes.data.accessToken;
-        const nickname = refreshRes.data.nickname;
-        const id = refreshRes.data.id;
+        const { accessToken, nickname } = refreshRes.data;
 
-        // 스토어 갱신
-        store.setAccessToken(newToken);
-        store.nickname = nickname;
-        store.id = id;
+        store.login(accessToken, nickname);
 
-        // 원래 요청 재시도
-        err.config.__isRetryRequest = true;
-        err.config.headers.Authorization = `Bearer ${newToken}`;
-        return api(err.config);
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+        return api(originalRequest);
       } catch (refreshErr) {
-        alert("로그인 세션이 만료되었습니다. 다시 로그인해주세요.");
+        console.error("세션 만료로 로그아웃 처리합니다.");
         store.logout();
         window.location.href = "/";
         return Promise.reject(refreshErr);
