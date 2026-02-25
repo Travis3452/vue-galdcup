@@ -2,9 +2,7 @@ name: Galdcup Frontend CI/CD
 
 on:
   push:
-    branches: [ "main" ]
-    paths:
-      - 'frontend/**'
+    branches: [ "master" ]
 
 jobs:
   deploy:
@@ -17,6 +15,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '24'
+
+      - name: Create .env file
+        run: |
+          cd frontend
+          echo "VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}" >> .env
+          echo "VITE_SUPABASE_PUBLIC_KEY=${{ secrets.VITE_SUPABASE_PUBLIC_KEY }}" >> .env
+          echo "VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}" >> .env
+          echo "VITE_GOOGLE_CLIENT_ID=${{ secrets.VITE_GOOGLE_CLIENT_ID }}" >> .env
 
       - name: Install dependencies & Build
         run: |
