@@ -25,7 +25,6 @@ jobs:
 
       - name: Install dependencies & Build
         run: |
-          cd frontend
           npm install
           npm run build
 
@@ -35,9 +34,9 @@ jobs:
           host: ${{ secrets.REMOTE_IP }}
           username: ${{ secrets.REMOTE_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "frontend/dist/*"
+          source: "dist/*"
           target: "/var/www/galdcup-frontend"
-          strip_components: 2
+          strip_components: 1
 
       - name: Reload Nginx
         uses: appleboy/ssh-action@v1.0.3
