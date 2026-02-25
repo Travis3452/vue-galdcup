@@ -27,6 +27,16 @@ export const useBoardStore = defineStore('board', {
       } finally {
         this.loading = false
       }
+    },
+
+    async fetchVoteSession(boardId) {
+      try {
+        const response = await api.get(`/boards/${boardId}/vote-session`);
+        this.currentVoteSession = response.data;
+      } catch (error) {
+        console.error('투표 세션 조회 실패:', error);
+        this.currentVoteSession = null;
+      }
     }
   }
 })

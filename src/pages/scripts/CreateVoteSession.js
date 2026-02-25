@@ -64,19 +64,36 @@ export default function useCreateVoteSession() {
   }
 
   async function createVoteSession() {
-    const boardId = route.params.boardId
-    const payload = {
-      startTime: toSeoulOffsetDateTime(startTime.value),
-      endTime: toSeoulOffsetDateTime(endTime.value),
-      options: options.value.filter(o => o.trim() !== ''),
-      optionImages: optionImages.value // ✅ filter 제거
-    }
+  const boardId = route.params.boardId;
 
+  const mappedOptions = options.value
+    .map((label, idx) => ({
+      label: label.trim(),
+      imageUrl: optionImages.value[idx]
+    }))
+    .filter(opt => opt.label !== "");
+
+  if (mappedOptions.length < 2) {
+    alert("최소 2개 이상의 선택지를 입력해야 합니다.");
+    return;
+  }
+
+  const payload = {
+    startTime: toSeoulOffsetDateTime(startTime.value),
+    endTime: toSeoulOffsetDateTime(endTime.value),
+    options: mappedOptions
+  };
+
+  try {
     await api.post(`/boards/${boardId}/vote-session`, payload, {
       headers: { Authorization: `Bearer ${store.accessToken}` }
-    })
-    router.push(`/boards/${boardId}`)
+    });
+    router.push(`/boards/${boardId}`);
+  } catch (err) {
+    console.error("생성 실패:", err.response?.data);
+    alert("갈드컵 생성에 실패했습니다. 모든 이미지를 업로드했는지 확인해주세요.");
   }
+}
 
   return {
     boardTitle,

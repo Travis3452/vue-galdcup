@@ -54,7 +54,7 @@
           >
             이전
           </button>
-          <span class="text-slate-600">페이지 {{ popularPage + 1 }} / {{ popularTotalPages }}</span>
+          <span class="text-slate-600">페이지 {{ popularPage + 1 }} / {{Math.max(popularTotalPages, 1) }}</span>
           <button
             :disabled="popularPage >= popularTotalPages - 1"
             @click="nextPopularPage"
