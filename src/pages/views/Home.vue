@@ -2,7 +2,6 @@
   <main class="min-h-[calc(100vh-96px)] bg-gradient-to-br from-indigo-50 via-sky-50 to-blue-100 p-10">
     <div class="max-w-6xl mx-auto space-y-20">
       
-      <!-- 사이트 소개 -->
       <section class="rounded-2xl shadow-xl overflow-hidden">
         <img
           src="/images/debate-banner.jpg"
@@ -11,19 +10,18 @@
         />
         <div class="bg-indigo-900 text-center px-10 py-12">
           <h2 class="text-3xl md:text-4xl font-extrabold text-white mb-6">
-            ✨ 갈드컵은 팬심에서 시작된다
+            ✨ 세상에서 제일 재밌는 남의 싸움 구경
           </h2>
           <p class="max-w-3xl mx-auto text-indigo-100 text-lg leading-relaxed">
-            Galdcup은 단순한 토론장이 아닙니다.<br />
-            서로 다른 의견이 정면으로 맞붙어 격렬한 논쟁이 벌어지는 전장입니다.<br />
-            누구나 자유롭게 의견을 던지고, 투표로 승부를 가르며<br />
-            당신의 선택이 결과를 정하는 커뮤니티<br />
-            — 그것이 Galdcup입니다.
+            짜장면 vs 짬뽕부터 롤드컵 우승자 예측까지!<br />
+            Galdcup은 세상의 모든 호불호와 논쟁거리를 투표로 결판내는 곳입니다.<br />
+            당신의 확고한 취향과 논리로 반대파를 설득해 보세요.<br />
+            과연 대중의 선택은 어느 쪽을 향할 것인가?<br />
+            — 대국민 VS 플랫폼, Galdcup.
           </p>
         </div>
       </section>
 
-      <!-- 인기 갈드컵 순위 -->
       <section class="bg-white rounded-2xl shadow-lg p-10">
         <div class="flex justify-between items-center mb-10 border-b pb-4">
           <h3 class="text-2xl font-bold text-indigo-600">
@@ -45,7 +43,6 @@
           </div>
         </div>
 
-        <!-- 페이지네이션 버튼 -->
         <div class="flex justify-center items-center gap-4 mt-10">
           <button
             :disabled="popularPage === 0"
@@ -65,21 +62,20 @@
         </div>
       </section>
 
-      <!-- 🆕 최근 생성된 갈드컵 -->
       <section class="bg-white rounded-2xl shadow-lg p-10">
         <div class="flex justify-between items-center mb-10 border-b pb-4">
           <h3 class="text-2xl font-bold text-indigo-700">
-            🆕 최근 생성된 갈드컵
+            🆕 최신 갈드컵
           </h3>
           <router-link
             to="/boards/create"
             class="px-4 py-2 rounded font-medium transition-colors
                    bg-indigo-600 text-white hover:bg-indigo-700"
           >
-            갈드컵 생성
+            갈드컵 열기
           </router-link>
         </div>
-        
+
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
           <div
             v-for="board in boards"
@@ -126,48 +122,112 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import useHome from '@/pages/scripts/Home.js'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import api from '@/axios' // 기존 경로 유지
 
-const {
-  boards,
-  page,
-  totalPages,
-  formatDate,
-  goToBoard,
-  nextPage,
-  prevPage,
-  searchBoards,
-  popularBoards,
-  fetchPopularBoards
-} = useHome()
+// 상태 변수
+const boards = ref([])
+const popularBoards = ref([])
+const page = ref(0)
+const size = 10
+const totalPages = ref(1)
+const router = useRouter()
 
 const searchKeyword = ref('')
-function doSearch() {
-  if (!searchKeyword.value) return
-  searchBoards(0, searchKeyword.value)
-}
-
 const popularPage = ref(0)
 const popularPageSize = 10
+
+// Computed
 const popularTotalPages = computed(() =>
-  Math.ceil(popularBoards.value.length / popularPageSize)
+  Math.max(Math.ceil(popularBoards.value.length / popularPageSize), 1)
 )
+
 const pagedPopularBoards = computed(() => {
   const start = popularPage.value * popularPageSize
   const end = start + popularPageSize
   return popularBoards.value.slice(start, end)
 })
+
+// API 호출 함수
+async function fetchBoards() {
+  try {
+    const res = await api.get(`/boards`, { params: { page: page.value, size } })
+    boards.value = res.data.content
+    totalPages.value = Math.max(res.data.totalPages, 1)
+  } catch (err) {
+    console.error('API 호출 실패:', err)
+  }
+}
+
+async function searchBoards(pageNum, keyword) {
+  try {
+    const res = await api.get(`/boards/search`, {
+      params: { page: pageNum, size, keyword }
+    })
+    boards.value = res.data.content
+    page.value = res.data.number
+    totalPages.value = Math.max(res.data.totalPages, 1)
+  } catch (err) {
+    console.error('검색 API 호출 실패:', err)
+  }
+}
+
+async function fetchPopularBoards() {
+  try {
+    const res = await api.get(`/boards/popular`)
+    popularBoards.value = res.data
+  } catch (err) {
+    console.error('인기 게시판 API 호출 실패:', err)
+  }
+}
+
+// 동작 함수들
+function doSearch() {
+  if (!searchKeyword.value) return
+  searchBoards(0, searchKeyword.value)
+}
+
+function formatDate(dateString) {
+  const date = new Date(dateString)
+  const year = String(date.getFullYear()).slice(2)
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function goToBoard(boardId) {
+  router.push(`/boards/${boardId}`)
+}
+
+function nextPage() {
+  if (page.value < totalPages.value - 1) {
+    page.value++
+    fetchBoards()
+  }
+}
+
+function prevPage() {
+  if (page.value > 0) {
+    page.value--
+    fetchBoards()
+  }
+}
+
 function nextPopularPage() {
   if (popularPage.value < popularTotalPages.value - 1) {
     popularPage.value++
   }
 }
+
 function prevPopularPage() {
   if (popularPage.value > 0) {
     popularPage.value--
   }
 }
 
-fetchPopularBoards()
+onMounted(() => {
+  fetchBoards()
+  fetchPopularBoards()
+})
 </script>
