@@ -1,10 +1,10 @@
 <template>
-  <main class="min-h-[calc(100vh-96px)] bg-gradient-to-br from-indigo-50 via-sky-50 to-blue-100 p-6 md:p-10 flex items-center justify-center">
-    <div class="w-full max-w-5xl bg-white rounded-[2rem] shadow-2xl p-8 md:p-12 border border-indigo-50 relative overflow-hidden flex flex-col">
-      <div class="absolute -top-20 -right-20 w-64 h-64 bg-indigo-100 rounded-full blur-3xl pointer-events-none opacity-50"></div>
+  <div class="w-full font-sans">
+    <div class="w-full bg-white p-8 md:p-12 flex flex-col relative overflow-hidden">
+      <div class="absolute -top-32 -right-32 w-64 h-64 bg-indigo-50 rounded-full blur-3xl pointer-events-none opacity-60"></div>
       
-      <h1 class="text-3xl md:text-4xl font-extrabold text-indigo-700 mb-8 tracking-tight flex items-center gap-3 relative z-10">
-        📝 새로운 의견 작성
+      <h1 class="text-3xl md:text-4xl font-extrabold text-slate-800 mb-8 tracking-tight flex items-center gap-3 relative z-10 pb-6 border-b-2 border-slate-100">
+        📝 새로운 게시글 작성
       </h1>
 
       <div class="space-y-6 relative z-10 flex-1 flex flex-col">
@@ -12,13 +12,13 @@
           <input
             v-model="title"
             type="text"
-            class="w-full bg-slate-50 border border-slate-300 rounded-2xl px-6 py-5 text-xl font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+            class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-5 text-xl font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
             placeholder="제목을 입력하세요."
             aria-label="제목 입력"
           />
         </div>
 
-        <div class="flex-1 flex flex-col border border-slate-300 rounded-2xl overflow-hidden bg-white shadow-sm focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent transition-all">
+        <div class="flex-1 flex flex-col border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent transition-all min-h-[500px]">
           <div ref="editorRef" class="w-full flex-1" aria-label="게시글 내용 에디터"></div>
         </div>
 
@@ -29,7 +29,7 @@
           <span class="text-lg font-semibold">{{ errorMessage }}</span>
         </div>
 
-        <div class="flex justify-end gap-4 mt-8 pt-6 border-t border-slate-100">
+        <div class="flex justify-end gap-4 mt-8 pt-6 border-t-2 border-slate-100">
           <router-link
             :to="`/boards/${boardId}`"
             class="px-8 py-4 rounded-2xl font-bold text-lg text-slate-600 bg-slate-100 hover:bg-slate-200 transition"
@@ -46,7 +46,7 @@
         </div>
       </div>
     </div>
-  </main>
+  </div>
 </template>
 
 <script setup>
@@ -79,7 +79,7 @@ function initQuill() {
   const container = editorRef.value
   quill = new Quill(container, {
     theme: 'snow',
-    placeholder: '당신의 논리와 의견을 자유롭게 펼쳐보세요...',
+    placeholder: '당신의 논리와 의견을 자유롭게 펼쳐보세요.',
     modules: {
       toolbar: [
         [{ header: [1, 2, false] }],

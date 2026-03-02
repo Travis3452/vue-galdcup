@@ -1,32 +1,40 @@
 <template>
   <div class="space-y-6 mb-12">
-    <div v-if="voteSession" class="bg-white rounded-[2rem] shadow-xl p-8 md:p-12 border border-indigo-50 relative overflow-hidden text-center">
+    <div v-if="voteSession" class="bg-white rounded-[2rem] shadow-xl p-8 md:p-12 border border-indigo-50 relative overflow-hidden text-center transition-all duration-500">
       <div class="absolute -bottom-20 -left-20 w-64 h-64 bg-blue-50 rounded-full blur-3xl pointer-events-none opacity-60"></div>
 
       <div class="relative z-10 space-y-8">
         
-        <div v-if="voteStatus === 'UPCOMING'" 
-             class="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-600 rounded-2xl font-black text-sm uppercase tracking-widest shadow-sm border border-amber-100">
-          <span class="relative flex h-3 w-3">
-            <span class="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
-          </span>
-          Upcoming
-        </div>
-        <div v-else-if="voteStatus === 'LIVE'" 
-             class="inline-flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-2xl font-black text-sm uppercase tracking-widest shadow-sm">
-          <span class="relative flex h-3 w-3">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span>
-          </span>
-          LIVE
-        </div>
-        <div v-else 
-             class="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-500 rounded-2xl font-black text-sm uppercase tracking-widest border border-slate-200">
-          Finished
+        <div class="flex items-center justify-between">
+          <div v-if="voteStatus === 'UPCOMING'" 
+               class="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-600 rounded-2xl font-black text-sm uppercase tracking-widest shadow-sm border border-amber-100">
+            <span class="relative flex h-3 w-3">
+              <span class="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
+            </span>
+            Upcoming
+          </div>
+          <div v-else-if="voteStatus === 'LIVE'" 
+               class="inline-flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-2xl font-black text-sm uppercase tracking-widest shadow-sm">
+            <span class="relative flex h-3 w-3">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span>
+            </span>
+            LIVE
+          </div>
+          <div v-else 
+               class="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-500 rounded-2xl font-black text-sm uppercase tracking-widest border border-slate-200">
+            Finished
+          </div>
+
+          <button @click="toggleExpanded" class="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 transition-transform duration-300" :class="{'rotate-180': !isExpanded}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7" />
+            </svg>
+          </button>
         </div>
 
-        <div class="space-y-2">
-          <h2 class="text-3xl md:text-4xl font-extrabold text-slate-800 tracking-tight">
+        <div class="space-y-2 cursor-pointer" @click="toggleExpanded">
+          <h2 class="text-3xl md:text-4xl font-extrabold text-slate-800 tracking-tight transition-colors hover:text-indigo-600">
             {{ voteStatus === 'UPCOMING' ? '준비 중인 갈드컵' : '진행 중인 갈드컵' }}
           </h2>
           <p class="text-sm text-slate-400 font-bold">
@@ -34,49 +42,52 @@
           </p>
         </div>
 
-        <div class="flex items-center justify-center gap-4 md:gap-12 py-4 flex-wrap" :class="{'grayscale opacity-70': voteStatus === 'UPCOMING'}">
-          <template v-for="(opt, idx) in voteSession.options" :key="idx">
-            <div class="flex flex-col items-center group w-40 md:w-48">
-              <div class="relative overflow-hidden rounded-[2rem] border-4 border-white shadow-xl mb-4 aspect-square w-full bg-slate-100 ring-1 ring-slate-100">
-                <img :src="opt.imageUrl || 'https://via.placeholder.com/300'"
-                     :alt="opt.label"
-                     class="w-full h-full object-cover group-hover:scale-110 transition duration-500" />
-                
-                <div v-if="voteStatus !== 'UPCOMING'" class="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-sm text-white py-2">
-                  <div class="text-xs font-bold opacity-80 uppercase tracking-tighter">Current</div>
-                  <div class="text-lg font-black">{{ opt.count.toLocaleString() }}표</div>
+        <div v-show="isExpanded" class="transition-all duration-500 origin-top">
+          <div class="flex items-center justify-center gap-4 md:gap-12 py-4 flex-wrap" :class="{'grayscale opacity-70': voteStatus === 'UPCOMING'}">
+            <template v-for="(opt, idx) in voteSession.options" :key="idx">
+              <div class="flex flex-col items-center group w-40 md:w-48">
+                <div class="relative overflow-hidden rounded-[2rem] border-4 border-white shadow-xl mb-4 aspect-square w-full bg-slate-100 ring-1 ring-slate-100">
+                  <img :src="opt.imageUrl || 'https://via.placeholder.com/300'"
+                       :alt="opt.label"
+                       class="w-full h-full object-cover group-hover:scale-110 transition duration-500" />
+                  
+                  <div v-if="voteStatus !== 'UPCOMING'" class="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-sm text-white py-2">
+                    <div class="text-xs font-bold opacity-80 uppercase tracking-tighter">Current</div>
+                    <div class="text-lg font-black">{{ opt.count.toLocaleString() }}표</div>
+                  </div>
                 </div>
+                <span class="text-xl font-black text-slate-800 break-all">{{ opt.label }}</span>
+                
+                <div class="w-full h-3 bg-slate-100 rounded-full mt-4 overflow-hidden border border-slate-50">
+                  <div class="bg-indigo-600 h-full transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(79,70,229,0.4)]"
+                       :style="{ width: calculatePercentage(opt.count) + '%' }"></div>
+                </div>
+                <span class="text-sm font-bold text-indigo-600 mt-2">{{ Math.round(calculatePercentage(opt.count)) }}%</span>
               </div>
-              <span class="text-xl font-black text-slate-800 break-all">{{ opt.label }}</span>
               
-              <div class="w-full h-3 bg-slate-100 rounded-full mt-4 overflow-hidden border border-slate-50">
-                <div class="bg-indigo-600 h-full transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(79,70,229,0.4)]"
-                     :style="{ width: calculatePercentage(opt.count) + '%' }"></div>
+              <div v-if="idx < (voteSession.options?.length || 0) - 1" 
+                   class="text-4xl md:text-6xl font-black text-red-600 italic animate-pulse mx-2 select-none">
+                VS
               </div>
-              <span class="text-sm font-bold text-indigo-600 mt-2">{{ Math.round(calculatePercentage(opt.count)) }}%</span>
-            </div>
-            
-            <div v-if="idx < (voteSession.options?.length || 0) - 1" 
-                 class="text-4xl md:text-6xl font-black text-red-600 italic animate-pulse mx-2 select-none">
-              VS
-            </div>
-          </template>
-        </div>
+            </template>
+          </div>
 
-        <div class="flex justify-center pt-6">
-          <button
-            @click="onVoteClick"
-            :disabled="voteStatus !== 'LIVE'"
-            class="w-full md:w-auto px-16 py-5 rounded-2xl transition shadow-xl font-black text-xl transform hover:-translate-y-1 active:scale-95 disabled:hover:translate-y-0 disabled:cursor-not-allowed"
-            :class="[
-              voteStatus === 'LIVE' 
-              ? 'bg-indigo-600 text-white shadow-indigo-100 hover:bg-indigo-700' 
-              : 'bg-slate-200 text-slate-400 shadow-none'
-            ]"
-          >
-          투표 참여하기
-          </button>
+          <div class="flex justify-center pt-6">
+            <button
+              @click="onVoteClick"
+              :disabled="voteStatus !== 'LIVE'"
+              class="w-full md:w-auto px-16 py-5 rounded-2xl transition shadow-xl font-black text-xl transform hover:-translate-y-1 active:scale-95 disabled:hover:translate-y-0 disabled:cursor-not-allowed"
+              :class="[
+                voteStatus === 'LIVE' 
+                ? 'bg-indigo-600 text-white shadow-indigo-100 hover:bg-indigo-700' 
+                : 'bg-slate-200 text-slate-400 shadow-none'
+              ]"
+            >
+              투표 참여하기
+            </button>
+          </div>
         </div>
+        
       </div>
     </div>
 
@@ -111,7 +122,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useBoardStore } from '@/stores/board';
 import { useUserStore } from '@/stores/user';
@@ -127,6 +138,9 @@ const boardId = route.params.boardId;
 const voteSession = computed(() => boardStore.currentVoteSession);
 const isManager = computed(() => boardStore.isBoardManager);
 
+// 접기/펴기 상태 변수
+const isExpanded = ref(true);
+
 // 투표 상태 판별 (UPCOMING, LIVE, FINISHED)
 const voteStatus = computed(() => {
   if (!voteSession.value) return null;
@@ -140,6 +154,19 @@ const voteStatus = computed(() => {
   if (now > end) return 'FINISHED';
   return 'LIVE';
 });
+
+// 상태에 따라 기본 접힘/펼침 세팅
+watch(voteStatus, (newVal) => {
+  if (newVal === 'LIVE') {
+    isExpanded.value = true;
+  } else if (newVal === 'UPCOMING' || newVal === 'FINISHED') {
+    isExpanded.value = false;
+  }
+}, { immediate: true });
+
+const toggleExpanded = () => {
+  isExpanded.value = !isExpanded.value;
+};
 
 const handleCreateVote = () => {
   router.push(`/boards/${boardId}/createVoteSession`);
