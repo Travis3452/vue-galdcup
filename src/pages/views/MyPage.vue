@@ -83,7 +83,7 @@
               </div>
               <div v-else class="py-20 text-center text-slate-400 font-medium italic border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50 flex flex-col items-center justify-center">
                 <span class="text-4xl mb-4 text-slate-300">텅</span>
-                <p>아직 작성된 내용이 없습니다.</p>
+                <p>아직 작성된 내용이 없습니다. (API 연동 대기 중)</p>
               </div>
             </div>
 
@@ -112,6 +112,7 @@
                   v-model="newNickname"
                   placeholder="새로운 닉네임을 입력하세요"
                   class="flex-1 border border-slate-300 px-5 py-4 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none text-lg font-medium text-slate-800 bg-slate-50"
+                  @keyup.enter="changeNickname"
                 />
                 <button
                   @click="changeNickname"
@@ -146,7 +147,7 @@
                 @click="openApprovalWindow"
                 class="bg-purple-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-purple-700 transition shadow-md transform hover:-translate-y-0.5"
               >
-                요청 승인 관리창 열기
+                권한 요청 관리
               </button>
               <button
                 v-else
@@ -171,13 +172,14 @@
                 v-model="confirmEmail"
                 placeholder="이메일 입력"
                 class="w-full border border-slate-300 px-5 py-4 rounded-xl shadow-sm focus:ring-2 focus:ring-rose-500 focus:outline-none text-lg font-medium text-slate-800 bg-white"
+                @keyup.enter="deleteAccount"
               />
               <div class="flex justify-end">
                 <button
                   @click="deleteAccount"
                   class="bg-rose-500 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-rose-600 transition shadow-md whitespace-nowrap"
                 >
-                  회원 탈퇴
+                  회원 탈퇴하기
                 </button>
               </div>
             </div>
@@ -205,13 +207,12 @@ const router = useRouter()
 const route = useRoute()
 
 // --- 상태 관리 ---
-const currentTab = ref('posts') // posts, comments, profile, role, withdraw
+const currentTab = ref('posts') // 기본 탭: 작성한 게시글
 const items = ref([])
 const currentPage = ref(0)
 const totalPages = ref(1)
 const size = 10
 
-// 유저 관련 상태
 const user = ref({})
 const newNickname = ref('')
 const confirmEmail = ref('')
@@ -221,26 +222,37 @@ onMounted(async () => {
   if (route.query.tab) currentTab.value = route.query.tab
   if (route.query.page) currentPage.value = Number(route.query.page)
   
-  await fetchUser() // 유저 정보는 항상 먼저 로드
+  await fetchUser() // 유저 정보 로드
   
   if (['posts', 'comments'].includes(currentTab.value)) {
     fetchData()
   }
 })
 
-// --- 리스트 (게시글/댓글) 데이터 통신 ---
 function changeTab(tab) {
   currentTab.value = tab
   currentPage.value = 0
   errorMessage.value = '' // 탭 이동 시 에러 초기화
   newNickname.value = ''
   confirmEmail.value = ''
-  updateQueryAndFetch()
+  
+  router.replace({ query: { tab: currentTab.value, page: currentPage.value } }).then(() => {
+    if (['posts', 'comments'].includes(currentTab.value)) {
+      fetchData()
+    }
+  })
 }
 
+// --- API 통신 ---
+
+// [수정됨] API 호출 부분을 주석 처리하고 빈 배열을 반환하도록 처리
 async function fetchData() {
   if (!['posts', 'comments'].includes(currentTab.value)) return;
+  
   try {
+    // TODO: 백엔드 API (GET /posts/my, GET /comments/my) 구현 완료 후 아래 주석을 해제하세요.
+    
+    /*
     let endpoint = currentTab.value === 'posts' ? `/posts/my` : `/comments/my`
     const res = await api.get(endpoint, {
       params: { page: currentPage.value, size },
@@ -248,6 +260,12 @@ async function fetchData() {
     })
     items.value = res.data.content || []
     totalPages.value = res.data.totalPages || 1
+    */
+
+    // 백엔드 연동 전까지 오류가 나지 않도록 빈 배열 처리
+    items.value = []
+    totalPages.value = 1
+
   } catch (err) {
     console.error('데이터 조회 실패:', err)
     items.value = []
@@ -255,7 +273,6 @@ async function fetchData() {
   }
 }
 
-// --- 유저 정보 (기존 MyPage 로직) 통신 ---
 async function fetchUser() {
   try {
     const res = await api.get('/users/me', {
@@ -356,13 +373,7 @@ function formatDate(dateStr) {
 function goToPage(page) {
   if (page < 0 || page >= totalPages.value) return
   currentPage.value = page
-  updateQueryAndFetch()
-}
-
-function updateQueryAndFetch() {
-  router.replace({
-    query: { tab: currentTab.value, page: currentPage.value }
-  }).then(() => {
+  router.replace({ query: { tab: currentTab.value, page: currentPage.value } }).then(() => {
     fetchData()
   })
 }
