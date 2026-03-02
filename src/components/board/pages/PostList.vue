@@ -1,165 +1,260 @@
 <template>
-  <div>
-    <!-- 탭 버튼 + 글쓰기 버튼 -->
-    <div class="flex justify-between items-center border-b border-gray-200 bg-white px-6 py-3">
-      <div class="flex">
-        <button
-          class="px-4 py-2 text-sm font-semibold"
-          :class="activeTab === 'latest' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-600'"
-          @click="switchTab('latest')"
+  <div class="w-full font-sans pb-10">
+    
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 border-b-2 border-slate-200 pb-4">
+      <div class="flex gap-6">
+        <button 
+          @click="changeTab('latest')" 
+          class="relative text-lg font-extrabold transition-colors duration-300"
+          :class="currentTab === 'latest' ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'"
         >
           최신글
+          <span v-if="currentTab === 'latest'" class="absolute -bottom-[18px] left-0 right-0 h-1 bg-indigo-600 rounded-t-full"></span>
         </button>
-        <button
-          class="ml-4 px-4 py-2 text-sm font-semibold"
-          :class="activeTab === 'popular' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-600'"
-          @click="switchTab('popular')"
+        <button 
+          @click="changeTab('popular')" 
+          class="relative text-lg font-extrabold transition-colors duration-300"
+          :class="currentTab === 'popular' ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'"
         >
           인기글
+          <span v-if="currentTab === 'popular'" class="absolute -bottom-[18px] left-0 right-0 h-1 bg-indigo-600 rounded-t-full"></span>
         </button>
       </div>
 
-      <router-link :to="`/boards/${boardId}/posts/create`"
-        class="px-3 py-1 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 transition">
-        글쓰기
+      <router-link 
+        :to="`/boards/${boardId}/posts/create`"
+        class="px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition shadow-md shadow-indigo-100 flex items-center gap-2"
+      >
+        <span>✍️</span> 글쓰기
       </router-link>
     </div>
 
-    <!-- 게시글 테이블 -->
-    <table class="w-full text-sm">
-      <thead>
-        <tr class="bg-gray-50 border-b-2 border-gray-300 text-gray-600">
-          <th class="px-4 py-2 text-left w-2/5">제목</th>
-          <th class="px-4 py-2 text-center w-1/5">작성자</th>
-          <th class="px-4 py-2 text-center w-1/5">작성일</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr
-          v-for="post in posts"
-          :key="post.id"
-          class="border-b border-gray-200 hover:bg-gray-50"
-          :class="post.id === selectedPostId ? 'bg-indigo-100 font-bold text-indigo-700' : ''"
-        >
-          <td class="px-4 py-2 truncate">
-            <router-link
-              :to="{
-                name: 'Post',
-                params: { boardId: boardId, postId: post.id },
-                query: { 
-                  page: pageInfo.number, 
-                  tab: activeTab, 
-                  searchMode: searchMode, 
-                  searchKeyword: searchKeyword 
-                }
-              }"
-              class="text-gray-800 hover:text-indigo-600"
-            >
-              {{ post.title }}
-            </router-link>
-          </td>
-          <td class="px-4 py-2 text-center text-gray-600">{{ post.authorNickname }}</td>
-          <td class="px-4 py-2 text-center text-gray-600">{{ formatDate(post.createdAt) }}</td>
-        </tr>
+    <div v-if="posts.length > 0" class="flex flex-col gap-3">
+      <router-link
+        v-for="post in posts" 
+        :key="post.id"
+        :to="{ path: `/boards/${boardId}/posts/${post.id}`, query: { page: currentPage, tab: currentTab, searchMode: searchMode, searchKeyword: searchKeyword } }"
+        class="group flex flex-col md:flex-row justify-between items-start md:items-center px-6 py-5 bg-white border border-slate-100 rounded-2xl hover:border-indigo-300 hover:shadow-md transition cursor-pointer"
+        :class="{'bg-indigo-50/50 border-indigo-200': selectedPostId === post.id}"
+      >
+        <div class="flex-1 w-full mb-3 md:mb-0">
+          <h3 class="text-lg font-bold text-slate-800 group-hover:text-indigo-600 transition truncate pr-4">
+            {{ post.title }}
+          </h3>
+          <div class="flex items-center gap-3 mt-1.5 text-sm font-medium text-slate-500">
+            <span>👤 {{ post.authorNickname }}</span>
+            <span class="text-slate-300">|</span>
+            <span>📅 {{ formatDate(post.createdAt) }}</span>
+          </div>
+        </div>
+        
+        <div class="flex items-center gap-5 text-sm font-bold text-slate-400 shrink-0">
+          <div class="flex items-center gap-1.5" title="조회수">
+            <span>👁️</span> {{ post.viewCount || post.view || 0 }}
+          </div>
+          <div v-if="post.likeCount" class="flex items-center gap-1.5 text-rose-500" title="좋아요">
+            <span>❤️</span> {{ post.likeCount }}
+          </div>
+          <div class="flex items-center gap-1.5 text-indigo-500" title="댓글">
+            <span>💬</span> {{ post.commentCount || 0 }}
+          </div>
+        </div>
+      </router-link>
+    </div>
 
-        <tr v-if="posts.length === 0">
-          <td colspan="3" class="px-4 py-6 text-center text-gray-500">아직 게시글이 없습니다.</td>
-        </tr>
-      </tbody>
-    </table>
+    <div v-else class="py-16 text-center text-slate-400 font-medium italic border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50">
+      해당하는 게시글이 없습니다.
+    </div>
 
-    <!-- 페이지네이션 -->
-    <div class="flex justify-center py-4 space-x-1">
-      <button @click="goToBlock(currentBlock - 1, activeTab)" :disabled="pageInfo.number === 0"
-        class="px-3 py-1 border border-gray-300 rounded text-sm bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-50">
+    <div v-if="totalPages > 1" class="flex justify-center items-center gap-2 mt-10">
+      <button 
+        @click="goToPage(currentPage - 1)" 
+        :disabled="currentPage === 0"
+        class="px-4 py-2 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 disabled:opacity-40 transition"
+      >
         이전
       </button>
-      <button
-        v-for="page in visiblePages"
-        :key="page"
-        @click="fetchPosts(page - 1, activeTab)"
-        class="px-3 py-1 border border-gray-300 rounded text-sm"
-        :class="pageInfo.number === page - 1 ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 hover:bg-gray-100'"
+      
+      <button 
+        v-for="page in visiblePages" 
+        :key="page" 
+        @click="goToPage(page - 1)"
+        class="px-4 py-2 rounded-xl font-bold transition"
+        :class="currentPage + 1 === page ? 'bg-indigo-600 text-white shadow-md' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'"
       >
         {{ page }}
       </button>
-      <button @click="goToBlock(currentBlock + 1, activeTab)" :disabled="pageInfo.number >= pageInfo.totalPages - 1"
-        class="px-3 py-1 border border-gray-300 rounded text-sm bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-50">
+
+      <button 
+        @click="goToPage(currentPage + 1)" 
+        :disabled="currentPage >= totalPages - 1"
+        class="px-4 py-2 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 disabled:opacity-40 transition"
+      >
         다음
       </button>
     </div>
 
-    <!-- 검색 영역 -->
-    <div class="flex justify-center items-center space-x-2 py-4 border-t border-gray-200">
-      <select v-model="searchMode"
-        class="px-2 py-1 border border-gray-300 rounded text-sm text-gray-700 bg-white">
-        <option value="titleContent">제목+내용</option>
+    <div class="flex flex-col md:flex-row justify-center items-center gap-3 mt-10 pt-8 border-t-2 border-slate-100">
+      <select 
+        v-model="searchInputMode" 
+        class="px-4 py-3 bg-white border border-slate-300 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+      >
+        <option value="titleContent">제목 + 내용</option>
         <option value="author">작성자</option>
       </select>
-
-      <input v-model="searchKeyword" type="text" placeholder="검색어 입력"
-        class="px-3 py-1 border border-gray-300 rounded text-sm w-64 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
-
-      <button @click="doSearch"
-        class="px-3 py-1 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 transition">
-        검색
-      </button>
+      
+      <div class="relative w-full md:w-80">
+        <input 
+          type="text" 
+          v-model="searchInputKeyword" 
+          @keyup.enter="performSearch"
+          placeholder="검색어를 입력하세요" 
+          class="w-full px-5 py-3 bg-white border border-slate-300 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 pr-12"
+        >
+        <button 
+          @click="performSearch" 
+          class="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-indigo-600 hover:text-indigo-800 transition"
+        >
+          🔍
+        </button>
+      </div>
     </div>
+
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
-import useBoardPosts from '@/components/board/scripts/PostList.js'
-
-const route = useRoute()
+import { ref, computed, watch, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import api from '@/axios'
 
 const props = defineProps({
-  boardId: { type: String, default: null },
-  page: { type: Number, default: 0 },
-  selectedPostId: { type: Number, default: null }
+  boardId: {
+    type: [String, Number],
+    required: true
+  },
+  selectedPostId: {
+    type: [String, Number],
+    default: null
+  }
 })
 
-const boardId = props.boardId || route.params.boardId
+const router = useRouter()
+const route = useRoute()
 
-const {
-  posts,
-  pageInfo,
-  currentBlock,
-  visiblePages,
-  fetchPosts,
-  goToBlock,
-  formatDate,
-  searchPosts   
-} = useBoardPosts(boardId)
+// 상태 변수
+const posts = ref([])
+const currentPage = ref(0)
+const totalPages = ref(1)
+const currentTab = ref('latest')
 
-const activeTab = ref(route.query.tab || 'latest')
 const searchMode = ref('titleContent')
 const searchKeyword = ref('')
 
-function switchTab(tab) {
-  activeTab.value = tab
-  fetchPosts(0, tab)
-}
+// 입력 필드용 (실제 검색 버튼을 누르기 전까지의 값)
+const searchInputMode = ref('titleContent')
+const searchInputKeyword = ref('')
 
-function doSearch() {
-  if (!searchKeyword.value) return
-  searchPosts(0, searchMode.value, searchKeyword.value, activeTab.value)
-}
+const size = 10
 
-onMounted(async () => {
-  if (route.query.searchMode && route.query.searchKeyword) {
-    await searchPosts(
-      props.page,
-      route.query.searchMode,
-      route.query.searchKeyword,
-      activeTab.value
-    )
-    searchMode.value = route.query.searchMode
-    searchKeyword.value = route.query.searchKeyword
-  } else {
-    await fetchPosts(props.page, activeTab.value)
+// 쿼리스트링 동기화 및 데이터 로드
+async function fetchPosts() {
+  try {
+    let endpoint = `/posts/board/${props.boardId}`
+    const params = { page: currentPage.value, size }
+
+    // 인기글 탭
+    if (currentTab.value === 'popular') {
+      endpoint = `/posts/board/${props.boardId}/popular`
+    }
+
+    // 검색 조건 추가
+    if (searchKeyword.value) {
+      if (searchMode.value === 'titleContent') {
+        params.keyword = searchKeyword.value
+        endpoint = `/posts/board/${props.boardId}/search`
+      } else if (searchMode.value === 'author') {
+        params.nickname = searchKeyword.value
+        endpoint = `/posts/board/${props.boardId}/search/author`
+      }
+    }
+
+    const res = await api.get(endpoint, { params })
+    posts.value = res.data.content || []
+    totalPages.value = res.data.totalPages || 1
+  } catch (err) {
+    console.error('게시글 목록 로드 실패', err)
   }
+}
+
+// 동작 함수
+function changeTab(tabName) {
+  currentTab.value = tabName
+  currentPage.value = 0
+  updateQueryAndFetch()
+}
+
+function performSearch() {
+  searchMode.value = searchInputMode.value
+  searchKeyword.value = searchInputKeyword.value
+  currentPage.value = 0
+  updateQueryAndFetch()
+}
+
+function goToPage(page) {
+  if (page < 0 || page >= totalPages.value) return
+  currentPage.value = page
+  updateQueryAndFetch()
+}
+
+function updateQueryAndFetch() {
+  // 브라우저 주소창(URL 쿼리) 업데이트 후 패치
+  router.replace({
+    query: {
+      ...route.query,
+      page: currentPage.value,
+      tab: currentTab.value,
+      searchMode: searchMode.value,
+      searchKeyword: searchKeyword.value
+    }
+  }).then(() => {
+    fetchPosts()
+  })
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  return date.toLocaleDateString('ko-KR')
+}
+
+// 페이지네이션 숫자 렌더링용
+const visiblePages = computed(() => {
+  const pages = []
+  const maxVisible = 5
+  const start = Math.max(1, currentPage.value + 1 - Math.floor(maxVisible / 2))
+  const end = Math.min(totalPages.value, start + maxVisible - 1)
+  for (let i = start; i <= end; i++) pages.push(i)
+  return pages
+})
+
+onMounted(() => {
+  // URL에서 초기 상태 읽어오기
+  currentPage.value = Number(route.query.page) || 0
+  currentTab.value = route.query.tab || 'latest'
+  searchMode.value = route.query.searchMode || 'titleContent'
+  searchKeyword.value = route.query.searchKeyword || ''
+  
+  searchInputMode.value = searchMode.value
+  searchInputKeyword.value = searchKeyword.value
+
+  fetchPosts()
+})
+
+// 게시판 변경 시 리로드
+watch(() => props.boardId, () => {
+  currentPage.value = 0
+  searchKeyword.value = ''
+  fetchPosts()
 })
 </script>

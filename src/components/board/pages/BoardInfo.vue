@@ -7,9 +7,11 @@
         <div class="space-y-4">
           <div class="flex items-center gap-4">
             <span class="w-10 h-10 flex items-center justify-center rounded-xl bg-indigo-600 text-white text-xl font-black shadow-md shrink-0">G</span>
-            <h1 class="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight break-keep">
-              {{ board?.topic }}
-            </h1>
+            <router-link :to="`/boards/${boardId}`" class="group">
+              <h1 class="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight break-keep group-hover:text-indigo-600 transition-colors">
+                {{ board?.topic }}
+              </h1>
+            </router-link>
           </div>
           
           <div class="flex flex-wrap items-center gap-y-2 gap-x-3 text-sm font-medium">
