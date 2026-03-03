@@ -16,7 +16,7 @@
           
           <div class="flex flex-wrap items-center gap-y-2 gap-x-3 text-sm font-medium">
             <div class="flex items-center gap-2 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-xl">
-              <span class="text-indigo-500">👑</span>
+              <span class="text-indigo-500">👤</span>
               <span class="text-slate-400 mr-1">매니저</span>
               <span class="text-slate-800">{{ boardPolicy?.boardManager?.nickname || '없음' }}</span>
             </div>
@@ -56,7 +56,7 @@
           @click="applyForBoardManager"
           class="w-full md:w-auto px-8 py-3.5 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 transition text-base font-bold shadow-lg shadow-indigo-200 transform hover:-translate-y-0.5"
         >
-          👑 이 갈드컵 매니저 권한 신청하기
+          갈드컵 매니저 권한 신청하기
         </button>
       </div>
     </div>
@@ -77,7 +77,7 @@ import { useRoute, useRouter } from 'vue-router'
 import api from '@/axios'
 import { useUserStore } from '@/stores/user'
 import { useBoardStore } from '@/stores/board'
-import BoardPolicyModal from '@/components/board/pages/BoardPolicy.vue'
+import BoardPolicyModal from '@/views/board/BoardPolicyView.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -115,9 +115,7 @@ async function fetchBoardPolicy() {
 
 async function deleteBoard() {
   try {
-    await api.delete(`/boards/${boardId}`, {
-      headers: { Authorization: `Bearer ${store.accessToken}` }
-    })
+    await api.delete(`/boards/${boardId}`)
     router.push('/')
   } catch (err) {
     console.error('게시판 삭제 실패', err)
@@ -127,9 +125,7 @@ async function deleteBoard() {
 
 async function applyForBoardManager() {
   try {
-    await api.post(`/board-manager-requests/${boardId}/apply`, {}, {
-      headers: { Authorization: `Bearer ${store.accessToken}` }
-    })
+    await api.post(`/board-manager-requests/${boardId}/apply`)
     alert('권한 위임 신청이 접수되었습니다.')
   } catch (err) {
     console.error('권한 위임 신청 실패', err)
@@ -150,7 +146,7 @@ function formatDate(dateStr) {
 function confirmDeleteBoard() {
   if (!confirm('정말 이 갈드컵을 삭제하시겠습니까?')) return
 
-  const input = prompt(`삭제하려면 갈드컵 주제를 똑같이 입력하세요\n ex) ${board.value?.topic}`)
+  const input = prompt(`삭제하려면 갈드컵 주제를 똑같이 입력하세요.\n ex) ${board.value?.topic}`)
   if (input !== board.value?.topic) {
     alert('입력한 주제가 일치하지 않습니다. 삭제가 취소되었습니다.')
     return

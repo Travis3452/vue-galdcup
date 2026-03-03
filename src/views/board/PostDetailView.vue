@@ -15,11 +15,11 @@
                 <span class="text-indigo-500">👤</span> {{ post?.authorNickname }}
               </span>
               <span class="flex items-center gap-1.5">
-                ⏰ {{ formatDate(post?.createdAt) }}
+                📅 {{ formatDate(post?.createdAt) }}
                 <span v-if="post?.updatedAt && post?.updatedAt !== post?.createdAt" class="text-xs text-slate-400 italic">(수정됨)</span>
               </span>
               <span class="flex items-center gap-1.5 text-indigo-500 font-bold">
-                👁️ {{ post?.viewCount || post?.view || 0 }}
+                👀 조회수 {{ post?.viewCount || post?.view || 0 }}
               </span>
             </div>
 
@@ -87,7 +87,7 @@
             <p class="text-slate-800 text-lg leading-relaxed mb-4 font-medium">{{ comment.content }}</p>
 
             <button @click="toggleReplyBox(comment.id)" class="text-sm font-bold text-indigo-500 hover:text-indigo-700 transition flex items-center gap-1">
-              ↳ 대댓글 작성
+              답글 달기
             </button>
 
             <div v-if="replies[comment.id] && replies[comment.id].length > 0" class="mt-4 ml-4 md:ml-8 pl-4 border-l-2 border-indigo-200 space-y-4">
@@ -112,7 +112,7 @@
             <div v-if="activeReplyBox === comment.id" class="mt-4 ml-4 md:ml-8 bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-3">
               <textarea v-model="newReplies[comment.id]" rows="2"
                 class="w-full border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm resize-none bg-slate-50"
-                placeholder="대댓글을 입력하세요..."></textarea>
+                placeholder="답글 내용을 입력하세요..."></textarea>
               <div class="flex justify-end">
                 <button @click="createReply(comment.id)" class="px-6 py-2 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition shadow-md">
                   작성 완료
@@ -129,7 +129,7 @@
         <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 flex flex-col gap-4">
           <textarea v-model="newComment" rows="3"
             class="w-full border border-slate-300 rounded-xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none text-slate-800 font-medium bg-white"
-            placeholder="댓글을 입력하세요."></textarea>
+            placeholder="댓글을 입력하세요..."></textarea>
           <div class="flex justify-end">
             <button @click="createComment" class="px-8 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition shadow-md">
               작성 완료
@@ -172,14 +172,14 @@ import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useBoardStore } from '@/stores/board'
 import api from '@/axios'
-import PostList from '@/components/board/pages/PostList.vue'
+import PostList from '@/views/board/PostListView.vue'
 
 const store = useUserStore()
 const route = useRoute()
 const router = useRouter()
 const boardStore = useBoardStore()
 
-// --- 상태 변수 ---
+// --- 상태 관리 ---
 const post = ref(null)
 const comments = ref([])
 const replies = ref({})
@@ -200,14 +200,14 @@ const visiblePages = computed(() => {
   return pages
 })
 
-// --- 함수 ---
+// --- 유틸리티 ---
 function formatDate(dateStr) {
   if (!dateStr) return ''
   const date = new Date(dateStr)
   return date.toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' })
 }
 
-// 게시글 데이터 페칭
+// 게시글 데이터 호출
 async function fetchPost(postId) {
   try {
     const res = await api.get(`/posts/${postId}`)
@@ -218,7 +218,7 @@ async function fetchPost(postId) {
   }
 }
 
-// 댓글 페칭
+// 댓글 및 답글 호출
 async function fetchComments(postId) {
   try {
     const res = await api.get(`/comments/post/${postId}`, {
@@ -237,7 +237,6 @@ async function fetchComments(postId) {
     replies.value = newRepliesMap
   } catch (err) {
     console.error('댓글 조회 실패:', err)
-    alert(err.response?.data?.message || '댓글을 불러오는 중 오류가 발생했습니다.')
   }
 }
 
@@ -252,12 +251,11 @@ async function createComment() {
     newComment.value = ''
     await fetchComments(post.value.id)
   } catch (err) {
-    console.error('댓글 작성 실패:', err)
     alert(err.response?.data?.message || '댓글 작성 중 오류가 발생했습니다.')
   }
 }
 
-// 대댓글 작성
+// 답글 작성
 async function createReply(commentId) {
   const content = newReplies.value[commentId]
   if (!content || !content.trim()) return
@@ -270,8 +268,7 @@ async function createReply(commentId) {
     activeReplyBox.value = null
     await fetchComments(post.value.id)
   } catch (err) {
-    console.error('대댓글 작성 실패:', err)
-    alert(err.response?.data?.message || '대댓글 작성 중 오류가 발생했습니다.')
+    alert(err.response?.data?.message || '답글 작성 중 오류가 발생했습니다.')
   }
 }
 
@@ -283,8 +280,7 @@ async function editComment(comment) {
     await api.put(`/comments/${comment.id}`, { content: newContent })
     await fetchComments(post.value.id)
   } catch (err) {
-    console.error('댓글 수정 실패:', err)
-    alert(err.response?.data?.message || '댓글 수정 중 오류가 발생했습니다.')
+    alert('댓글 수정 실패')
   }
 }
 
@@ -294,41 +290,37 @@ async function deleteComment(commentId) {
     await api.delete(`/comments/${commentId}`)
     await fetchComments(post.value.id)
   } catch (err) {
-    console.error('댓글 삭제 실패:', err)
-    alert(err.response?.data?.message || '댓글 삭제 중 오류가 발생했습니다.')
+    alert('댓글 삭제 실패')
   }
 }
 
-// 대댓글 수정/삭제
+// 답글 수정/삭제
 async function editReply(reply) {
-  const newContent = prompt('대댓글 수정:', reply.content)
+  const newContent = prompt('답글 수정:', reply.content)
   if (!newContent) return
   try {
     await api.put(`/replies/${reply.id}`, { content: newContent })
     await fetchComments(post.value.id)
   } catch (err) {
-    console.error('대댓글 수정 실패:', err)
-    alert(err.response?.data?.message || '대댓글 수정 중 오류가 발생했습니다.')
+    alert('답글 수정 실패')
   }
 }
 
 async function deleteReply(replyId) {
-  if (!confirm('대댓글을 삭제하시겠습니까?')) return
+  if (!confirm('답글을 삭제하시겠습니까?')) return
   try {
     await api.delete(`/replies/${replyId}`)
     await fetchComments(post.value.id)
   } catch (err) {
-    console.error('대댓글 삭제 실패:', err)
-    alert(err.response?.data?.message || '대댓글 삭제 중 오류가 발생했습니다.')
+    alert('답글 삭제 실패')
   }
 }
 
-// 게시글 조작
+// 게시글 편집 및 삭제
 function editPost() {
   const boardId = route.params.boardId
   const postId = post.value?.id
-  if (!postId) return
-  router.push(`/boards/${boardId}/posts/${postId}/update`)
+  router.push(`/boards/${boardId}/posts/${postId}/edit`)
 }
 
 async function deletePost() {
@@ -338,57 +330,51 @@ async function deletePost() {
     alert('게시글이 삭제되었습니다.')
     router.push(`/boards/${route.params.boardId}`)
   } catch (err) {
-    console.error('게시글 삭제 실패:', err)
-    alert(err.response?.data?.message || '게시글 삭제 중 오류가 발생했습니다.')
+    alert(err.response?.data?.message || '게시글 삭제 실패')
   }
 }
 
-// 관리자 삭제
+// 관리자 권한 삭제
 async function adminDeletePost() {
   if (!confirm('관리자 권한으로 게시글을 삭제하시겠습니까?')) return
   try {
     await api.delete(`/boards/${route.params.boardId}/posts/${post.value.id}/admin-delete`)
-    alert('관리자 권한으로 게시글이 삭제되었습니다.')
+    alert('관리자 권한으로 삭제되었습니다.')
     router.push(`/boards/${route.params.boardId}`)
   } catch (err) {
-    console.error('관리자 게시글 삭제 실패:', err)
-    alert(err.response?.data?.message || '관리자 게시글 삭제 중 오류가 발생했습니다.')
+    alert('관리자 삭제 실패')
   }
 }
 
-// 좋아요/싫어요
+// 좋아요/싫어요 반응
 async function reactToPost(type) {
   try {
     await api.post(`/posts/${post.value.id}/reactions`, {}, { params: { type } })
     await fetchPost(post.value.id)
   } catch (err) {
-    console.error('게시글 반응 실패:', err)
-    alert(err.response?.data?.message || '게시글 반응 처리 중 오류가 발생했습니다.')
+    alert(err.response?.data?.message || '반응 처리 중 오류가 발생했습니다.')
   }
 }
 
-// 기타 UI 컨트롤
+// UI 제어
 function toggleReplyBox(commentId) {
   activeReplyBox.value = activeReplyBox.value === commentId ? null : commentId
 }
 
 async function goToPage(page) {
-  if (page < 0 || page >= totalPages.value) return
   currentPage.value = page
   await fetchComments(post.value.id)
 }
 
 async function prevPage() {
-  if (currentPage.value === 0) return
-  await goToPage(currentPage.value - 1)
+  if (currentPage.value > 0) await goToPage(currentPage.value - 1)
 }
 
 async function nextPage() {
-  if (!hasNextPage.value) return
-  await goToPage(currentPage.value + 1)
+  if (hasNextPage.value) await goToPage(currentPage.value + 1)
 }
 
-// --- Lifecycle ---
+// --- 초기화 ---
 onMounted(async () => {
   const postId = route.params.postId
   await fetchPost(postId)

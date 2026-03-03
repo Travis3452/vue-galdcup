@@ -8,8 +8,8 @@
 
 <script setup>
 import { useRoute } from 'vue-router'
-import PostList from '@/components/board/pages/PostList.vue'
-import VoteSession from '@/components/board/pages/VoteSession.vue'
+import PostList from '@/views/board/PostListView.vue'
+import VoteSession from '@/views/board/VoteSessionView.vue'
 
 const route = useRoute()
 const boardId = route.params.boardId

@@ -13,5 +13,5 @@
 </template>
 
 <script setup>
-import BoardInfo from '@/components/board/pages/BoardInfo.vue'
+import BoardInfo from '@/views/board/BoardInfoView.vue'
 </script>
