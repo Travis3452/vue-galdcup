@@ -54,14 +54,14 @@
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div 
-              v-for="(opt, idx) in options" 
+              v-for="(label, idx) in options" 
               :key="idx"
               class="bg-white border-2 border-slate-100 rounded-[2rem] p-6 hover:border-indigo-300 transition-colors shadow-sm relative group"
             >
               <button 
                 v-if="options.length > 2"
                 @click="removeOption(idx)"
-                class="absolute -top-3 -right-3 w-8 h-8 bg-red-100 text-red-600 rounded-full font-black shadow-md hover:bg-red-500 hover:text-white transition opacity-0 group-hover:opacity-100 flex items-center justify-center"
+                class="absolute -top-3 -right-3 w-8 h-8 bg-red-100 text-red-600 rounded-full font-black shadow-md hover:bg-red-500 hover:text-white transition opacity-0 group-hover:opacity-100 flex items-center justify-center z-20"
               >
                 ✕
               </button>
@@ -92,7 +92,7 @@
                   <div v-if="optionPreviews[idx]" class="mt-4 rounded-xl overflow-hidden border-2 border-slate-100 aspect-video relative group/img">
                     <img :src="optionPreviews[idx]" class="w-full h-full object-cover" />
                     <div class="absolute inset-0 bg-black/20 flex items-center justify-center transition-opacity" :class="optionImages[idx] ? 'opacity-0 group-hover/img:opacity-100' : 'opacity-100'">
-                      <span v-if="optionImages[idx]" class="bg-black/70 text-white px-3 py-1.5 rounded-lg text-xs font-bold backdrop-blur-sm">이미지 등록 완료</span>
+                      <span v-if="optionImages[idx]" class="bg-black/70 text-white px-3 py-1.5 rounded-lg text-xs font-bold backdrop-blur-sm border border-white/20">이미지 등록 완료</span>
                       <span v-else class="bg-indigo-600/90 text-white px-3 py-1.5 rounded-lg text-xs font-bold animate-pulse backdrop-blur-sm">업로드 중...</span>
                     </div>
                   </div>
@@ -105,7 +105,7 @@
         <div class="pt-8 border-t-2 border-slate-100 flex justify-end gap-4">
           <button 
             @click="createVoteSession"
-            class="px-12 py-4 bg-indigo-600 text-white rounded-2xl font-black text-lg shadow-xl shadow-indigo-200 hover:bg-indigo-700 transition transform hover:-translate-y-1 active:scale-95"
+            class="px-12 py-4 bg-indigo-600 text-white rounded-2xl font-black text-lg shadow-xl shadow-indigo-200 hover:bg-indigo-700 transition transform hover:-translate-y-1 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             투표 생성하기
           </button>
@@ -126,26 +126,20 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/axios'
-import { useUserStore } from '@/stores/user'
 import { uploadImage } from '@/services/uploadImage'
 
 const route = useRoute()
 const router = useRouter()
-const store = useUserStore()
 
 const boardTitle = ref('')
 
-// 날짜 초기화 로직 (다음날 0시) - UTC 변환 이슈 수정
+// 날짜 초기화 로직 (다음날 0시)
 function getTomorrowMidnight() {
   const now = new Date()
   now.setDate(now.getDate() + 1)
-  
-  // 브라우저의 로컬 타임존 기준으로 YYYY-MM-DD 포맷 수동 생성
   const year = now.getFullYear()
   const month = String(now.getMonth() + 1).padStart(2, '0')
   const day = String(now.getDate()).padStart(2, '0')
-  
-  // datetime-local 입력창이 인식하는 규격 (YYYY-MM-DDT00:00)
   return `${year}-${month}-${day}T00:00`
 }
 
@@ -154,15 +148,14 @@ const endTime = ref('')
 const options = ref(['', ''])
 
 // 이미지 관련 상태 분리
-const optionPreviews = ref([null, null]) // 빠른 브라우저 로컬 미리보기 용도
-const optionImages = ref([null, null])   // 서버에 업로드 완료된 진짜 URL
+const optionPreviews = ref([null, null]) // 로컬 미리보기용
+const optionImages = ref([null, null])   // 서버 업로드 완료된 URL
 
 onMounted(async () => {
   const boardId = route.params.boardId
   try {
-    const res = await api.get(`/boards/${boardId}`, {
-      headers: { Authorization: `Bearer ${store.accessToken}` }
-    })
+    // [수정] 헤더 수동 주입 제거
+    const res = await api.get(`/boards/${boardId}`)
     boardTitle.value = res.data.topic
   } catch (err) {
     console.error('게시판 정보 로드 실패', err)
@@ -183,38 +176,37 @@ function removeOption(idx) {
   }
 }
 
-// 시간 포맷 변환 (서버 전송용 +09:00 KST 보정)
+// 시간 포맷 변환 (서버 전송용 KST 보정)
 function toSeoulOffsetDateTime(dtLocalValue) {
   if (!dtLocalValue) return null
   const normalized = dtLocalValue.length === 16 ? `${dtLocalValue}:00` : dtLocalValue
   return new Date(normalized + '+09:00').toISOString()
 }
 
-// 이미지 업로드 핸들러 (병목 현상 해결)
+// 이미지 업로드 핸들러
 async function onImageUpload(event, idx) {
   const file = event.target.files?.[0]
   if (!file) return
   
-  // 1. 빠른 미리보기를 위해 브라우저 메모리에 가상 URL 생성 (즉시 화면 표시)
+  // 미리보기 즉시 표시
   optionPreviews.value[idx] = URL.createObjectURL(file)
-  optionImages.value[idx] = null // 기존 업로드 URL 초기화
+  optionImages.value[idx] = null 
 
   try {
-    // 2. 백그라운드에서 클라우드/서버 업로드 진행
     const url = await uploadImage(file)
     optionImages.value[idx] = url
   } catch (err) {
     console.error('이미지 업로드 실패', err)
     alert('이미지 업로드에 실패했습니다.')
-    optionPreviews.value[idx] = null // 실패 시 미리보기도 닫음
+    optionPreviews.value[idx] = null 
   }
 }
 
-// 갈드컵 생성 전송
+// 투표 생성 전송
 async function createVoteSession() {
   const boardId = route.params.boardId
 
-  // 이미지가 '업로드 중'인지 검사하는 방어 로직
+  // 업로드 중인지 체크
   const isUploading = optionPreviews.value.some((preview, idx) => preview !== null && optionImages.value[idx] === null)
   if (isUploading) {
     alert("이미지가 아직 서버에 업로드 중입니다. 잠시만 기다려주세요.")
@@ -244,9 +236,8 @@ async function createVoteSession() {
   }
 
   try {
-    await api.post(`/boards/${boardId}/vote-session`, payload, {
-      headers: { Authorization: `Bearer ${store.accessToken}` }
-    })
+    // [수정] 헤더 수동 주입 제거
+    await api.post(`/boards/${boardId}/vote-session`, payload)
     alert('새로운 갈드컵 투표가 성공적으로 열렸습니다!')
     router.push(`/boards/${boardId}`)
   } catch (err) {

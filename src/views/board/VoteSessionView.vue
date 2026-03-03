@@ -169,7 +169,10 @@ const toggleExpanded = () => {
 };
 
 const handleCreateVote = () => {
-  router.push(`/boards/${boardId}/createVoteSession`);
+  router.push({ 
+    name: 'CreateVoteSession', 
+    params: { boardId: boardId } 
+  });
 };
 
 const handleFinishVote = async () => {

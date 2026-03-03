@@ -15,6 +15,7 @@
             class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-5 text-xl font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
             placeholder="제목을 입력하세요."
             aria-label="제목 입력"
+            @input="errorMessage = ''"
           />
         </div>
 
@@ -22,7 +23,7 @@
           <div ref="editorRef" class="w-full flex-1" aria-label="게시글 내용 에디터"></div>
         </div>
 
-        <div v-if="errorMessage" class="bg-red-50 border border-red-200 text-red-600 px-6 py-4 rounded-2xl flex items-center space-x-3">
+        <div v-if="errorMessage" class="bg-red-50 border border-red-200 text-red-600 px-6 py-4 rounded-2xl flex items-center space-x-3 animate-pulse">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
@@ -38,7 +39,7 @@
           </router-link>
           <button
             @click="createPost"
-            :disabled="submitting"
+            :disabled="submitting || !title.trim()"
             class="px-10 py-4 rounded-2xl font-extrabold text-lg text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transition transform hover:-translate-y-1"
           >
             {{ submitting ? '작성 중...' : '작성 완료' }}
@@ -56,11 +57,9 @@ import Quill from 'quill'
 import 'quill/dist/quill.snow.css'
 import api from '@/axios'
 import { uploadImage } from '@/services/uploadImage'
-import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
 const router = useRouter()
-const store = useUserStore()
 
 const title = ref('')
 const editorRef = ref(null)
@@ -90,6 +89,7 @@ function initQuill() {
     },
   })
 
+  // 이미지 업로드 핸들러
   const toolbar = quill.getModule('toolbar')
   if (toolbar) {
     toolbar.addHandler('image', async () => {
@@ -116,10 +116,12 @@ function initQuill() {
 
 async function createPost() {
   errorMessage.value = ''
+  
   if (!title.value || title.value.trim() === '') {
     errorMessage.value = '제목을 입력하세요.'
     return
   }
+
   submitting.value = true
   try {
     const content = quill?.root?.innerHTML || ''
@@ -128,21 +130,17 @@ async function createPost() {
       title: title.value.trim(),
       content,
     }
-    await api.post('/posts', postData, {
-      headers: {
-        Authorization: `Bearer ${store.accessToken}`,
-        'Content-Type': 'application/json',
-      },
-    })
+
+    await api.post('/posts', postData)
+    
+    alert('게시글이 성공적으로 등록되었습니다!')
     router.push(`/boards/${boardId}`)
   } catch (err) {
     console.error('게시글 생성 실패', err)
-    if (err.response && err.response.data && err.response.data.message) {
+    if (err.response?.data?.message) {
       errorMessage.value = err.response.data.message
-      alert(`${err.response.data.message}`)
     } else {
-      errorMessage.value = '알 수 없는 오류가 발생했습니다.'
-      alert('알 수 없는 오류가 발생했습니다.')
+      errorMessage.value = '게시글 생성 중 오류가 발생했습니다.'
     }
   } finally {
     submitting.value = false

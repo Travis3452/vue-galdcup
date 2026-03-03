@@ -34,14 +34,20 @@
           </div>
 
           <div class="space-y-3">
-            <label class="text-base font-extrabold text-slate-700 flex items-center gap-2">
-              <span class="text-indigo-500">📝</span> 상세 설명
-            </label>
+            <div class="flex justify-between items-center px-1">
+              <label class="text-base font-extrabold text-slate-700 flex items-center gap-2">
+                <span class="text-indigo-500">📝</span> 상세 설명
+              </label>
+              <span :class="['text-xs font-bold', description.length < 5 ? 'text-rose-500' : 'text-slate-400']">
+                {{ description.length }} / 200 (최소 5자)
+              </span>
+            </div>
             <textarea 
               v-model="description"
               rows="4"
-              placeholder="이 갈드컵의 룰이나 배경을 자유롭게 설명해주세요."
+              placeholder="이 갈드컵의 룰이나 배경을 5자 이상 설명해주세요."
               class="w-full bg-white border border-slate-200 rounded-2xl px-6 py-5 text-base font-medium text-slate-800 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition shadow-sm resize-none"
+              :class="{'border-rose-300 ring-1 ring-rose-100': errorMessage && description.length < 5}"
             ></textarea>
           </div>
           
@@ -61,7 +67,7 @@
           </button>
           <button 
             @click="handleCreateBoard"
-            :disabled="isSubmitting"
+            :disabled="isSubmitting || description.length < 5"
             class="px-12 py-4 bg-indigo-600 text-white rounded-2xl font-black text-lg shadow-xl shadow-indigo-200 hover:bg-indigo-700 transition transform hover:-translate-y-1 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 w-full sm:w-auto"
           >
             {{ isSubmitting ? '개최 준비 중...' : '갈드컵 열기' }}
@@ -74,18 +80,21 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { useUserStore } from '@/stores/user'
 import api from '@/axios'
 
 const router = useRouter()
-const store = useUserStore()
 
 const topic = ref('')
 const description = ref('')
 const isSubmitting = ref(false)
 const errorMessage = ref('')
+
+// 입력값이 변경되면 에러 메시지를 자동으로 숨깁니다.
+watch([topic, description], () => {
+  errorMessage.value = ''
+})
 
 async function handleCreateBoard() {
   errorMessage.value = ''
@@ -95,26 +104,32 @@ async function handleCreateBoard() {
     return
   }
 
+  if (description.value.length < 5) {
+    errorMessage.value = '설명을 5자 이상 200자 이하로 입력하세요.'
+    return
+  }
+
   isSubmitting.value = true
   try {
     const payload = {
       topic: topic.value.trim(),
       description: description.value.trim()
     }
-    const res = await api.post('/boards', payload, {
-      headers: { Authorization: `Bearer ${store.accessToken}` }
-    })
     
-    // 생성된 게시판으로 바로 이동
-    const newBoardId = res.data.id || res.data // 응답 형태에 따라 수정 필요할 수 있음
+    // [수정] axios 인터셉터에서 토큰을 처리하므로 헤더 수동 주입을 제거했습니다.
+    const res = await api.post('/boards', payload)
+    
+    const newBoardId = res.data.id || res.data
     alert('새로운 갈드컵이 성공적으로 개최되었습니다!')
     router.push(`/boards/${newBoardId}`)
   } catch (err) {
     console.error('게시판 생성 실패', err)
+    
+    // 서버 검증 에러(400) 처리
     if (err.response && err.response.data && err.response.data.message) {
       errorMessage.value = err.response.data.message
     } else {
-      errorMessage.value = '게시판 생성에 실패했습니다.'
+      errorMessage.value = '게시판 생성에 실패했습니다. 다시 시도해주세요.'
     }
   } finally {
     isSubmitting.value = false

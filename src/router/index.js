@@ -24,13 +24,24 @@ const router = createRouter({
       component: () => import('@/views/MyPageView.vue'),
       meta: { requiresAuth: true }
     },
-    // 🛡️ /admin/roles (RoleApproval) 경로는 MyPage 탭으로 통합되었으므로 삭제합니다.
     {
       path: '/boards/create',
       name: 'CreateBoard',
       component: () => import('@/views/board/CreateBoardView.vue'),
       meta: { requiresAuth: true }
     },
+
+    {
+      path: '/boards/:boardId/votes/:voteSessionId',
+      name: 'Vote',
+      component: () => import('@/views/board/VoteView.vue'),
+      props: true,
+      meta: { 
+        requiresAuth: true, 
+        noLayout: true
+      }
+    },
+
     {
       path: '/boards/:boardId',
       component: BoardLayout,
@@ -59,13 +70,6 @@ const router = createRouter({
           path: 'posts/:postId/edit',
           name: 'UpdatePost',
           component: () => import('@/views/board/UpdatePostView.vue'),
-          props: true,
-          meta: { requiresAuth: true }
-        },
-        {
-          path: 'votes/:voteSessionId',
-          name: 'Vote',
-          component: () => import('@/views/board/VoteView.vue'),
           props: true,
           meta: { requiresAuth: true }
         },

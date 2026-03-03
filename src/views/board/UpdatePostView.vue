@@ -22,7 +22,7 @@
           <div ref="editorRef" class="w-full flex-1" aria-label="게시글 내용 에디터"></div>
         </div>
 
-        <div v-if="errorMessage" class="bg-red-50 border border-red-200 text-red-600 px-6 py-4 rounded-2xl flex items-center space-x-3">
+        <div v-if="errorMessage" class="bg-red-50 border border-red-200 text-red-600 px-6 py-4 rounded-2xl flex items-center space-x-3 animate-pulse">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
@@ -38,7 +38,7 @@
           </router-link>
           <button
             @click="updatePost"
-            :disabled="submitting"
+            :disabled="submitting || !title.trim()"
             class="px-10 py-4 rounded-2xl font-extrabold text-lg text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transition transform hover:-translate-y-1"
           >
             {{ submitting ? '수정 중...' : '수정 완료' }}
@@ -56,11 +56,9 @@ import Quill from 'quill'
 import 'quill/dist/quill.snow.css'
 import api from '@/axios'
 import { uploadImage } from '@/services/uploadImage'
-import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
 const router = useRouter()
-const store = useUserStore()
 
 const title = ref('')
 const editorRef = ref(null)
@@ -92,6 +90,7 @@ function initQuill() {
     },
   })
 
+  // 이미지 업로드 핸들러
   const toolbar = quill.getModule('toolbar')
   if (toolbar) {
     toolbar.addHandler('image', async () => {
@@ -116,31 +115,28 @@ function initQuill() {
   }
 }
 
+// 기존 게시글 데이터 로드 (수동 헤더 제거)
 async function loadPost() {
   try {
-    const { data } = await api.get(`/posts/${postId}`, {
-      headers: { Authorization: `Bearer ${store.accessToken}` }
-    })
+    const { data } = await api.get(`/posts/${postId}`)
     title.value = data.title
-    quill.root.innerHTML = data.content
+    if (quill) {
+      quill.root.innerHTML = data.content
+    }
   } catch (err) {
     console.error('게시글 불러오기 실패', err)
-    if (err.response && err.response.data && err.response.data.message) {
-      errorMessage.value = err.response.data.message
-      alert(`${err.response.data.message}`)
-    } else {
-      errorMessage.value = '게시글을 불러오지 못했습니다.'
-      alert('게시글을 불러오지 못했습니다.')
-    }
+    errorMessage.value = err.response?.data?.message || '게시글을 불러오지 못했습니다.'
   }
 }
 
+// 게시글 수정 실행 (수동 헤더 제거)
 async function updatePost() {
   errorMessage.value = ''
   if (!title.value || title.value.trim() === '') {
     errorMessage.value = '제목을 입력하세요.'
     return
   }
+  
   submitting.value = true
   try {
     const content = quill?.root?.innerHTML || ''
@@ -148,22 +144,18 @@ async function updatePost() {
       title: title.value.trim(),
       content,
     }
-    await api.put(`/posts/${postId}`, postData, {
-      headers: {
-        Authorization: `Bearer ${store.accessToken}`,
-        'Content-Type': 'application/json',
-      },
-    })
-    // 수정 완료 시 해당 게시글 상세 페이지로 이동
+    
+    // axios 인터셉터가 토큰을 자동으로 주입함
+    await api.put(`/posts/${postId}`, postData)
+    
+    alert('게시글이 성공적으로 수정되었습니다!')
     router.push(`/boards/${boardId}/posts/${postId}`)
   } catch (err) {
     console.error('게시글 수정 실패', err)
-    if (err.response && err.response.data && err.response.data.message) {
+    if (err.response?.data?.message) {
       errorMessage.value = err.response.data.message
-      alert(`${err.response.data.message}`)
     } else {
       errorMessage.value = '게시글 수정에 실패했습니다.'
-      alert('게시글 수정에 실패했습니다.')
     }
   } finally {
     submitting.value = false
@@ -172,7 +164,6 @@ async function updatePost() {
 </script>
 
 <style scoped>
-/* Quill 에디터의 기본 테마 스타일을 최신 UI에 맞게 덮어쓰기 (CreatePost와 동일) */
 :deep(.ql-toolbar.ql-snow) {
   background-color: #f8fafc; /* slate-50 */
   border: none !important;
