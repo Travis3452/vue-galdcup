@@ -25,6 +25,11 @@ export const useUserStore = defineStore('user', {
     role: null
   }),
   
+  getters: {
+    isAdmin: (state) => state.role?.includes('ADMIN') || false,
+    isManager: (state) => state.role?.includes('MANAGER') || false
+  },
+  
   actions: {
     login(accessToken, nickname) {
       this.accessToken = accessToken
