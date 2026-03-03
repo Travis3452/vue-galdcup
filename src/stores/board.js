@@ -4,12 +4,24 @@ import { useUserStore } from '@/stores/user'
 
 export const useBoardStore = defineStore('board', {
   state: () => ({
+    currentBoard: null,       
+    currentVoteSession: null, 
     isBoardManager: false,
     isSubManager: false,
     loading: false,
     error: null
   }),
   actions: {
+    async fetchBoard(boardId) {
+      try {
+        const res = await api.get(`/boards/${boardId}`)
+        this.currentBoard = res.data
+      } catch (err) {
+        console.error('게시판 정보 로드 실패', err)
+        this.currentBoard = null
+      }
+    },
+
     async fetchBoardPolicy(boardId) {
       this.loading = true
       try {
@@ -34,7 +46,6 @@ export const useBoardStore = defineStore('board', {
         const response = await api.get(`/boards/${boardId}/vote-session`);
         this.currentVoteSession = response.data;
       } catch (error) {
-        console.error('투표 세션 조회 실패:', error);
         this.currentVoteSession = null;
       }
     }

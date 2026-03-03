@@ -72,7 +72,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue' // ✨ computed 추가
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/axios'
 import { useUserStore } from '@/stores/user'
@@ -86,18 +86,10 @@ const boardStore = useBoardStore()
 
 const boardId = route.params.boardId
 
-const board = ref(null)
+const board = computed(() => boardStore.currentBoard)
 const boardPolicy = ref(null)
 const showPolicyModal = ref(false)
 
-async function fetchBoard() {
-  try {
-    const res = await api.get(`/boards/${boardId}`)
-    board.value = res.data
-  } catch (err) {
-    console.error('게시판 정보 로드 실패', err)
-  }
-}
 
 async function fetchBoardPolicy() {
   try {
@@ -155,7 +147,9 @@ function confirmDeleteBoard() {
 }
 
 onMounted(async () => {
-  await fetchBoard()
+  if (!boardStore.currentBoard || String(boardStore.currentBoard.id) !== String(boardId)) {
+    await boardStore.fetchBoard(boardId)
+  }
   await fetchBoardPolicy()
 })
 </script>
