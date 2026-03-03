@@ -188,8 +188,20 @@ const handleFinishVote = async () => {
 
 const onVoteClick = () => {
   if (voteStatus.value !== 'LIVE') return;
-  const url = `/boards/${boardId}/vote-session/${voteSession.value.id}/vote`;
-  window.open(url, '_blank', 'width=800,height=600,scrollbars=yes');
+
+  const width = 800;
+  const height = 800;
+
+  const left = window.screenX + (window.outerWidth - width) / 2;
+  const top = window.screenY + (window.outerHeight - height) / 2;
+
+  const url = `/boards/${boardId}/votes/${voteSession.value.id}`;
+
+  window.open(
+    url, 
+    '_blank', 
+    `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`
+  );
 };
 
 const formatDate = (dateStr) => {

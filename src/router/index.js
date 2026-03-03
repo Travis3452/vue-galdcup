@@ -31,6 +31,7 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
 
+    // 🛡️ [수정] Vote 페이지를 독립적인 최상위 경로로 설정
     {
       path: '/boards/:boardId/votes/:voteSessionId',
       name: 'Vote',
@@ -38,7 +39,7 @@ const router = createRouter({
       props: true,
       meta: { 
         requiresAuth: true, 
-        noLayout: true
+        noLayout: true  // App.vue에서 NavBar/Footer 숨김용
       }
     },
 
@@ -93,7 +94,6 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const userStore = useUserStore()
-
   if (to.meta.requiresAuth && !userStore.accessToken) {
     alert('로그인이 필요한 서비스입니다.')
     next('/')
