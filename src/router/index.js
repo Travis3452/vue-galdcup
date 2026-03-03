@@ -14,7 +14,7 @@ const router = createRouter({
       component: HomeView
     },
     {
-      path: '/auth/callback/google', 
+      path: '/auth/callback/google',
       name: 'googleCallback',
       component: GoogleCallback
     },
@@ -24,19 +24,13 @@ const router = createRouter({
       component: () => import('@/views/MyPageView.vue'),
       meta: { requiresAuth: true }
     },
-    {
-      path: '/admin/roles',
-      name: 'RoleApproval',
-      component: () => import('@/views/admin/RoleApprovalView.vue'),
-      meta: { requiresAuth: true, adminOnly: true }
-    },
+    // 🛡️ /admin/roles (RoleApproval) 경로는 MyPage 탭으로 통합되었으므로 삭제합니다.
     {
       path: '/boards/create',
       name: 'CreateBoard',
       component: () => import('@/views/board/CreateBoardView.vue'),
       meta: { requiresAuth: true }
     },
-    // 게시판 관련 중첩 라우팅
     {
       path: '/boards/:boardId',
       component: BoardLayout,
@@ -95,7 +89,6 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const userStore = useUserStore()
-  userStore.restore()
 
   if (to.meta.requiresAuth && !userStore.accessToken) {
     alert('로그인이 필요한 서비스입니다.')
