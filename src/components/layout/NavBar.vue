@@ -1,8 +1,8 @@
 <template>
-  <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200/50 shadow-sm px-6 py-4 flex justify-between items-center transition-all">
+  <header class="relative z-50 bg-slate-300 border-b border-slate-300 shadow-sm px-6 py-4 flex justify-between items-center transition-all">
     
     <router-link to="/" class="flex items-center gap-3 group shrink-0">
-      <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-md group-hover:bg-indigo-700 transition transform group-hover:-translate-y-0.5">
+      <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-md group-hover:bg-indigo-500 transition transform group-hover:-translate-y-0.5">
         G
       </div>
       <span class="text-2xl font-extrabold text-slate-800 tracking-tight group-hover:text-indigo-600 transition hidden sm:block">
@@ -13,12 +13,12 @@
     <div class="flex-1 max-w-lg mx-6 relative hidden md:block" ref="searchContainerRef">
       <div class="relative">
         <input 
-          v-model="searchQuery"
+          :value="searchQuery"
           @input="handleSearchInput"
           @focus="isSearchDropdownOpen = true"
           type="text" 
           placeholder="어떤 갈드컵을 찾으시나요?"
-          class="w-full bg-slate-50 border border-slate-200 rounded-full px-6 py-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition shadow-inner"
+          class="w-full bg-white border border-slate-300 rounded-full px-6 py-2.5 text-sm font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition shadow-inner"
         />
         <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold pointer-events-none">
           🔍
@@ -56,7 +56,7 @@
     <nav class="flex items-center gap-3 md:gap-4 shrink-0">
       
       <template v-if="isLoggedIn">
-        <div class="h-6 w-px bg-slate-200 hidden lg:block mx-1"></div>
+        <div class="h-6 w-px bg-slate-400 hidden lg:block mx-1"></div>
 
         <div
           class="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-2xl hover:border-indigo-300 hover:shadow-md transition cursor-pointer group"
@@ -72,7 +72,7 @@
 
         <button
           @click="logout"
-          class="px-4 py-2 bg-slate-100 text-slate-600 font-bold text-sm rounded-xl hover:bg-slate-200 transition"
+          class="px-4 py-2 bg-white text-slate-600 border border-slate-200 shadow-sm font-bold text-sm rounded-xl hover:bg-slate-50 hover:text-indigo-600 transition"
         >
           로그아웃
         </button>
@@ -81,9 +81,9 @@
       <template v-else>
         <button
           @click="handleLogin"
-          class="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white font-bold rounded-xl shadow-md shadow-indigo-200 hover:bg-indigo-700 hover:-translate-y-0.5 transition transform text-sm"
+          class="flex items-center gap-2 px-5 py-2.5 bg-white text-slate-900 font-bold rounded-xl shadow-md hover:bg-slate-50 hover:-translate-y-0.5 transition transform text-sm"
         >
-          <span class="bg-white text-indigo-600 w-5 h-5 rounded-full flex items-center justify-center font-black text-xs">G</span>
+          <span class="bg-indigo-600 text-white w-5 h-5 rounded-full flex items-center justify-center font-black text-xs">G</span>
           Google 로그인
         </button>
       </template>
@@ -103,7 +103,6 @@ const router = useRouter()
 const isLoggedIn = computed(() => !!store.accessToken)
 const nickname = computed(() => store.nickname || '')
 
-// 실시간 검색 관련 상태
 const searchQuery = ref('')
 const searchResults = ref([])
 const isSearchDropdownOpen = ref(false)
@@ -113,7 +112,6 @@ let searchTimeout = null
 
 onMounted(() => {
   store.restore()
-  // 드롭다운 외부 클릭 감지 이벤트 등록
   document.addEventListener('click', handleClickOutside)
 })
 
@@ -121,15 +119,15 @@ onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
 })
 
-// 외부 클릭 시 드롭다운 닫기
 function handleClickOutside(event) {
   if (searchContainerRef.value && !searchContainerRef.value.contains(event.target)) {
     isSearchDropdownOpen.value = false
   }
 }
 
-// 실시간 타이핑 처리 (디바운스 적용: 300ms 동안 입력이 없으면 API 호출)
-function handleSearchInput() {
+// ✨ 한글 입력 실시간 반응을 위해 event를 받아 직접 할당합니다.
+function handleSearchInput(event) {
+  searchQuery.value = event.target.value
   isSearchDropdownOpen.value = true
   
   if (!searchQuery.value.trim()) {
@@ -143,7 +141,7 @@ function handleSearchInput() {
   searchTimeout = setTimeout(async () => {
     try {
       const res = await api.get('/boards/search', {
-        params: { page: 0, size: 7, keyword: searchQuery.value.trim() } // 상위 7개 결과 노출
+        params: { page: 0, size: 7, keyword: searchQuery.value.trim() }
       })
       searchResults.value = res.data.content || []
     } catch (err) {
@@ -155,10 +153,9 @@ function handleSearchInput() {
   }, 300)
 }
 
-// 검색 결과 클릭 시 게시판으로 즉시 이동
 function goToBoard(boardId) {
   isSearchDropdownOpen.value = false
-  searchQuery.value = '' // 검색창 초기화
+  searchQuery.value = '' 
   router.push(`/boards/${boardId}`)
 }
 
@@ -208,7 +205,6 @@ function goToMyPage() {
 </script>
 
 <style scoped>
-/* 드롭다운 부드러운 등장 효과 */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.2s ease, transform 0.2s ease;
