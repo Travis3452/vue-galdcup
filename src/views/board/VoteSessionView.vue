@@ -55,7 +55,7 @@
                 <span class="text-xl font-black text-slate-800 break-all mb-1">{{ opt.label }}</span>
                 
                 <div v-if="voteStatus !== 'UPCOMING'" class="mb-4">
-                  <span class="text-lg font-black text-indigo-600">{{ opt.count.toLocaleString() }}표</span>
+                  <span class="text-lg font-black text-indigo-600">{{ (opt.count || 0).toLocaleString() }}표</span>
                 </div>
                 
                 <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden border border-slate-50">
@@ -142,11 +142,12 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useBoardStore } from '@/stores/board';
 import { useUserStore } from '@/stores/user';
 import api from '@/axios';
+import { Client } from '@stomp/stompjs';
 
 const route = useRoute();
 const router = useRouter();
@@ -159,6 +160,58 @@ const voteSession = computed(() => boardStore.currentVoteSession);
 const isManager = computed(() => boardStore.isBoardManager);
 
 const isExpanded = ref(true);
+
+// --- WebSocket 관련 로직 ---
+let client = null;
+
+const connectWebSocket = () => {
+  // 불필요한 연결 방지
+  if (!voteSession.value || voteSession.value.isFinished || client) return;
+
+  const baseURL = import.meta.env.VITE_API_BASE_URL;
+  // http -> ws / https -> wss 자동 변환
+  const socketURL = baseURL.replace(/^http/, 'ws') + '/ws-galdcup';
+
+  client = new Client({
+    brokerURL: socketURL,
+    reconnectDelay: 5000,
+    heartbeatIncoming: 4000,
+    heartbeatOutgoing: 4000,
+    onConnect: () => {
+      console.log('실시간 투표 통계 구독 시작');
+      
+      client.subscribe(`/topic/votes/${voteSession.value.id}`, (message) => {
+        if (message.body) {
+          const countsMap = JSON.parse(message.body);
+          
+          // Pinia Store 상태 직접 업데이트 (반응형 반영)
+          if (boardStore.currentVoteSession?.options) {
+            boardStore.currentVoteSession.options.forEach((opt, index) => {
+              if (countsMap[index] !== undefined) {
+                opt.count = countsMap[index];
+              }
+            });
+          }
+        }
+      });
+    },
+    onStompError: (frame) => {
+      console.error('STOMP 프로토콜 에러:', frame.headers['message']);
+    },
+    onWebSocketClose: () => {
+      console.log('WebSocket 연결 종료');
+    }
+  });
+
+  client.activate();
+};
+
+const disconnectWebSocket = () => {
+  if (client) {
+    client.deactivate();
+    client = null;
+  }
+};
 
 const voteStatus = computed(() => {
   if (!voteSession.value) return null;
@@ -173,11 +226,14 @@ const voteStatus = computed(() => {
   return 'LIVE';
 });
 
-watch(voteStatus, (newVal) => {
-  if (newVal === 'LIVE') {
+// 상태 변화에 따른 UI 확장/축소 및 소켓 관리
+watch(voteStatus, (newStatus) => {
+  if (newStatus === 'LIVE') {
     isExpanded.value = true;
-  } else if (newVal === 'UPCOMING' || newVal === 'FINISHED') {
+    connectWebSocket(); // 상태가 LIVE로 변하면 소켓 연결
+  } else {
     isExpanded.value = false;
+    disconnectWebSocket(); // 그 외 상태에선 소켓 해제
   }
 }, { immediate: true });
 
@@ -208,10 +264,8 @@ const onVoteClick = () => {
 
   const width = 800;
   const height = 800;
-
   const left = window.screenX + (window.outerWidth - width) / 2;
   const top = window.screenY + (window.outerHeight - height) / 2;
-
   const url = `/boards/${boardId}/votes/${voteSession.value.id}`;
 
   window.open(
@@ -228,18 +282,28 @@ const formatDate = (dateStr) => {
 };
 
 const calculatePercentage = (count) => {
-  if (!voteSession.value || !voteSession.value.options) return 0;
-  const total = voteSession.value.options.reduce((acc, cur) => acc + cur.count, 0);
+  if (!voteSession.value?.options) return 0;
+  const total = voteSession.value.options.reduce((acc, cur) => acc + (cur.count || 0), 0);
   return total === 0 ? 0 : (count / total) * 100;
 };
 
 onMounted(async () => {
   if (boardId) {
+    // 초기 데이터 로딩
     await Promise.all([
       boardStore.fetchBoardPolicy(boardId),
       boardStore.fetchVoteSession(boardId)
     ]);
+    
+    // 로딩 후 상태가 LIVE라면 소켓 연결 (watch에서 immediate로 처리되지만 안전장치)
+    if (voteStatus.value === 'LIVE') {
+      connectWebSocket();
+    }
   }
+});
+
+onUnmounted(() => {
+  disconnectWebSocket();
 });
 </script>
 
