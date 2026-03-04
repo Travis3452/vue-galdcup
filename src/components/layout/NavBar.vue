@@ -150,7 +150,7 @@ function handleSearchInput(event) {
     } finally {
       isSearching.value = false
     }
-  }, 300)
+  }, 500)
 }
 
 function goToBoard(boardId) {
