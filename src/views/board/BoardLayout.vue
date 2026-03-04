@@ -89,6 +89,5 @@ watch(() => boardStore.currentBoard, (newBoard) => {
 }, { immediate: true, deep: true })
 
 onMounted(() => {
-  loadBoardData(boardId.value)
 })
 </script>

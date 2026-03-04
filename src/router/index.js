@@ -31,7 +31,7 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
 
-    // 🛡️ [수정] Vote 페이지를 독립적인 최상위 경로로 설정
+    // Vote 페이지 (독립 팝업 레이아웃)
     {
       path: '/boards/:boardId/votes/:voteSessionId',
       name: 'Vote',
@@ -39,7 +39,7 @@ const router = createRouter({
       props: true,
       meta: { 
         requiresAuth: true, 
-        noLayout: true  // App.vue에서 NavBar/Footer 숨김용
+        noLayout: true 
       }
     },
 
@@ -73,6 +73,12 @@ const router = createRouter({
           component: () => import('@/views/board/UpdatePostView.vue'),
           props: true,
           meta: { requiresAuth: true }
+        },
+        {
+          path: 'history',
+          name: 'VoteHistory',
+          component: () => import('@/views/board/VoteHistoryView.vue'),
+          props: true
         },
         {
           path: 'votes/:voteSessionId/status',

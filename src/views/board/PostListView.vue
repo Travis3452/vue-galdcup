@@ -100,7 +100,7 @@
         class="px-4 py-3 bg-white border border-slate-300 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
       >
         <option value="titleContent">제목 + 내용</option>
-        <option value="author">작성자</option>
+        <option value="nickname">작성자</option>
       </select>
       
       <div class="relative w-full md:w-80">
@@ -151,31 +151,44 @@ const currentTab = ref('latest')
 const searchMode = ref('titleContent')
 const searchKeyword = ref('')
 
-// 입력 필드용 (실제 검색 버튼을 누르기 전까지의 값)
+// 입력 필드 전용 (검색 버튼 클릭 시에만 상단 searchKeyword로 반영)
 const searchInputMode = ref('titleContent')
 const searchInputKeyword = ref('')
 
 const size = 10
 
-// 쿼리스트링 동기화 및 데이터 로드
+// 🛠️ API 엔드포인트 및 파라미터 수정 로직
 async function fetchPosts() {
   try {
-    let endpoint = `/posts/board/${props.boardId}`
     const params = { page: currentPage.value, size }
+    let endpoint = ''
 
-    // 인기글 탭
+    // 1. 인기글(popular) 탭인 경우
     if (currentTab.value === 'popular') {
-      endpoint = `/posts/board/${props.boardId}/popular`
-    }
-
-    // 검색 조건 추가
-    if (searchKeyword.value) {
-      if (searchMode.value === 'titleContent') {
-        params.keyword = searchKeyword.value
-        endpoint = `/posts/board/${props.boardId}/search`
-      } else if (searchMode.value === 'author') {
-        params.nickname = searchKeyword.value
-        endpoint = `/posts/board/${props.boardId}/search/author`
+      if (searchKeyword.value) {
+        if (searchMode.value === 'titleContent') {
+          endpoint = `/posts/board/${props.boardId}/popular/search/keyword`
+          params.keyword = searchKeyword.value
+        } else {
+          endpoint = `/posts/board/${props.boardId}/popular/search/nickname`
+          params.nickname = searchKeyword.value
+        }
+      } else {
+        endpoint = `/posts/board/${props.boardId}/popular`
+      }
+    } 
+    // 2. 최신글(latest) 탭인 경우
+    else {
+      if (searchKeyword.value) {
+        if (searchMode.value === 'titleContent') {
+          endpoint = `/posts/board/${props.boardId}/search/keyword`
+          params.keyword = searchKeyword.value
+        } else {
+          endpoint = `/posts/board/${props.boardId}/search/nickname`
+          params.nickname = searchKeyword.value
+        }
+      } else {
+        endpoint = `/posts/board/${props.boardId}`
       }
     }
 
@@ -184,16 +197,19 @@ async function fetchPosts() {
     totalPages.value = res.data.totalPages || 1
   } catch (err) {
     console.error('게시글 목록 로드 실패', err)
+    posts.value = []
+    totalPages.value = 1
   }
 }
 
-// 동작 함수
+// 탭 변경
 function changeTab(tabName) {
   currentTab.value = tabName
   currentPage.value = 0
   updateQueryAndFetch()
 }
 
+// 검색 실행
 function performSearch() {
   searchMode.value = searchInputMode.value
   searchKeyword.value = searchInputKeyword.value
@@ -201,14 +217,15 @@ function performSearch() {
   updateQueryAndFetch()
 }
 
+// 페이지 이동
 function goToPage(page) {
   if (page < 0 || page >= totalPages.value) return
   currentPage.value = page
   updateQueryAndFetch()
 }
 
+// URL 쿼리 동기화 및 데이터 호출
 function updateQueryAndFetch() {
-  // 브라우저 주소창(URL 쿼리) 업데이트 후 패치
   router.replace({
     query: {
       ...route.query,
@@ -228,7 +245,7 @@ function formatDate(dateStr) {
   return date.toLocaleDateString('ko-KR')
 }
 
-// 페이지네이션 숫자 렌더링용
+// 페이지네이션 가시범위 계산
 const visiblePages = computed(() => {
   const pages = []
   const maxVisible = 5
@@ -239,9 +256,11 @@ const visiblePages = computed(() => {
 })
 
 onMounted(() => {
-  // URL에서 초기 상태 읽어오기
+  // 초기 로드 시 URL 쿼리 파라미터 적용 및 기본값 강제 설정
   currentPage.value = Number(route.query.page) || 0
   currentTab.value = route.query.tab || 'latest'
+  
+  // URL에 값이 없으면 반드시 'titleContent'로 지정되도록 변경
   searchMode.value = route.query.searchMode || 'titleContent'
   searchKeyword.value = route.query.searchKeyword || ''
   
@@ -251,10 +270,19 @@ onMounted(() => {
   fetchPosts()
 })
 
-// 게시판 변경 시 리로드
-watch(() => props.boardId, () => {
-  currentPage.value = 0
-  searchKeyword.value = ''
-  fetchPosts()
+// 게시판 아이디가 바뀔 경우 초기화 및 기본값 복원 후 재호출
+watch(() => props.boardId, (newId) => {
+  if (newId) {
+    currentPage.value = 0
+    currentTab.value = 'latest'
+    
+    // 검색창 완전 초기화
+    searchMode.value = 'titleContent'
+    searchInputMode.value = 'titleContent'
+    searchKeyword.value = ''
+    searchInputKeyword.value = ''
+    
+    fetchPosts()
+  }
 })
 </script>

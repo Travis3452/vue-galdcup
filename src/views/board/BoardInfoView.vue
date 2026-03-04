@@ -7,11 +7,14 @@
         <div class="space-y-4">
           <div class="flex items-center gap-4">
             <span class="w-10 h-10 flex items-center justify-center rounded-xl bg-indigo-600 text-white text-xl font-black shadow-md shrink-0">G</span>
-            <router-link :to="`/boards/${boardId}`" class="group">
-              <h1 class="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight break-keep group-hover:text-indigo-600 transition-colors">
-                {{ board?.topic }}
-              </h1>
-            </router-link>
+            
+            <div class="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+              <router-link :to="`/boards/${boardId}`" class="group">
+                <h1 class="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight break-keep group-hover:text-indigo-600 transition-colors">
+                  {{ board?.topic }}
+                </h1>
+              </router-link>
+              </div>
           </div>
           
           <div class="flex flex-wrap items-center gap-y-2 gap-x-3 text-sm font-medium">
@@ -29,16 +32,10 @@
         </div>
 
         <div v-if="boardStore.isBoardManager" class="flex gap-2 shrink-0">
-          <button
-            @click="showPolicyModal = true"
-            class="px-4 py-2.5 bg-yellow-500 text-white rounded-xl hover:bg-yellow-600 transition text-sm font-bold shadow-sm"
-          >
+          <button @click="showPolicyModal = true" class="px-4 py-2.5 bg-yellow-500 text-white rounded-xl hover:bg-yellow-600 transition text-sm font-bold shadow-sm">
             정책 변경
           </button>
-          <button
-            @click="confirmDeleteBoard"
-            class="px-4 py-2.5 bg-red-500 text-white rounded-xl hover:bg-red-600 transition text-sm font-bold shadow-sm"
-          >
+          <button @click="confirmDeleteBoard" class="px-4 py-2.5 bg-red-500 text-white rounded-xl hover:bg-red-600 transition text-sm font-bold shadow-sm">
             삭제
           </button>
         </div>
@@ -52,10 +49,7 @@
       </div>
 
       <div class="mt-8" v-if="!boardPolicy?.boardManager">
-        <button
-          @click="applyForBoardManager"
-          class="w-full md:w-auto px-8 py-3.5 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 transition text-base font-bold shadow-lg shadow-indigo-200 transform hover:-translate-y-0.5"
-        >
+        <button @click="applyForBoardManager" class="w-full md:w-auto px-8 py-3.5 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 transition text-base font-bold shadow-lg shadow-indigo-200 transform hover:-translate-y-0.5">
           갈드컵 매니저 권한 신청하기
         </button>
       </div>
@@ -72,7 +66,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue' // ✨ computed 추가
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/axios'
 import { useUserStore } from '@/stores/user'
@@ -89,7 +83,6 @@ const boardId = route.params.boardId
 const board = computed(() => boardStore.currentBoard)
 const boardPolicy = ref(null)
 const showPolicyModal = ref(false)
-
 
 async function fetchBoardPolicy() {
   try {
