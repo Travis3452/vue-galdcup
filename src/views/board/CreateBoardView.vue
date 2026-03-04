@@ -61,16 +61,23 @@
         <div class="pt-4 flex flex-col sm:flex-row justify-end gap-4">
           <button 
             @click="router.back()"
-            class="px-8 py-4 bg-white text-slate-600 border-2 border-slate-200 rounded-2xl font-bold text-lg hover:bg-slate-50 hover:border-slate-300 transition w-full sm:w-auto text-center"
+            :disabled="isSubmitting"
+            class="px-8 py-4 bg-white text-slate-600 border-2 border-slate-200 rounded-2xl font-bold text-lg hover:bg-slate-50 hover:border-slate-300 transition w-full sm:w-auto text-center disabled:opacity-50"
           >
             취소
           </button>
+          
           <button 
             @click="handleCreateBoard"
-            :disabled="isSubmitting || description.length < 5"
-            class="px-12 py-4 bg-indigo-600 text-white rounded-2xl font-black text-lg shadow-xl shadow-indigo-200 hover:bg-indigo-700 transition transform hover:-translate-y-1 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 w-full sm:w-auto"
+            :disabled="isSubmitting || description.length < 5 || !topic.trim()"
+            class="relative flex items-center justify-center gap-2 px-12 py-4 bg-indigo-600 text-white rounded-2xl font-black text-lg shadow-xl shadow-indigo-200 hover:bg-indigo-700 transition transform hover:-translate-y-1 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0 w-full sm:w-auto min-w-[180px]"
           >
-            {{ isSubmitting ? '개최 준비 중...' : '갈드컵 열기' }}
+            <svg v-if="isSubmitting" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            
+            <span>{{ isSubmitting ? '개최 준비 중...' : '갈드컵 열기' }}</span>
           </button>
         </div>
 
@@ -88,10 +95,10 @@ const router = useRouter()
 
 const topic = ref('')
 const description = ref('')
+// 통신 중 상태 관리 변수
 const isSubmitting = ref(false)
 const errorMessage = ref('')
 
-// 입력값이 변경되면 에러 메시지를 자동으로 숨깁니다.
 watch([topic, description], () => {
   errorMessage.value = ''
 })
@@ -109,23 +116,20 @@ async function handleCreateBoard() {
     return
   }
 
-  isSubmitting.value = true
+  isSubmitting.value = true // 통신 시작 (버튼에 스피너 돔)
   try {
     const payload = {
       topic: topic.value.trim(),
       description: description.value.trim()
     }
     
-    // [수정] axios 인터셉터에서 토큰을 처리하므로 헤더 수동 주입을 제거했습니다.
     const res = await api.post('/boards', payload)
-    
     const newBoardId = res.data.id || res.data
-    alert('새로운 갈드컵이 성공적으로 개최되었습니다!')
+    
     router.push(`/boards/${newBoardId}`)
   } catch (err) {
     console.error('게시판 생성 실패', err)
     
-    // 서버 검증 에러(400) 처리
     if (err.response && err.response.data && err.response.data.message) {
       errorMessage.value = err.response.data.message
     } else {

@@ -33,16 +33,22 @@
         <div class="flex justify-end gap-4 mt-8 pt-6 border-t-2 border-slate-100">
           <router-link
             :to="`/boards/${boardId}`"
-            class="px-8 py-4 rounded-2xl font-bold text-lg text-slate-600 bg-slate-100 hover:bg-slate-200 transition"
+            class="px-8 py-4 rounded-2xl font-bold text-lg text-slate-600 bg-slate-100 hover:bg-slate-200 transition text-center"
           >
             취소
           </router-link>
+          
           <button
             @click="createPost"
             :disabled="submitting || !title.trim()"
-            class="px-10 py-4 rounded-2xl font-extrabold text-lg text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transition transform hover:-translate-y-1"
+            class="relative flex items-center justify-center gap-2 px-10 py-4 rounded-2xl font-extrabold text-lg text-white bg-indigo-600 shadow-lg hover:bg-indigo-700 hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed transition transform hover:-translate-y-1 disabled:hover:translate-y-0 min-w-[160px]"
           >
-            {{ submitting ? '작성 중...' : '작성 완료' }}
+            <svg v-if="submitting" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            
+            <span>{{ submitting ? '작성 중...' : '작성 완료' }}</span>
           </button>
         </div>
       </div>

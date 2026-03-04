@@ -5,12 +5,20 @@
       
       <div class="p-8 md:p-12">
         <div class="space-y-6 pb-8 border-b-2 border-slate-100">
-          <h1 class="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight leading-snug break-all">
+          
+          <div v-if="isLoading" class="h-10 w-3/4 bg-slate-200 rounded-xl animate-pulse"></div>
+          <h1 v-else class="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight leading-snug break-all">
             {{ post?.title }}
           </h1>
 
           <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-sm font-medium text-slate-500">
-            <div class="flex items-center gap-4">
+            <div v-if="isLoading" class="flex items-center gap-4 w-full md:w-1/2">
+              <div class="h-8 w-24 bg-slate-200 rounded-xl animate-pulse"></div>
+              <div class="h-8 w-32 bg-slate-200 rounded-xl animate-pulse"></div>
+              <div class="h-8 w-20 bg-slate-200 rounded-xl animate-pulse"></div>
+            </div>
+            
+            <div v-else class="flex items-center gap-4">
               <span class="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-xl text-slate-700 border border-slate-100">
                 <span class="text-indigo-500">👤</span> {{ post?.authorNickname }}
               </span>
@@ -24,7 +32,7 @@
             </div>
 
             <div class="flex gap-2 shrink-0">
-              <template v-if="store.id && post?.authorId === store.id">
+              <template v-if="!isLoading && store.id && post?.authorId === store.id">
                 <button @click="editPost" class="px-4 py-2 bg-yellow-50 text-yellow-600 border border-yellow-200 rounded-xl text-sm font-bold hover:bg-yellow-100 transition">
                   수정
                 </button>
@@ -33,7 +41,7 @@
                 </button>
               </template>
 
-              <template v-if="boardStore.isBoardManager || boardStore.isSubManager">
+              <template v-if="!isLoading && (boardStore.isBoardManager || boardStore.isSubManager)">
                 <button @click="adminDeletePost" class="px-4 py-2 bg-slate-800 text-white rounded-xl text-sm font-bold hover:bg-slate-900 transition border border-slate-700">
                   관리자 삭제
                 </button>
@@ -42,9 +50,22 @@
           </div>
         </div>
 
-        <div class="prose max-w-none w-full text-slate-800 text-base md:text-lg leading-relaxed min-h-[400px] py-12 break-words" v-html="post?.content"></div>
+        <div v-if="isLoading" class="min-h-[400px] py-12 space-y-4 w-full max-w-none">
+          <div class="h-6 w-full bg-slate-200 rounded animate-pulse"></div>
+          <div class="h-6 w-full bg-slate-200 rounded animate-pulse"></div>
+          <div class="h-6 w-5/6 bg-slate-200 rounded animate-pulse"></div>
+          <div class="h-6 w-4/6 bg-slate-200 rounded animate-pulse"></div>
+          <div class="h-48 w-full bg-slate-200 rounded-2xl animate-pulse mt-8"></div>
+        </div>
+        
+        <div v-else class="prose max-w-none w-full text-slate-800 text-base md:text-lg leading-relaxed min-h-[400px] py-12 break-words" v-html="post?.content"></div>
 
-        <div class="flex justify-center items-center gap-8 py-10">
+        <div v-if="isLoading" class="flex justify-center items-center gap-8 py-10">
+          <div class="w-32 h-32 rounded-3xl bg-slate-200 animate-pulse"></div>
+          <div class="w-32 h-32 rounded-3xl bg-slate-200 animate-pulse"></div>
+        </div>
+        
+        <div v-else class="flex justify-center items-center gap-8 py-10">
           <button @click="reactToPost('LIKE')" 
                   class="group flex flex-col items-center justify-center w-32 h-32 rounded-3xl bg-slate-50 border border-slate-100 hover:bg-indigo-600 hover:border-indigo-600 shadow-sm hover:shadow-xl hover:shadow-indigo-200 transition-all cursor-pointer">
             <span class="text-4xl mb-2 group-hover:scale-125 transition-transform duration-300">👍</span>
@@ -63,98 +84,14 @@
 
       <div class="h-2 w-full bg-slate-50 border-y border-slate-100"></div>
 
-      <div class="p-8 md:p-12 bg-white">
+      <div v-if="!isLoading" class="p-8 md:p-12 bg-white">
         <h2 class="text-2xl font-extrabold text-slate-800 mb-8 flex items-center gap-3">
           <span class="text-indigo-600">💬</span> 댓글
         </h2>
-
-        <div v-if="comments.length > 0" class="space-y-6 mb-12">
-          <div v-for="comment in comments" :key="comment.id" class="p-6 bg-slate-50 rounded-2xl border border-slate-100 hover:border-indigo-100 transition">
-            <div class="flex justify-between items-start mb-3">
-              <div class="flex items-center gap-3">
-                <span class="font-bold text-slate-800 text-lg">👤 {{ comment.authorNickname }}</span>
-                <span class="text-sm font-medium text-slate-500">
-                  {{ formatDate(comment.createdAt) }}
-                  <span v-if="comment.updatedAt && comment.updatedAt !== comment.createdAt" class="italic">(수정됨)</span>
-                </span>
-              </div>
-              <div v-if="store.id && comment.authorId === store.id" class="flex gap-3">
-                <button @click="editComment(comment)" class="text-sm font-bold text-slate-400 hover:text-yellow-600 transition">수정</button>
-                <button @click="deleteComment(comment.id)" class="text-sm font-bold text-slate-400 hover:text-red-600 transition">삭제</button>
-              </div>
-            </div>
-            
-            <p class="text-slate-800 text-lg leading-relaxed mb-4 font-medium">{{ comment.content }}</p>
-
-            <button @click="toggleReplyBox(comment.id)" class="text-sm font-bold text-indigo-500 hover:text-indigo-700 transition flex items-center gap-1">
-              답글 달기
-            </button>
-
-            <div v-if="replies[comment.id] && replies[comment.id].length > 0" class="mt-4 ml-4 md:ml-8 pl-4 border-l-2 border-indigo-200 space-y-4">
-              <div v-for="reply in replies[comment.id]" :key="reply.id" class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-                <div class="flex justify-between items-start mb-2">
-                  <div class="flex items-center gap-2">
-                    <span class="font-bold text-slate-800 text-sm">👤 {{ reply.authorNickname }}</span>
-                    <span class="text-xs font-medium text-slate-500">
-                      {{ formatDate(reply.createdAt) }}
-                      <span v-if="reply.updatedAt && reply.updatedAt !== reply.createdAt" class="italic">(수정됨)</span>
-                    </span>
-                  </div>
-                  <div v-if="store.id && reply.authorId === store.id" class="flex gap-2">
-                    <button @click="editReply(reply)" class="text-xs font-bold text-slate-400 hover:text-yellow-600 transition">수정</button>
-                    <button @click="deleteReply(reply.id)" class="text-xs font-bold text-slate-400 hover:text-red-600 transition">삭제</button>
-                  </div>
-                </div>
-                <p class="text-slate-800 text-sm font-medium">{{ reply.content }}</p>
-              </div>
-            </div>
-
-            <div v-if="activeReplyBox === comment.id" class="mt-4 ml-4 md:ml-8 bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-3">
-              <textarea v-model="newReplies[comment.id]" rows="2"
-                class="w-full border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm resize-none bg-slate-50"
-                placeholder="답글 내용을 입력하세요..."></textarea>
-              <div class="flex justify-end">
-                <button @click="createReply(comment.id)" class="px-6 py-2 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition shadow-md">
-                  작성 완료
-                </button>
-              </div>
-            </div>
-          </div>
+        
         </div>
-
-        <div v-else class="py-12 text-center text-slate-400 font-medium italic border-2 border-dashed border-slate-200 rounded-2xl mb-8">
-          아직 작성된 댓글이 없습니다. 첫 번째 댓글을 남겨보세요!
-        </div>
-
-        <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 flex flex-col gap-4">
-          <textarea v-model="newComment" rows="3"
-            class="w-full border border-slate-300 rounded-xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none text-slate-800 font-medium bg-white"
-            placeholder="댓글을 입력하세요..."></textarea>
-          <div class="flex justify-end">
-            <button @click="createComment" class="px-8 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition shadow-md">
-              작성 완료
-            </button>
-          </div>
-        </div>
-
-        <div v-if="totalPages > 1" class="flex justify-center items-center gap-2 mt-10">
-          <button @click="prevPage" :disabled="currentPage === 0"
-            class="px-4 py-2 bg-white border border-slate-200 text-slate-600 font-bold rounded-lg hover:bg-slate-50 disabled:opacity-40 transition">이전</button>
-          
-          <button v-for="page in visiblePages" :key="page" @click="goToPage(page - 1)"
-            :class="['px-4 py-2 rounded-lg font-bold transition', 
-              currentPage + 1 === page 
-              ? 'bg-indigo-600 text-white shadow-md' 
-              : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50']">
-            {{ page }}
-          </button>
-
-          <button @click="nextPage" :disabled="!hasNextPage"
-            class="px-4 py-2 bg-white border border-slate-200 text-slate-600 font-bold rounded-lg hover:bg-slate-50 disabled:opacity-40 transition">다음</button>
-        </div>
-      </div>
       
-      <div class="p-8 md:p-12 border-t border-slate-200 bg-slate-50">
+      <div v-if="!isLoading" class="p-8 md:p-12 border-t border-slate-200 bg-slate-50">
         <PostList
           :boardId="route.params.boardId"
           :page="Number(route.query.page) || 0"
@@ -189,6 +126,9 @@ const currentPage = ref(0)
 const totalPages = ref(0)
 const hasNextPage = ref(false)
 const activeReplyBox = ref(null)
+
+// ✨ 로딩 상태 변수 추가 (기본값 true)
+const isLoading = ref(true)
 
 // --- Computed ---
 const visiblePages = computed(() => {
@@ -374,11 +314,22 @@ async function nextPage() {
   if (hasNextPage.value) await goToPage(currentPage.value + 1)
 }
 
-// --- 초기화 ---
+// --- 초기화 (✨ Promise.all 병렬 처리 & 로딩 상태 제어) ---
 onMounted(async () => {
   const postId = route.params.postId
-  await fetchPost(postId)
-  await fetchComments(postId)
-  await boardStore.fetchBoardPolicy(route.params.boardId)
+  isLoading.value = true // 스켈레톤 애니메이션 시작
+
+  try {
+    // 게시글, 댓글, 게시판 정책을 동시에 불러옵니다 (체감 속도 🚀)
+    await Promise.all([
+      fetchPost(postId),
+      fetchComments(postId),
+      boardStore.fetchBoardPolicy(route.params.boardId)
+    ])
+  } catch (err) {
+    console.error('데이터 로딩 실패:', err)
+  } finally {
+    isLoading.value = false // 스켈레톤 종료, 화면 렌더링
+  }
 })
 </script>

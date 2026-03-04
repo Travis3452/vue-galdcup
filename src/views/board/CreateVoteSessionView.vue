@@ -89,31 +89,48 @@
                     @change="(e) => onImageUpload(e, idx)"
                     class="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition cursor-pointer"
                   />
+                  
                   <div v-if="optionPreviews[idx]" class="mt-4 rounded-xl overflow-hidden border-2 border-slate-100 aspect-video relative group/img">
                     <img :src="optionPreviews[idx]" class="w-full h-full object-cover" />
-                    <div class="absolute inset-0 bg-black/20 flex items-center justify-center transition-opacity" :class="optionImages[idx] ? 'opacity-0 group-hover/img:opacity-100' : 'opacity-100'">
-                      <span v-if="optionImages[idx]" class="bg-black/70 text-white px-3 py-1.5 rounded-lg text-xs font-bold backdrop-blur-sm border border-white/20">이미지 등록 완료</span>
-                      <span v-else class="bg-indigo-600/90 text-white px-3 py-1.5 rounded-lg text-xs font-bold animate-pulse backdrop-blur-sm">업로드 중...</span>
+                    <div 
+                      class="absolute inset-0 bg-black/20 flex items-center justify-center transition-opacity" 
+                      :class="optionImages[idx] ? 'opacity-0 group-hover/img:opacity-100' : 'opacity-100'"
+                    >
+                      <span v-if="optionImages[idx]" class="bg-black/70 text-white px-3 py-1.5 rounded-lg text-xs font-bold backdrop-blur-sm border border-white/20">
+                        이미지 등록 완료
+                      </span>
+                      <span v-else class="bg-indigo-600/90 text-white px-3 py-1.5 rounded-lg text-xs font-bold animate-pulse backdrop-blur-sm">
+                        업로드 중...
+                      </span>
                     </div>
                   </div>
+
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="pt-8 border-t-2 border-slate-100 flex justify-end gap-4">
-          <button 
-            @click="createVoteSession"
-            class="px-12 py-4 bg-indigo-600 text-white rounded-2xl font-black text-lg shadow-xl shadow-indigo-200 hover:bg-indigo-700 transition transform hover:-translate-y-1 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            투표 생성하기
-          </button>
+        <div class="pt-8 border-t-2 border-slate-100 flex flex-col sm:flex-row justify-end gap-4">
           <button 
             @click="router.back()"
-            class="px-8 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold text-lg hover:bg-slate-200 transition"
+            :disabled="isSubmitting"
+            class="px-8 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold text-lg hover:bg-slate-200 transition text-center disabled:opacity-50"
           >
             취소
+          </button>
+          
+          <button 
+            @click="createVoteSession"
+            :disabled="isSubmitting || !isFormValid"
+            class="relative flex items-center justify-center gap-2 px-12 py-4 bg-indigo-600 text-white rounded-2xl font-black text-lg shadow-xl shadow-indigo-200 hover:bg-indigo-700 transition transform hover:-translate-y-1 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0 min-w-[200px]"
+          >
+            <svg v-if="isSubmitting" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            
+            <span>{{ isSubmitting ? '생성 중...' : '투표 생성하기' }}</span>
           </button>
         </div>
 
@@ -123,7 +140,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/axios'
 import { uploadImage } from '@/services/uploadImage'
@@ -133,7 +150,9 @@ const router = useRouter()
 
 const boardTitle = ref('')
 
-// 날짜 초기화 로직 (다음날 0시)
+// ✨ 서버 전송 상태를 관리하는 변수 추가
+const isSubmitting = ref(false)
+
 function getTomorrowMidnight() {
   const now = new Date()
   now.setDate(now.getDate() + 1)
@@ -147,14 +166,12 @@ const startTime = ref(getTomorrowMidnight())
 const endTime = ref('')
 const options = ref(['', ''])
 
-// 이미지 관련 상태 분리
-const optionPreviews = ref([null, null]) // 로컬 미리보기용
-const optionImages = ref([null, null])   // 서버 업로드 완료된 URL
+const optionPreviews = ref([null, null])
+const optionImages = ref([null, null])
 
 onMounted(async () => {
   const boardId = route.params.boardId
   try {
-    // [수정] 헤더 수동 주입 제거
     const res = await api.get(`/boards/${boardId}`)
     boardTitle.value = res.data.topic
   } catch (err) {
@@ -176,19 +193,16 @@ function removeOption(idx) {
   }
 }
 
-// 시간 포맷 변환 (서버 전송용 KST 보정)
 function toSeoulOffsetDateTime(dtLocalValue) {
   if (!dtLocalValue) return null
   const normalized = dtLocalValue.length === 16 ? `${dtLocalValue}:00` : dtLocalValue
   return new Date(normalized + '+09:00').toISOString()
 }
 
-// 이미지 업로드 핸들러
 async function onImageUpload(event, idx) {
   const file = event.target.files?.[0]
   if (!file) return
   
-  // 미리보기 즉시 표시
   optionPreviews.value[idx] = URL.createObjectURL(file)
   optionImages.value[idx] = null 
 
@@ -202,11 +216,16 @@ async function onImageUpload(event, idx) {
   }
 }
 
-// 투표 생성 전송
+// ✨ 버튼 비활성화 조건을 체크하는 computed 속성
+const isFormValid = computed(() => {
+  // 빈 칸이 아닌 옵션이 최소 2개 이상이어야 함
+  const validOptionsCount = options.value.filter(opt => opt.trim() !== '').length
+  return validOptionsCount >= 2 && startTime.value && endTime.value
+})
+
 async function createVoteSession() {
   const boardId = route.params.boardId
 
-  // 업로드 중인지 체크
   const isUploading = optionPreviews.value.some((preview, idx) => preview !== null && optionImages.value[idx] === null)
   if (isUploading) {
     alert("이미지가 아직 서버에 업로드 중입니다. 잠시만 기다려주세요.")
@@ -220,29 +239,24 @@ async function createVoteSession() {
     }))
     .filter(opt => opt.label !== "")
 
-  if (mappedOptions.length < 2) {
-    alert("최소 2개 이상의 선택지(후보)를 입력해야 합니다.")
-    return
-  }
-  if (!startTime.value || !endTime.value) {
-    alert("시작 일시와 종료 일시를 모두 설정해주세요.")
-    return
-  }
-
   const payload = {
     startTime: toSeoulOffsetDateTime(startTime.value),
     endTime: toSeoulOffsetDateTime(endTime.value),
     options: mappedOptions
   }
 
+  isSubmitting.value = true // 스피너 시작
+
   try {
-    // [수정] 헤더 수동 주입 제거
     await api.post(`/boards/${boardId}/vote-session`, payload)
-    alert('새로운 갈드컵 투표가 성공적으로 열렸습니다!')
+    // 부드러운 전환을 위해 alert 제거 추천
+    // alert('새로운 갈드컵 투표가 성공적으로 열렸습니다!')
     router.push(`/boards/${boardId}`)
   } catch (err) {
     console.error("생성 실패:", err.response?.data)
     alert("갈드컵 생성에 실패했습니다. 입력값을 확인해주세요.")
+  } finally {
+    isSubmitting.value = false // 스피너 정지
   }
 }
 </script>
