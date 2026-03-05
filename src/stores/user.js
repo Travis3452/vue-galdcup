@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia'
-import api from '@/axios'
+import axios from 'axios' // reissue에서 직접 사용하기 위해 기본 axios 임포트
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 function parseJwt(token) {
   try {
@@ -27,7 +29,8 @@ export const useUserStore = defineStore('user', {
   
   getters: {
     isAdmin: (state) => state.role?.includes('ADMIN') || false,
-    isManager: (state) => state.role?.includes('MANAGER') || false
+    isManager: (state) => state.role?.includes('MANAGER') || false,
+    isLoggedIn: (state) => !!state.accessToken
   },
   
   actions: {
@@ -70,17 +73,23 @@ export const useUserStore = defineStore('user', {
       }
     },
 
+    // ✨ reissue 액션 추가 (NavBar.vue 에러 해결)
     async reissue() {
       try {
-        const response = await api.post('/auth/refresh')
-        const { accessToken, nickname } = response.data
+        // 인터셉터가 없는 기본 axios 인스턴스로 요청 (무한루프 방지)
+        const response = await axios.post(
+          `${API_BASE_URL}/api/auth/refresh`,
+          {},
+          { withCredentials: true }
+        );
         
-        this.login(accessToken, nickname)
-        return true
+        const { accessToken, nickname } = response.data;
+        this.login(accessToken, nickname);
+        return true;
       } catch (error) {
-        console.error("토큰 재발급 실패:", error)
-        this.logout()
-        return false
+        console.error("토큰 재발급 실패:", error);
+        this.logout();
+        return false;
       }
     }
   }
