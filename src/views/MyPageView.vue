@@ -6,7 +6,16 @@
         <div class="bg-white rounded-[2rem] shadow-xl p-8 border border-indigo-50 relative overflow-hidden flex flex-col items-center text-center">
           <div class="absolute -top-20 -right-20 w-48 h-48 bg-indigo-50 rounded-full blur-3xl pointer-events-none opacity-60"></div>
           
-          <div class="relative z-10 w-full">
+          <div v-if="isLoading" class="relative z-10 w-full animate-pulse">
+            <div class="w-24 h-24 mx-auto bg-slate-200 rounded-full mb-4"></div>
+            <div class="w-32 h-7 bg-slate-200 rounded-lg mx-auto mb-2"></div>
+            <div class="w-48 h-4 bg-slate-100 rounded-full mx-auto mb-8"></div>
+            <div class="space-y-3">
+              <div v-for="i in 5" :key="i" class="w-full h-12 bg-slate-100 rounded-2xl"></div>
+            </div>
+          </div>
+
+          <div v-else class="relative z-10 w-full">
             <div class="w-24 h-24 mx-auto bg-indigo-100 rounded-full flex items-center justify-center text-4xl mb-4 shadow-inner border-4 border-white font-black">
               <span class="text-indigo-600">{{ user.nickname ? user.nickname.charAt(0) : '👤' }}</span>
             </div>
@@ -62,7 +71,14 @@
             <span v-else-if="currentTab === 'withdraw'" class="text-rose-500">🚪 회원 탈퇴</span>
           </h3>
 
-          <div v-if="['posts', 'comments'].includes(currentTab)" class="flex-1 flex flex-col">
+          <div v-if="isLoading" class="flex-1 space-y-4 animate-pulse">
+            <div v-if="['posts', 'comments', 'approval'].includes(currentTab)" class="space-y-4">
+              <div v-for="i in 5" :key="i" class="w-full h-20 bg-slate-50 border border-slate-100 rounded-2xl"></div>
+            </div>
+            <div v-else class="w-full h-40 bg-slate-50 rounded-2xl"></div>
+          </div>
+
+          <div v-else-if="['posts', 'comments'].includes(currentTab)" class="flex-1 flex flex-col">
             <div class="flex-1">
               <div v-if="items.length > 0" class="flex flex-col gap-4">
                 <router-link
@@ -164,6 +180,8 @@ const store = useUserStore()
 const router = useRouter()
 const route = useRoute()
 
+// --- 상태 관리 ---
+const isLoading = ref(true) // ✨ 로딩 상태 추가
 const currentTab = ref('posts')
 const items = ref([])
 const roleRequests = ref([])
@@ -176,24 +194,39 @@ const errorMessage = ref('')
 
 onMounted(async () => {
   if (route.query.tab) currentTab.value = route.query.tab
-  await fetchUser()
-  handleTabData()
+  
+  isLoading.value = true // 로딩 시작
+  try {
+    await fetchUser()
+    await handleTabData()
+  } finally {
+    // 자연스러운 전환을 위해 0.4초 지연
+    setTimeout(() => {
+      isLoading.value = false
+    }, 400)
+  }
 })
 
-function changeTab(tab) {
+async function changeTab(tab) {
   currentTab.value = tab
   currentPage.value = 0
   errorMessage.value = ''
   router.replace({ query: { tab, page: 0 } })
-  handleTabData()
+  
+  isLoading.value = true
+  try {
+    await handleTabData()
+  } finally {
+    isLoading.value = false
+  }
 }
 
-function handleTabData() {
-  if (['posts', 'comments'].includes(currentTab.value)) fetchData()
-  if (currentTab.value === 'approval') fetchRoleRequests()
+async function handleTabData() {
+  if (['posts', 'comments'].includes(currentTab.value)) await fetchData()
+  if (currentTab.value === 'approval') await fetchRoleRequests()
 }
 
-// --- API 로직 (Axios 인터셉터 활용, 헤더 수동 주입 제거) ---
+// --- API 로직 ---
 
 async function fetchUser() {
   try {
@@ -270,5 +303,19 @@ async function requestRole() {
 // --- 유틸리티 ---
 const getItemLink = (item) => `/boards/${item.boardId || 1}/posts/${currentTab.value === 'comments' ? item.postId : item.id}`
 const formatDate = (str) => str ? new Date(str).toLocaleDateString('ko-KR') : ''
-const goToPage = (p) => { currentPage.value = p; fetchData(); }
+const goToPage = async (p) => { 
+  currentPage.value = p
+  isLoading.value = true
+  await fetchData()
+  isLoading.value = false
+}
+
+const closePopup = () => {
+  if (window.opener && !window.opener.closed) {
+    window.close();
+  } else {
+    alert("브라우저 보안 설정으로 인해 창을 자동으로 닫을 수 없습니다. 탭을 직접 닫아주세요.");
+    self.close();
+  }
+};
 </script>

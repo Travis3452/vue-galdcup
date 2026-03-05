@@ -278,7 +278,7 @@ async function deletePost() {
 async function adminDeletePost() {
   if (!confirm('관리자 권한으로 게시글을 삭제하시겠습니까?')) return
   try {
-    await api.delete(`/boards/${route.params.boardId}/posts/${post.value.id}/admin-delete`)
+    await api.delete(`/posts/board/${route.params.boardId}/post/${post.value.id}`)
     alert('관리자 권한으로 삭제되었습니다.')
     router.push(`/boards/${route.params.boardId}`)
   } catch (err) {

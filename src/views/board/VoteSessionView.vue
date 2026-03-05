@@ -1,10 +1,35 @@
 <template>
   <div class="space-y-6 mb-12">
-    <div v-if="voteSession" class="bg-white rounded-[2rem] shadow-xl p-8 md:p-12 border border-indigo-50 relative overflow-hidden text-center transition-all duration-500">
+    <div v-if="isLoading" class="bg-white rounded-[2rem] shadow-xl p-8 md:p-12 border border-slate-50 animate-pulse">
+      <div class="space-y-8">
+        <div class="flex justify-between items-center">
+          <div class="w-24 h-8 bg-slate-200 rounded-2xl"></div>
+          <div class="w-10 h-10 bg-slate-100 rounded-full"></div>
+        </div>
+        
+        <div class="flex flex-col items-center space-y-4">
+          <div class="w-3/4 h-10 bg-slate-200 rounded-xl"></div>
+          <div class="w-1/2 h-4 bg-slate-100 rounded-lg"></div>
+        </div>
+
+        <div class="flex items-center justify-center gap-8 py-4 flex-wrap">
+          <div v-for="i in 2" :key="i" class="flex flex-col items-center w-40 md:w-48">
+            <div class="w-full aspect-square bg-slate-200 rounded-[2rem] mb-4"></div>
+            <div class="w-2/3 h-6 bg-slate-200 rounded-lg mb-4"></div>
+            <div class="w-full h-3 bg-slate-100 rounded-full"></div>
+          </div>
+        </div>
+
+        <div class="flex justify-center pt-6">
+          <div class="w-48 h-16 bg-slate-200 rounded-2xl"></div>
+        </div>
+      </div>
+    </div>
+
+    <div v-else-if="voteSession" class="bg-white rounded-[2rem] shadow-xl p-8 md:p-12 border border-indigo-50 relative overflow-hidden text-center transition-all duration-500">
       <div class="absolute -bottom-20 -left-20 w-64 h-64 bg-blue-50 rounded-full blur-3xl pointer-events-none opacity-60"></div>
 
       <div class="relative z-10 space-y-8">
-        
         <div class="flex items-center justify-between">
           <div v-if="voteStatus === 'UPCOMING'" 
                class="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-600 rounded-2xl font-black text-sm uppercase tracking-widest shadow-sm border border-amber-100">
@@ -123,22 +148,7 @@
       </div>
     </div>
 
-    <div v-if="isManager && voteSession" class="bg-indigo-900 rounded-2xl p-6 flex flex-col sm:flex-row justify-between items-center shadow-lg gap-4">
-      <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-lg bg-indigo-700 flex items-center justify-center text-white">⚙️</div>
-        <h4 class="text-white font-bold tracking-tight text-lg">갈드컵 관리 도구</h4>
-      </div>
-      <div class="flex gap-3 w-full sm:w-auto">
-        <button 
-          v-if="!voteSession.isFinished" 
-          @click="handleFinishVote"
-          class="flex-1 sm:flex-none px-6 py-2 bg-red-500 text-white text-sm font-bold rounded-xl shadow-md hover:bg-red-600 transition transform active:scale-95"
-        >
-          투표 즉시 마감
-        </button>
-      </div>
     </div>
-  </div>
 </template>
 
 <script setup>
@@ -156,63 +166,16 @@ const userStore = useUserStore();
 
 const boardId = route.params.boardId;
 
+// --- 1. 상태 관리 변수 ---
+const isLoading = ref(true); // 스켈레톤 UI 제어
+const isExpanded = ref(true); // 아코디언 확장 여부
+let client = null; // 웹소켓 클라이언트
+
+// --- 2. Computed 데이터 (템플릿에서 직접 참조됨) ---
 const voteSession = computed(() => boardStore.currentVoteSession);
 const isManager = computed(() => boardStore.isBoardManager);
 
-const isExpanded = ref(true);
-
-// --- WebSocket 관련 로직 ---
-let client = null;
-
-const connectWebSocket = () => {
-  // 불필요한 연결 방지
-  if (!voteSession.value || voteSession.value.isFinished || client) return;
-
-  const baseURL = import.meta.env.VITE_API_BASE_URL;
-  // http -> ws / https -> wss 자동 변환
-  const socketURL = baseURL.replace(/^http/, 'ws') + '/ws-galdcup';
-
-  client = new Client({
-    brokerURL: socketURL,
-    reconnectDelay: 5000,
-    heartbeatIncoming: 4000,
-    heartbeatOutgoing: 4000,
-    onConnect: () => {
-      console.log('실시간 투표 통계 구독 시작');
-      
-      client.subscribe(`/topic/votes/${voteSession.value.id}`, (message) => {
-        if (message.body) {
-          const countsMap = JSON.parse(message.body);
-          
-          // Pinia Store 상태 직접 업데이트 (반응형 반영)
-          if (boardStore.currentVoteSession?.options) {
-            boardStore.currentVoteSession.options.forEach((opt, index) => {
-              if (countsMap[index] !== undefined) {
-                opt.count = countsMap[index];
-              }
-            });
-          }
-        }
-      });
-    },
-    onStompError: (frame) => {
-      console.error('STOMP 프로토콜 에러:', frame.headers['message']);
-    },
-    onWebSocketClose: () => {
-      console.log('WebSocket 연결 종료');
-    }
-  });
-
-  client.activate();
-};
-
-const disconnectWebSocket = () => {
-  if (client) {
-    client.deactivate();
-    client = null;
-  }
-};
-
+// 투표 상태 계산 (UPCOMING, LIVE, FINISHED)
 const voteStatus = computed(() => {
   if (!voteSession.value) return null;
   if (voteSession.value.isFinished) return 'FINISHED';
@@ -226,26 +189,65 @@ const voteStatus = computed(() => {
   return 'LIVE';
 });
 
-// 상태 변화에 따른 UI 확장/축소 및 소켓 관리
-watch(voteStatus, (newStatus) => {
-  if (newStatus === 'LIVE') {
-    isExpanded.value = true;
-    connectWebSocket(); // 상태가 LIVE로 변하면 소켓 연결
-  } else {
-    isExpanded.value = false;
-    disconnectWebSocket(); // 그 외 상태에선 소켓 해제
-  }
-}, { immediate: true });
+// --- 3. 유틸리티 함수 ---
+const formatDate = (dateStr) => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  return date.toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' });
+};
 
+// ✨ [NaN 방지] 퍼센트 계산 로직
+const calculatePercentage = (count) => {
+  if (!voteSession.value?.options) return 0;
+  // 모든 count를 숫자로 변환하여 합계 계산 (문자열 결합 방지)
+  const total = voteSession.value.options.reduce((acc, cur) => acc + Number(cur.count || 0), 0);
+  if (total === 0) return 0;
+  return (Number(count || 0) / total) * 100;
+};
+
+// --- 4. WebSocket (실시간 통계) 로직 ---
+const connectWebSocket = () => {
+  if (!voteSession.value || voteSession.value.isFinished || client) return;
+
+  const baseURL = import.meta.env.VITE_API_BASE_URL;
+  const socketURL = baseURL.replace(/^http/, 'ws') + '/ws-galdcup';
+
+  client = new Client({
+    brokerURL: socketURL,
+    reconnectDelay: 5000,
+    onConnect: () => {
+      console.log('실시간 통계 구독 성공');
+      client.subscribe(`/topic/votes/${voteSession.value.id}`, (message) => {
+        if (message.body) {
+          const countsMap = JSON.parse(message.body);
+          if (boardStore.currentVoteSession?.options) {
+            boardStore.currentVoteSession.options.forEach((opt, index) => {
+              if (countsMap[index] !== undefined) {
+                opt.count = countsMap[index];
+              }
+            });
+          }
+        }
+      });
+    }
+  });
+  client.activate();
+};
+
+const disconnectWebSocket = () => {
+  if (client) {
+    client.deactivate();
+    client = null;
+  }
+};
+
+// --- 5. 이벤트 핸들러 ---
 const toggleExpanded = () => {
   isExpanded.value = !isExpanded.value;
 };
 
 const handleCreateVote = () => {
-  router.push({ 
-    name: 'CreateVoteSession', 
-    params: { boardId: boardId } 
-  });
+  router.push({ name: 'CreateVoteSession', params: { boardId: boardId } });
 };
 
 const handleFinishVote = async () => {
@@ -261,43 +263,39 @@ const handleFinishVote = async () => {
 
 const onVoteClick = () => {
   if (voteStatus.value !== 'LIVE') return;
-
   const width = 800;
   const height = 800;
   const left = window.screenX + (window.outerWidth - width) / 2;
   const top = window.screenY + (window.outerHeight - height) / 2;
-  const url = `/boards/${boardId}/votes/${voteSession.value.id}`;
-
-  window.open(
-    url, 
-    '_blank', 
-    `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`
-  );
+  window.open(`/boards/${boardId}/votes/${voteSession.value.id}`, '_blank', 
+    `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`);
 };
 
-const formatDate = (dateStr) => {
-  if (!dateStr) return '';
-  const date = new Date(dateStr);
-  return date.toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' });
-};
-
-const calculatePercentage = (count) => {
-  if (!voteSession.value?.options) return 0;
-  const total = voteSession.value.options.reduce((acc, cur) => acc + (cur.count || 0), 0);
-  return total === 0 ? 0 : (count / total) * 100;
-};
+// --- 6. 생명주기 및 감시자 ---
+watch(voteStatus, (newVal) => {
+  if (newVal === 'LIVE') {
+    isExpanded.value = true;
+    connectWebSocket();
+  } else {
+    disconnectWebSocket();
+  }
+}, { immediate: true });
 
 onMounted(async () => {
   if (boardId) {
-    // 초기 데이터 로딩
-    await Promise.all([
-      boardStore.fetchBoardPolicy(boardId),
-      boardStore.fetchVoteSession(boardId)
-    ]);
-    
-    // 로딩 후 상태가 LIVE라면 소켓 연결 (watch에서 immediate로 처리되지만 안전장치)
-    if (voteStatus.value === 'LIVE') {
-      connectWebSocket();
+    isLoading.value = true;
+    try {
+      await Promise.all([
+        boardStore.fetchBoardPolicy(boardId),
+        boardStore.fetchVoteSession(boardId)
+      ]);
+    } catch (err) {
+      console.error('데이터 로딩 실패:', err);
+    } finally {
+      // 자연스러운 전환을 위해 아주 짧은 지연 후 로딩 종료
+      setTimeout(() => {
+        isLoading.value = false;
+      }, 300);
     }
   }
 });
@@ -306,13 +304,3 @@ onUnmounted(() => {
   disconnectWebSocket();
 });
 </script>
-
-<style scoped>
-.grayscale {
-  filter: grayscale(1);
-}
-.italic {
-  font-style: italic;
-  text-shadow: 0 0 15px rgba(220, 38, 38, 0.3);
-}
-</style>
