@@ -147,7 +147,21 @@
         </button>
       </div>
     </div>
-
+    <div v-if="isManager && voteSession" class="bg-indigo-900 rounded-2xl p-6 flex flex-col sm:flex-row justify-between items-center shadow-lg gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-indigo-700 flex items-center justify-center text-white">⚙️</div>
+        <h4 class="text-white font-bold tracking-tight text-lg">갈드컵 관리 도구</h4>
+      </div>
+      <div class="flex gap-3 w-full sm:w-auto">
+        <button 
+          v-if="!voteSession.isFinished" 
+          @click="handleFinishVote"
+          class="flex-1 sm:flex-none px-6 py-2 bg-red-500 text-white text-sm font-bold rounded-xl shadow-md hover:bg-red-600 transition transform active:scale-95"
+        >
+          투표 즉시 마감
+        </button>
+      </div>
+    </div>
     </div>
 </template>
 
