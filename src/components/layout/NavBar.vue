@@ -2,10 +2,7 @@
   <header class="relative z-50 bg-slate-300 border-b border-slate-300 shadow-sm px-6 py-4 flex justify-between items-center transition-all">
     
     <router-link to="/" class="flex items-center gap-3 group shrink-0">
-      <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-md group-hover:bg-indigo-500 transition transform group-hover:-translate-y-0.5">
-        G
-      </div>
-      <span class="text-2xl font-extrabold text-slate-800 tracking-tight group-hover:text-indigo-600 transition hidden sm:block">
+      <span class="text-2xl font-extrabold text-indigo-600 tracking-tight transition-all duration-200 group-hover:-translate-y-0.5 group-hover:scale-105 hidden sm:block">
         Galdcup
       </span>
     </router-link>
