@@ -6,9 +6,16 @@
       <div class="p-8 md:p-12">
         <div class="space-y-6 pb-8 border-b-2 border-slate-100">
           
-          <div v-if="isLoading" class="h-10 w-3/4 bg-slate-200 rounded-xl animate-pulse"></div>
-          <h1 v-else class="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight leading-snug break-all">
-            {{ post?.title }}
+          <div v-if="isLoading" class="flex items-center gap-3">
+            <div class="h-10 w-24 bg-slate-200 rounded-xl animate-pulse"></div>
+            <div class="h-10 w-3/4 bg-slate-200 rounded-xl animate-pulse"></div>
+          </div>
+
+          <h1 v-else class="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight leading-snug break-all flex flex-wrap items-center gap-3">
+            <span class="inline-flex items-center px-3.5 py-1.5 rounded-xl bg-indigo-50 text-indigo-600 text-sm md:text-base font-black border border-indigo-100 uppercase tracking-wider shrink-0">
+              {{ post?.categoryType === 'NOTICE' ? '📢 ' : '' }}{{ post?.categoryName || '일반' }}
+            </span>
+            <span class="flex-1">{{ post?.title }}</span>
           </h1>
 
           <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-sm font-medium text-slate-500">
@@ -54,7 +61,6 @@
           <div class="h-6 w-full bg-slate-200 rounded animate-pulse"></div>
           <div class="h-6 w-full bg-slate-200 rounded animate-pulse"></div>
           <div class="h-6 w-5/6 bg-slate-200 rounded animate-pulse"></div>
-          <div class="h-6 w-4/6 bg-slate-200 rounded animate-pulse"></div>
           <div class="h-48 w-full bg-slate-200 rounded-2xl animate-pulse mt-8"></div>
         </div>
         
@@ -88,13 +94,11 @@
         <h2 class="text-2xl font-extrabold text-slate-800 mb-8 flex items-center gap-3">
           <span class="text-indigo-600">💬</span> 댓글
         </h2>
-        
         </div>
       
       <div v-if="!isLoading" class="p-8 md:p-12 border-t border-slate-200 bg-slate-50">
         <PostList
           :boardId="route.params.boardId"
-          :page="Number(route.query.page) || 0"
           :selectedPostId="post?.id"
         />
       </div>
@@ -104,7 +108,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useBoardStore } from '@/stores/board'
@@ -116,35 +120,14 @@ const route = useRoute()
 const router = useRouter()
 const boardStore = useBoardStore()
 
-// --- 상태 관리 ---
+// 상태 변수
 const post = ref(null)
-const comments = ref([])
-const replies = ref({})
-const newComment = ref('')
-const newReplies = ref({})
-const currentPage = ref(0)
-const totalPages = ref(0)
-const hasNextPage = ref(false)
-const activeReplyBox = ref(null)
-
-// ✨ 로딩 상태 변수 추가 (기본값 true)
 const isLoading = ref(true)
 
-// --- Computed ---
-const visiblePages = computed(() => {
-  const pages = []
-  const maxVisible = 5
-  const start = Math.max(1, currentPage.value + 1 - Math.floor(maxVisible / 2))
-  const end = Math.min(totalPages.value, start + maxVisible - 1)
-  for (let i = start; i <= end; i++) pages.push(i)
-  return pages
-})
-
-// --- 유틸리티 ---
+// 유틸리티: 날짜 포맷
 function formatDate(dateStr) {
   if (!dateStr) return ''
-  const date = new Date(dateStr)
-  return date.toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' })
+  return new Date(dateStr).toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' })
 }
 
 // 게시글 데이터 호출
@@ -158,111 +141,14 @@ async function fetchPost(postId) {
   }
 }
 
-// 댓글 및 답글 호출
-async function fetchComments(postId) {
-  try {
-    const res = await api.get(`/comments/post/${postId}`, {
-      params: { size: 30, page: currentPage.value }
-    })
-
-    comments.value = res.data.content ?? res.data
-    totalPages.value = res.data.totalPages ?? 1
-    hasNextPage.value = !res.data.last
-
-    const newRepliesMap = { ...replies.value }
-    for (const comment of comments.value) {
-      const replyRes = await api.get(`/replies/comment/${comment.id}`)
-      newRepliesMap[comment.id] = replyRes.data
-    }
-    replies.value = newRepliesMap
-  } catch (err) {
-    console.error('댓글 조회 실패:', err)
-  }
-}
-
-// 댓글 작성
-async function createComment() {
-  if (!newComment.value.trim()) return
-  try {
-    await api.post(`/comments`, {
-      postId: post.value.id,
-      content: newComment.value.trim()
-    })
-    newComment.value = ''
-    await fetchComments(post.value.id)
-  } catch (err) {
-    alert(err.response?.data?.message || '댓글 작성 중 오류가 발생했습니다.')
-  }
-}
-
-// 답글 작성
-async function createReply(commentId) {
-  const content = newReplies.value[commentId]
-  if (!content || !content.trim()) return
-  try {
-    await api.post(`/replies`, {
-      commentId,
-      content: content.trim()
-    })
-    newReplies.value[commentId] = ''
-    activeReplyBox.value = null
-    await fetchComments(post.value.id)
-  } catch (err) {
-    alert(err.response?.data?.message || '답글 작성 중 오류가 발생했습니다.')
-  }
-}
-
-// 댓글 수정/삭제
-async function editComment(comment) {
-  const newContent = prompt('댓글 수정:', comment.content)
-  if (!newContent) return
-  try {
-    await api.put(`/comments/${comment.id}`, { content: newContent })
-    await fetchComments(post.value.id)
-  } catch (err) {
-    alert('댓글 수정 실패')
-  }
-}
-
-async function deleteComment(commentId) {
-  if (!confirm('댓글을 삭제하시겠습니까?')) return
-  try {
-    await api.delete(`/comments/${commentId}`)
-    await fetchComments(post.value.id)
-  } catch (err) {
-    alert('댓글 삭제 실패')
-  }
-}
-
-// 답글 수정/삭제
-async function editReply(reply) {
-  const newContent = prompt('답글 수정:', reply.content)
-  if (!newContent) return
-  try {
-    await api.put(`/replies/${reply.id}`, { content: newContent })
-    await fetchComments(post.value.id)
-  } catch (err) {
-    alert('답글 수정 실패')
-  }
-}
-
-async function deleteReply(replyId) {
-  if (!confirm('답글을 삭제하시겠습니까?')) return
-  try {
-    await api.delete(`/replies/${replyId}`)
-    await fetchComments(post.value.id)
-  } catch (err) {
-    alert('답글 삭제 실패')
-  }
-}
-
-// 게시글 편집 및 삭제
+// 게시글 수정 페이지 이동
 function editPost() {
   const boardId = route.params.boardId
   const postId = post.value?.id
   router.push(`/boards/${boardId}/posts/${postId}/edit`)
 }
 
+// 게시글 삭제
 async function deletePost() {
   if (!confirm('게시글을 삭제하시겠습니까?')) return
   try {
@@ -290,46 +176,38 @@ async function adminDeletePost() {
 async function reactToPost(type) {
   try {
     await api.post(`/posts/${post.value.id}/reactions`, {}, { params: { type } })
-    await fetchPost(post.value.id)
+    await fetchPost(post.value.id) // 반응 후 데이터 갱신
   } catch (err) {
     alert(err.response?.data?.message || '반응 처리 중 오류가 발생했습니다.')
   }
 }
 
-// UI 제어
-function toggleReplyBox(commentId) {
-  activeReplyBox.value = activeReplyBox.value === commentId ? null : commentId
-}
-
-async function goToPage(page) {
-  currentPage.value = page
-  await fetchComments(post.value.id)
-}
-
-async function prevPage() {
-  if (currentPage.value > 0) await goToPage(currentPage.value - 1)
-}
-
-async function nextPage() {
-  if (hasNextPage.value) await goToPage(currentPage.value + 1)
-}
-
-// --- 초기화 (✨ Promise.all 병렬 처리 & 로딩 상태 제어) ---
+// 초기 로딩 (게시글 및 게시판 정책 병렬 처리)
 onMounted(async () => {
   const postId = route.params.postId
-  isLoading.value = true // 스켈레톤 애니메이션 시작
+  isLoading.value = true
 
   try {
-    // 게시글, 댓글, 게시판 정책을 동시에 불러옵니다 (체감 속도 🚀)
     await Promise.all([
       fetchPost(postId),
-      fetchComments(postId),
       boardStore.fetchBoardPolicy(route.params.boardId)
     ])
   } catch (err) {
     console.error('데이터 로딩 실패:', err)
   } finally {
-    isLoading.value = false // 스켈레톤 종료, 화면 렌더링
+    isLoading.value = false
   }
 })
 </script>
+
+<style scoped>
+/* Tailwind Typography(prose) 커스텀 스타일 */
+:deep(.prose img) {
+  border-radius: 1.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  margin: 2rem auto;
+}
+:deep(.prose) {
+  color: #334155; /* slate-700 */
+}
+</style>

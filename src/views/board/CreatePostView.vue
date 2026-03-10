@@ -8,15 +8,30 @@
       </h1>
 
       <div class="space-y-6 relative z-10 flex-1 flex flex-col">
-        <div>
-          <input
-            v-model="title"
-            type="text"
-            class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-5 text-xl font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-            placeholder="제목을 입력하세요."
-            aria-label="제목 입력"
-            @input="errorMessage = ''"
-          />
+        <div class="flex flex-col md:flex-row gap-4">
+          <div class="w-full md:w-48 shrink-0">
+            <select
+              v-model="selectedCategoryId"
+              class="w-full h-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 text-base font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition appearance-none cursor-pointer"
+              aria-label="카테고리 선택"
+            >
+              <option :value="null" disabled>카테고리 선택</option>
+              <option v-for="cat in categories" :key="cat.id" :value="cat.id">
+                {{ cat.type === 'NOTICE' ? '📢 ' + cat.name : '📁 ' + cat.name }}
+              </option>
+            </select>
+          </div>
+
+          <div class="flex-1">
+            <input
+              v-model="title"
+              type="text"
+              class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-5 text-xl font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+              placeholder="제목을 입력하세요."
+              aria-label="제목 입력"
+              @input="errorMessage = ''"
+            />
+          </div>
         </div>
 
         <div class="flex-1 flex flex-col border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent transition-all min-h-[500px]">
@@ -40,7 +55,7 @@
           
           <button
             @click="createPost"
-            :disabled="submitting || !title.trim()"
+            :disabled="submitting || !title.trim() || !selectedCategoryId"
             class="relative flex items-center justify-center gap-2 px-10 py-4 rounded-2xl font-extrabold text-lg text-white bg-indigo-600 shadow-lg hover:bg-indigo-700 hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed transition transform hover:-translate-y-1 disabled:hover:translate-y-0 min-w-[160px]"
           >
             <svg v-if="submitting" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -67,18 +82,40 @@ import { uploadImage } from '@/services/uploadImage'
 const route = useRoute()
 const router = useRouter()
 
+const boardId = Number(route.params.boardId || 0)
+
+// 상태 변수
 const title = ref('')
+const categories = ref([])
+const selectedCategoryId = ref(null)
 const editorRef = ref(null)
 let quill = null
 const submitting = ref(false)
 const errorMessage = ref('')
 
-const boardId = Number(route.params.boardId || 0)
-
 onMounted(async () => {
+  await fetchCategories() // 카테고리 먼저 로드
   await nextTick()
   initQuill()
 })
+
+// 카테고리 목록 가져오기
+async function fetchCategories() {
+  try {
+    // 백엔드의 @RequestMapping("/api/boards/{boardId}/post-categories")과 일치시켜야 합니다.
+    const res = await api.get(`/boards/${boardId}/post-categories`)
+    categories.value = res.data || []
+    
+    // (PostCreate의 경우) 기본값 설정 로직 유지
+    const generalCat = categories.value.find(c => c.type === 'GENERAL')
+    if (generalCat) {
+      selectedCategoryId.value = generalCat.id
+    }
+  } catch (err) {
+    console.error('카테고리 로드 실패', err)
+    errorMessage.value = '카테고리 정보를 불러오지 못했습니다.'
+  }
+}
 
 function initQuill() {
   const container = editorRef.value
@@ -95,7 +132,7 @@ function initQuill() {
     },
   })
 
-  // 이미지 업로드 핸들러
+  // 이미지 핸들러 로직 (기존과 동일)
   const toolbar = quill.getModule('toolbar')
   if (toolbar) {
     toolbar.addHandler('image', async () => {
@@ -112,7 +149,6 @@ function initQuill() {
           quill.insertEmbed(range.index, 'image', url, 'user')
           quill.setSelection(range.index + 1)
         } catch (err) {
-          console.error('이미지 업로드 실패', err)
           errorMessage.value = '이미지 업로드에 실패했습니다.'
         }
       }
@@ -123,7 +159,12 @@ function initQuill() {
 async function createPost() {
   errorMessage.value = ''
   
-  if (!title.value || title.value.trim() === '') {
+  if (!selectedCategoryId.value) {
+    errorMessage.value = '카테고리를 선택하세요.'
+    return
+  }
+
+  if (!title.value.trim()) {
     errorMessage.value = '제목을 입력하세요.'
     return
   }
@@ -133,6 +174,7 @@ async function createPost() {
     const content = quill?.root?.innerHTML || ''
     const postData = {
       boardId,
+      categoryId: selectedCategoryId.value, // 수정된 부분: categoryId 추가
       title: title.value.trim(),
       content,
     }
@@ -143,8 +185,11 @@ async function createPost() {
     router.push(`/boards/${boardId}`)
   } catch (err) {
     console.error('게시글 생성 실패', err)
+    // 백엔드에서 보낸 에러 메시지 처리 (예: NOTICE 권한 부족 등)
     if (err.response?.data?.message) {
       errorMessage.value = err.response.data.message
+    } else if (err.response?.status === 403) {
+      errorMessage.value = '이 카테고리(공지사항 등)에 글을 쓸 권한이 없습니다.'
     } else {
       errorMessage.value = '게시글 생성 중 오류가 발생했습니다.'
     }
@@ -155,10 +200,11 @@ async function createPost() {
 </script>
 
 <style scoped>
+/* 기존 스타일 유지 */
 :deep(.ql-toolbar.ql-snow) {
-  background-color: #f8fafc; /* slate-50 */
+  background-color: #f8fafc;
   border: none !important;
-  border-bottom: 1px solid #e2e8f0 !important; /* slate-200 */
+  border-bottom: 1px solid #e2e8f0 !important;
   border-top-left-radius: 1rem;
   border-top-right-radius: 1rem;
   padding: 1rem;
@@ -171,14 +217,17 @@ async function createPost() {
 
 :deep(.ql-editor) {
   min-height: 400px;
-  font-size: 1.125rem; /* text-lg */
+  font-size: 1.125rem;
   line-height: 1.75;
-  color: #334155; /* slate-700 */
+  color: #334155;
   padding: 1.5rem;
 }
 
-:deep(.ql-editor.ql-blank::before) {
-  color: #94a3b8; /* slate-400 */
-  font-style: normal;
+/* 드롭다운 화살표 커스텀 (필요시) */
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1.5em;
 }
 </style>

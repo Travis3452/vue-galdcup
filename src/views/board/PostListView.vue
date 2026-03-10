@@ -1,7 +1,7 @@
 <template>
   <div class="w-full font-sans pb-10">
     
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 border-b-2 border-slate-200 pb-4">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4 border-b-2 border-slate-200 pb-4">
       <div class="flex gap-6">
         <button 
           @click="changeTab('latest')" 
@@ -29,18 +29,45 @@
       </router-link>
     </div>
 
+    <div class="flex flex-wrap gap-2 mb-6">
+      <button 
+        @click="selectCategory(null)"
+        class="px-4 py-1.5 rounded-full text-sm font-bold transition-all border"
+        :class="selectedCategoryId === null 
+          ? 'bg-slate-800 text-white border-slate-800' 
+          : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400'"
+      >
+        전체
+      </button>
+      <button 
+        v-for="category in categories" 
+        :key="category.id"
+        @click="selectCategory(category.id)"
+        class="px-4 py-1.5 rounded-full text-sm font-bold transition-all border"
+        :class="selectedCategoryId === category.id 
+          ? 'bg-indigo-600 text-white border-indigo-600' 
+          : 'bg-white text-slate-500 border-slate-200 hover:border-indigo-400'"
+      >
+        {{ category.name }}
+      </button>
+    </div>
+
     <div v-if="posts.length > 0" class="flex flex-col gap-3">
       <router-link
         v-for="post in posts" 
         :key="post.id"
-        :to="{ path: `/boards/${boardId}/posts/${post.id}`, query: { page: currentPage, tab: currentTab, searchMode: searchMode, searchKeyword: searchKeyword } }"
+        :to="{ path: `/boards/${boardId}/posts/${post.id}`, query: { page: currentPage, tab: currentTab, categoryId: selectedCategoryId, searchMode: searchMode, searchKeyword: searchKeyword } }"
         class="group flex flex-col md:flex-row justify-between items-start md:items-center px-6 py-5 bg-white border border-slate-100 rounded-2xl hover:border-indigo-300 hover:shadow-md transition cursor-pointer"
-        :class="{'bg-indigo-50/50 border-indigo-200': selectedPostId === post.id}"
       >
         <div class="flex-1 w-full mb-3 md:mb-0">
-          <h3 class="text-lg font-bold text-slate-800 group-hover:text-indigo-600 transition truncate pr-4">
-            {{ post.title }}
-          </h3>
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-500 font-bold uppercase">
+              {{ post.categoryName || '일반' }}
+            </span>
+            <h3 class="text-lg font-bold text-slate-800 group-hover:text-indigo-600 transition truncate pr-4">
+              {{ post.title }}
+            </h3>
+          </div>
           <div class="flex items-center gap-3 mt-1.5 text-sm font-medium text-slate-500">
             <span>👤 {{ post.authorNickname }}</span>
             <span class="text-slate-300">|</span>
@@ -50,13 +77,10 @@
         
         <div class="flex items-center gap-5 text-sm font-bold text-slate-400 shrink-0">
           <div class="flex items-center gap-1.5" title="조회수">
-            <span>👁️</span> {{ post.viewCount || post.view || 0 }}
+            <span>👁️</span> {{ post.viewCount || 0 }}
           </div>
           <div v-if="post.likeCount" class="flex items-center gap-1.5 text-rose-500" title="좋아요">
             <span>❤️</span> {{ post.likeCount }}
-          </div>
-          <div class="flex items-center gap-1.5 text-indigo-500" title="댓글">
-            <span>💬</span> {{ post.commentCount || 0 }}
           </div>
         </div>
       </router-link>
@@ -66,61 +90,7 @@
       해당하는 게시글이 없습니다.
     </div>
 
-    <div v-if="totalPages > 1" class="flex justify-center items-center gap-2 mt-10">
-      <button 
-        @click="goToPage(currentPage - 1)" 
-        :disabled="currentPage === 0"
-        class="px-4 py-2 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 disabled:opacity-40 transition"
-      >
-        이전
-      </button>
-      
-      <button 
-        v-for="page in visiblePages" 
-        :key="page" 
-        @click="goToPage(page - 1)"
-        class="px-4 py-2 rounded-xl font-bold transition"
-        :class="currentPage + 1 === page ? 'bg-indigo-600 text-white shadow-md' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'"
-      >
-        {{ page }}
-      </button>
-
-      <button 
-        @click="goToPage(currentPage + 1)" 
-        :disabled="currentPage >= totalPages - 1"
-        class="px-4 py-2 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 disabled:opacity-40 transition"
-      >
-        다음
-      </button>
     </div>
-
-    <div class="flex flex-col md:flex-row justify-center items-center gap-3 mt-10 pt-8 border-t-2 border-slate-100">
-      <select 
-        v-model="searchInputMode" 
-        class="px-4 py-3 bg-white border border-slate-300 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-      >
-        <option value="titleContent">제목 + 내용</option>
-        <option value="nickname">작성자</option>
-      </select>
-      
-      <div class="relative w-full md:w-80">
-        <input 
-          type="text" 
-          v-model="searchInputKeyword" 
-          @keyup.enter="performSearch"
-          placeholder="검색어를 입력하세요" 
-          class="w-full px-5 py-3 bg-white border border-slate-300 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 pr-12"
-        >
-        <button 
-          @click="performSearch" 
-          class="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-indigo-600 hover:text-indigo-800 transition"
-        >
-          🔍
-        </button>
-      </div>
-    </div>
-
-  </div>
 </template>
 
 <script setup>
@@ -129,14 +99,8 @@ import { useRouter, useRoute } from 'vue-router'
 import api from '@/axios'
 
 const props = defineProps({
-  boardId: {
-    type: [String, Number],
-    required: true
-  },
-  selectedPostId: {
-    type: [String, Number],
-    default: null
-  }
+  boardId: { type: [String, Number], required: true },
+  selectedPostId: { type: [String, Number], default: null }
 })
 
 const router = useRouter()
@@ -144,55 +108,45 @@ const route = useRoute()
 
 // 상태 변수
 const posts = ref([])
+const categories = ref([]) // 카테고리 목록 추가
+const selectedCategoryId = ref(null) // 선택된 카테고리 (null 이면 '전체')
 const currentPage = ref(0)
 const totalPages = ref(1)
 const currentTab = ref('latest')
-
 const searchMode = ref('titleContent')
 const searchKeyword = ref('')
 
-// 입력 필드 전용 (검색 버튼 클릭 시에만 상단 searchKeyword로 반영)
 const searchInputMode = ref('titleContent')
 const searchInputKeyword = ref('')
-
 const size = 10
 
-// 🛠️ API 엔드포인트 및 파라미터 수정 로직
+// 🛠️ 카테고리 목록 로드 부분 수정
+async function fetchCategories() {
+  try {
+    // 수정 전: api.get(`/post-categories/board/${props.boardId}`)
+    // 수정 후: 백엔드 @RequestMapping("/api/boards/{boardId}/post-categories")에 맞춤
+    const res = await api.get(`/boards/${props.boardId}/post-categories`)
+    categories.value = res.data || []
+  } catch (err) {
+    console.error('카테고리 목록 로드 실패', err)
+  }
+}
+
+// 🛠️ 게시글 목록 로드 (통합 API 사용)
 async function fetchPosts() {
   try {
-    const params = { page: currentPage.value, size }
-    let endpoint = ''
-
-    // 1. 인기글(popular) 탭인 경우
-    if (currentTab.value === 'popular') {
-      if (searchKeyword.value) {
-        if (searchMode.value === 'titleContent') {
-          endpoint = `/posts/board/${props.boardId}/popular/search/keyword`
-          params.keyword = searchKeyword.value
-        } else {
-          endpoint = `/posts/board/${props.boardId}/popular/search/nickname`
-          params.nickname = searchKeyword.value
-        }
-      } else {
-        endpoint = `/posts/board/${props.boardId}/popular`
-      }
-    } 
-    // 2. 최신글(latest) 탭인 경우
-    else {
-      if (searchKeyword.value) {
-        if (searchMode.value === 'titleContent') {
-          endpoint = `/posts/board/${props.boardId}/search/keyword`
-          params.keyword = searchKeyword.value
-        } else {
-          endpoint = `/posts/board/${props.boardId}/search/nickname`
-          params.nickname = searchKeyword.value
-        }
-      } else {
-        endpoint = `/posts/board/${props.boardId}`
-      }
+    const params = { 
+      page: currentPage.value, 
+      size: size,
+      // categoryId가 null(전체)이면 파라미터에서 제외하여 백엔드에서 null로 받게 함
+      categoryId: selectedCategoryId.value || undefined, 
+      isPopular: currentTab.value === 'popular',
+      searchType: searchKeyword.value ? searchMode.value : undefined,
+      keyword: searchKeyword.value || undefined
     }
 
-    const res = await api.get(endpoint, { params })
+    // 통합 엔드포인트 호출 (백엔드: /api/posts/board/{boardId})
+    const res = await api.get(`/posts/board/${props.boardId}`, { params })
     posts.value = res.data.content || []
     totalPages.value = res.data.totalPages || 1
   } catch (err) {
@@ -200,6 +154,13 @@ async function fetchPosts() {
     posts.value = []
     totalPages.value = 1
   }
+}
+
+// 카테고리 변경 시
+function selectCategory(id) {
+  selectedCategoryId.value = id
+  currentPage.value = 0
+  updateQueryAndFetch()
 }
 
 // 탭 변경
@@ -231,6 +192,7 @@ function updateQueryAndFetch() {
       ...route.query,
       page: currentPage.value,
       tab: currentTab.value,
+      categoryId: selectedCategoryId.value,
       searchMode: searchMode.value,
       searchKeyword: searchKeyword.value
     }
@@ -241,11 +203,10 @@ function updateQueryAndFetch() {
 
 function formatDate(dateStr) {
   if (!dateStr) return ''
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('ko-KR')
+  return new Date(dateStr).toLocaleDateString('ko-KR')
 }
 
-// 페이지네이션 가시범위 계산
+// 페이지네이션 가시범위 (기존 동일)
 const visiblePages = computed(() => {
   const pages = []
   const maxVisible = 5
@@ -255,33 +216,31 @@ const visiblePages = computed(() => {
   return pages
 })
 
-onMounted(() => {
-  // 초기 로드 시 URL 쿼리 파라미터 적용 및 기본값 강제 설정
+onMounted(async () => {
+  // 초기 쿼리 파라미터 읽기
   currentPage.value = Number(route.query.page) || 0
   currentTab.value = route.query.tab || 'latest'
-  
-  // URL에 값이 없으면 반드시 'titleContent'로 지정되도록 변경
+  selectedCategoryId.value = route.query.categoryId ? Number(route.query.categoryId) : null
   searchMode.value = route.query.searchMode || 'titleContent'
   searchKeyword.value = route.query.searchKeyword || ''
   
   searchInputMode.value = searchMode.value
   searchInputKeyword.value = searchKeyword.value
 
+  // 카테고리와 게시글 순차 로드
+  await fetchCategories()
   fetchPosts()
 })
 
-// 게시판 아이디가 바뀔 경우 초기화 및 기본값 복원 후 재호출
-watch(() => props.boardId, (newId) => {
+watch(() => props.boardId, async (newId) => {
   if (newId) {
     currentPage.value = 0
     currentTab.value = 'latest'
-    
-    // 검색창 완전 초기화
-    searchMode.value = 'titleContent'
-    searchInputMode.value = 'titleContent'
+    selectedCategoryId.value = null // 게시판 바뀌면 '전체'로 초기화
     searchKeyword.value = ''
     searchInputKeyword.value = ''
     
+    await fetchCategories()
     fetchPosts()
   }
 })
