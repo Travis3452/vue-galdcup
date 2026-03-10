@@ -90,7 +90,64 @@
       해당하는 게시글이 없습니다.
     </div>
 
+    <div v-if="totalPages > 1" class="mt-8 flex justify-center items-center gap-2">
+      <button 
+        @click="goToPage(currentPage - 1)" 
+        :disabled="currentPage === 0"
+        class="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-30 transition"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+      </button>
+      
+      <button 
+        v-for="page in visiblePages" 
+        :key="page"
+        @click="goToPage(page - 1)"
+        class="w-10 h-10 rounded-lg font-bold transition-all"
+        :class="currentPage === (page - 1) ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'"
+      >
+        {{ page }}
+      </button>
+
+      <button 
+        @click="goToPage(currentPage + 1)" 
+        :disabled="currentPage >= totalPages - 1"
+        class="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-30 transition"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+      </button>
     </div>
+
+    <div class="mt-10 flex justify-center">
+      <div class="flex items-center gap-2 bg-slate-100 p-1.5 rounded-2xl border border-slate-200 w-full max-w-xl shadow-inner">
+        <select 
+          v-model="searchInputMode"
+          class="bg-transparent border-none text-slate-600 font-bold text-sm px-4 focus:ring-0 cursor-pointer"
+        >
+          <option value="TITLE_CONTENT">제목+내용</option>
+          <option value="NICKNAME">작성자</option>
+        </select>
+        
+        <div class="h-6 w-px bg-slate-300"></div>
+
+        <input 
+          v-model="searchInputKeyword"
+          type="text" 
+          placeholder="검색어를 입력하세요..."
+          class="flex-1 bg-transparent border-none px-4 py-2 text-slate-700 placeholder-slate-400 focus:ring-0"
+          @keyup.enter="performSearch"
+        />
+
+        <button 
+          @click="performSearch"
+          class="px-5 py-2.5 bg-slate-800 text-white rounded-xl font-bold text-sm hover:bg-slate-900 transition shadow-sm"
+        >
+          검색
+        </button>
+      </div>
+    </div>
+
+  </div>
 </template>
 
 <script setup>
@@ -106,71 +163,79 @@ const props = defineProps({
 const router = useRouter()
 const route = useRoute()
 
-// 상태 변수
+// --- 상태 관리 ---
 const posts = ref([])
-const categories = ref([]) // 카테고리 목록 추가
-const selectedCategoryId = ref(null) // 선택된 카테고리 (null 이면 '전체')
+const categories = ref([]) // 해당 게시판의 카테고리 목록 (일반, 공지사항 등)
+const selectedCategoryId = ref(null) // 선택된 카테고리 ID (null이면 '전체')
 const currentPage = ref(0)
 const totalPages = ref(1)
-const currentTab = ref('latest')
-const searchMode = ref('titleContent')
+const currentTab = ref('latest') // 'latest' (최신순), 'popular' (인기순)
+
+// API 요청 시 실제로 전송되는 확정된 검색 값
+// 백엔드 PostService의 "NICKNAME" 조건문에 맞춤
+const searchMode = ref('TITLE_CONTENT') 
 const searchKeyword = ref('')
 
-const searchInputMode = ref('titleContent')
+// 검색 입력창(UI)에 실시간으로 바인딩되는 값
+const searchInputMode = ref('TITLE_CONTENT') 
 const searchInputKeyword = ref('')
+
 const size = 10
 
-// 🛠️ 카테고리 목록 로드 부분 수정
+// --- API 호출 함수 ---
+
+// 1. 카테고리 로드: GET /api/boards/{boardId}/post-categories
 async function fetchCategories() {
   try {
-    // 수정 전: api.get(`/post-categories/board/${props.boardId}`)
-    // 수정 후: 백엔드 @RequestMapping("/api/boards/{boardId}/post-categories")에 맞춤
     const res = await api.get(`/boards/${props.boardId}/post-categories`)
     categories.value = res.data || []
   } catch (err) {
-    console.error('카테고리 목록 로드 실패', err)
+    console.error('카테고리 목록 로드 실패:', err)
   }
 }
 
-// 🛠️ 게시글 목록 로드 (통합 API 사용)
+// 2. 게시글 목록 로드: GET /api/posts/board/{boardId}
 async function fetchPosts() {
   try {
     const params = { 
       page: currentPage.value, 
       size: size,
-      // categoryId가 null(전체)이면 파라미터에서 제외하여 백엔드에서 null로 받게 함
       categoryId: selectedCategoryId.value || undefined, 
       isPopular: currentTab.value === 'popular',
+      // 백엔드 @RequestParam searchType, keyword와 매핑
       searchType: searchKeyword.value ? searchMode.value : undefined,
       keyword: searchKeyword.value || undefined
     }
 
-    // 통합 엔드포인트 호출 (백엔드: /api/posts/board/{boardId})
     const res = await api.get(`/posts/board/${props.boardId}`, { params })
+    
+    // Page<PostDto> 응답 처리
     posts.value = res.data.content || []
     totalPages.value = res.data.totalPages || 1
   } catch (err) {
-    console.error('게시글 목록 로드 실패', err)
+    console.error('게시글 목록 로드 실패:', err)
     posts.value = []
     totalPages.value = 1
   }
 }
 
-// 카테고리 변경 시
+// --- 사용자 인터랙션 함수 ---
+
+// 카테고리 필터 변경 (전체 또는 특정 카테고리)
 function selectCategory(id) {
   selectedCategoryId.value = id
   currentPage.value = 0
   updateQueryAndFetch()
 }
 
-// 탭 변경
+// 최신순/인기순 탭 전환
 function changeTab(tabName) {
   currentTab.value = tabName
   currentPage.value = 0
   updateQueryAndFetch()
 }
 
-// 검색 실행
+// 검색 실행 (입력값을 확정값으로 복사 후 호출)
 function performSearch() {
   searchMode.value = searchInputMode.value
   searchKeyword.value = searchInputKeyword.value
@@ -178,14 +243,14 @@ function performSearch() {
   updateQueryAndFetch()
 }
 
-// 페이지 이동
+// 페이지 번호 클릭 시 이동
 function goToPage(page) {
   if (page < 0 || page >= totalPages.value) return
   currentPage.value = page
   updateQueryAndFetch()
 }
 
-// URL 쿼리 동기화 및 데이터 호출
+// URL 쿼리와 내부 상태를 동기화하고 API 호출
 function updateQueryAndFetch() {
   router.replace({
     query: {
@@ -201,42 +266,57 @@ function updateQueryAndFetch() {
   })
 }
 
+// 날짜 포맷 (예: 2024. 3. 10.)
 function formatDate(dateStr) {
   if (!dateStr) return ''
   return new Date(dateStr).toLocaleDateString('ko-KR')
 }
 
-// 페이지네이션 가시범위 (기존 동일)
+// --- Computed ---
+
+// 페이지네이션 가시 범위 (현재 페이지 앞뒤로 최대 5개 표시)
 const visiblePages = computed(() => {
   const pages = []
   const maxVisible = 5
-  const start = Math.max(1, currentPage.value + 1 - Math.floor(maxVisible / 2))
-  const end = Math.min(totalPages.value, start + maxVisible - 1)
-  for (let i = start; i <= end; i++) pages.push(i)
+  let start = Math.max(1, (currentPage.value + 1) - Math.floor(maxVisible / 2))
+  let end = Math.min(totalPages.value, start + maxVisible - 1)
+  
+  if (end - start + 1 < maxVisible) {
+    start = Math.max(1, end - maxVisible + 1)
+  }
+  
+  for (let i = Math.max(1, start); i <= end; i++) {
+    pages.push(i)
+  }
   return pages
 })
 
+// --- Lifecycle & Watch ---
+
 onMounted(async () => {
-  // 초기 쿼리 파라미터 읽기
+  // 1. URL 쿼리 파라미터에서 이전 상태 복구 (새로고침/뒤로가기 대응)
   currentPage.value = Number(route.query.page) || 0
   currentTab.value = route.query.tab || 'latest'
   selectedCategoryId.value = route.query.categoryId ? Number(route.query.categoryId) : null
-  searchMode.value = route.query.searchMode || 'titleContent'
+  
+  // 백엔드 기준 값('TITLE_CONTENT', 'NICKNAME')으로 복구
+  searchMode.value = route.query.searchMode || 'TITLE_CONTENT'
   searchKeyword.value = route.query.searchKeyword || ''
   
   searchInputMode.value = searchMode.value
   searchInputKeyword.value = searchKeyword.value
 
-  // 카테고리와 게시글 순차 로드
+  // 2. 데이터 순차 로드
   await fetchCategories()
   fetchPosts()
 })
 
+// 게시판 변경(boardId) 감지 시 상태 초기화 및 재로드
 watch(() => props.boardId, async (newId) => {
   if (newId) {
     currentPage.value = 0
     currentTab.value = 'latest'
-    selectedCategoryId.value = null // 게시판 바뀌면 '전체'로 초기화
+    selectedCategoryId.value = null
     searchKeyword.value = ''
     searchInputKeyword.value = ''
     
@@ -245,3 +325,10 @@ watch(() => props.boardId, async (newId) => {
   }
 })
 </script>
+
+<style scoped>
+/* 필요시 추가 스타일링 */
+select:focus, input:focus {
+  outline: none;
+}
+</style>
