@@ -24,10 +24,7 @@
           </button>
         </nav>
 
-        <button @click="$emit('close')" class="mt-auto px-4 py-3 bg-slate-200 text-slate-600 rounded-2xl text-xs font-black hover:bg-slate-300 transition">
-          닫기 (ESC)
-        </button>
-      </aside>
+        </aside>
 
       <main class="flex-1 flex flex-col min-w-0 bg-white">
         <header class="h-20 flex items-center justify-between px-10 border-b border-slate-50">
@@ -52,22 +49,20 @@
           <section v-show="activeTab === 'managers'" class="space-y-8">
             <div class="flex gap-2">
               <input v-model="searchNickname" @keyup.enter="handleSearchUser" class="flex-1 border border-slate-200 px-5 py-3 rounded-2xl text-sm outline-none focus:border-indigo-500" placeholder="닉네임으로 유저 검색" />
-              <button @click="handleSearchUser" class="px-6 bg-slate-800 text-white rounded-2xl text-sm font-bold shadow-sm">검색</button>
+              <button @click="handleSearchUser" class="px-6 bg-slate-800 text-white rounded-2xl text-sm font-bold">검색</button>
             </div>
-
-            <div class="min-h-[100px]">
-              <div v-if="searchResults.length > 0" class="bg-slate-50 rounded-2xl p-4 mb-4 border border-slate-100">
+            <div class="min-h-[80px]">
+              <div v-if="searchResults.length > 0" class="bg-slate-50 rounded-2xl p-4 mb-4">
                 <div v-for="user in searchResults" :key="user.id" class="flex justify-between items-center p-3 bg-white rounded-xl mb-2 shadow-sm">
                   <span class="text-sm font-bold text-slate-700">👤 {{ user.nickname }}</span>
                   <button @click="handleAddSubManager(user.nickname)" class="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-600 hover:text-white transition">권한부여</button>
                 </div>
               </div>
             </div>
-
             <div class="space-y-3">
               <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">현재 서브 매니저</p>
               <div v-for="sm in boardPolicy?.subManagers" :key="sm.id" class="flex justify-between items-center p-4 border border-slate-100 rounded-2xl hover:bg-slate-50 transition">
-                <span class="font-bold text-slate-700 flex items-center gap-2">🛡️ {{ sm.nickname }}</span>
+                <span class="font-bold text-slate-700">🛡️ {{ sm.nickname }}</span>
                 <button @click="handleRemoveSubManager(sm.nickname)" class="text-xs font-bold text-red-400 hover:bg-red-50 px-3 py-1.5 rounded-lg transition">해임</button>
               </div>
             </div>
@@ -75,10 +70,9 @@
 
           <section v-show="activeTab === 'categories'" class="space-y-8">
             <div v-if="isMainManager" class="bg-slate-50 p-6 rounded-[2rem] border border-slate-100">
-              <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3 px-1 text-center">새 카테고리 추가</label>
               <div class="flex gap-2">
-                <input v-model="newCategoryName" maxlength="10" @keyup.enter="handleAddCategory" class="flex-1 px-5 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 bg-white" placeholder="카테고리명 (2~10자)" />
-                <button @click="handleAddCategory" class="px-6 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition">추가</button>
+                <input v-model="newCategoryName" maxlength="10" @keyup.enter="handleAddCategory" class="flex-1 px-5 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 bg-white" placeholder="새 카테고리명 (2~10자)" />
+                <button @click="handleAddCategory" class="px-6 bg-indigo-600 text-white rounded-xl font-bold">추가</button>
               </div>
             </div>
 
@@ -108,9 +102,22 @@
                       </div>
                     </td>
                     <td class="px-6 py-4 text-right">
-                      <div class="flex justify-end gap-1">
-                        <button @click="openEditPrompt(cat)" class="px-3 py-2 text-slate-400 hover:text-indigo-600 transition"><span class="text-xs font-bold">수정</span></button>
-                        <button v-if="getType(cat) === 'CUSTOM' && isMainManager" @click="handleDeleteCategory(cat.id, cat.name)" class="px-3 py-2 text-slate-400 hover:text-red-500 transition"><span class="text-xs font-bold">삭제</span></button>
+                      <div class="flex justify-end items-center gap-2">
+                        <template v-if="deletingCategoryId !== cat.id">
+                          <button @click="openEditPrompt(cat)" class="px-3 py-2 text-slate-400 hover:text-indigo-600 transition text-xs font-bold">수정</button>
+                          <button v-if="getType(cat) === 'CUSTOM' && isMainManager" @click="startDelete(cat.id)" class="px-3 py-2 text-slate-400 hover:text-red-500 transition text-xs font-bold">삭제</button>
+                        </template>
+
+                        <template v-else>
+                          <select v-model="selectedMoveToId" class="text-xs p-1 border rounded bg-white outline-none focus:ring-1 focus:ring-red-400">
+                            <option value="" disabled>이동할 곳 선택</option>
+                            <option v-for="dest in getMoveDestinations(cat.id)" :key="dest.id" :value="dest.id">
+                              {{ dest.name }} (으)로 이동
+                            </option>
+                          </select>
+                          <button @click="handleConfirmDelete" :disabled="!selectedMoveToId" class="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded">확인</button>
+                          <button @click="deletingCategoryId = null" class="text-xs font-bold text-slate-400 px-2 py-1">취소</button>
+                        </template>
                       </div>
                     </td>
                   </tr>
@@ -119,7 +126,7 @@
             </div>
 
             <div v-if="isOrderChanged" class="flex justify-center pt-2">
-              <button @click="handleSaveOrder" class="px-10 py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-xl shadow-indigo-100 hover:bg-indigo-700 transform hover:-translate-y-1 transition-all active:scale-95">
+              <button @click="handleSaveOrder" class="px-10 py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95">
                 변경된 순서 저장하기
               </button>
             </div>
@@ -143,7 +150,6 @@ const boardStore = useBoardStore()
 const userStore = useUserStore()
 const emit = defineEmits(['close'])
 
-// --- 탭 설정 ---
 const activeTab = ref('threshold')
 const tabs = [
   { id: 'threshold', label: '인기글 기준', icon: '🔥' },
@@ -152,7 +158,6 @@ const tabs = [
 ]
 const currentTabLabel = computed(() => tabs.find(t => t.id === activeTab.value)?.label)
 
-// --- 데이터 참조 ---
 const boardId = computed(() => route.params.boardId)
 const boardPolicy = computed(() => boardStore.currentPolicy)
 const categories = computed(() => boardStore.categories)
@@ -160,17 +165,17 @@ const categories = computed(() => boardStore.categories)
 const isMainManager = computed(() => {
   const managerId = boardPolicy.value?.boardManager?.id
   const myId = userStore.id
-  if (!managerId || !myId) return false
-  return Number(managerId) === Number(myId)
+  return managerId && myId && Number(managerId) === Number(myId)
 })
 
 const getType = (cat) => (cat.categoryType || cat.type || '').toUpperCase()
 
-// --- 정렬 상태 관리 ---
+// --- 정렬 및 삭제 상태 ---
 const localCategories = ref([])
 const isOrderChanged = ref(false)
+const deletingCategoryId = ref(null) // 현재 삭제를 시도 중인 카테고리 ID
+const selectedMoveToId = ref('')      // 게시글을 이동할 대상 카테고리 ID
 
-// [최적화] 얕은 복사를 사용해 반응성 유지 및 성능 최적화
 watch(categories, (newVal) => {
   if (newVal) {
     localCategories.value = [...newVal]
@@ -178,94 +183,82 @@ watch(categories, (newVal) => {
   }
 }, { immediate: true })
 
-// ✅ [2번 수정] 전체 새로고침 대신 부분 업데이트를 위해 refreshData는 초기 로드용으로만 사용
-async function refreshData() {
-  await boardStore.fetchBoardDetails(boardId.value)
-}
-
 function moveOrder(index, direction) {
   const newIndex = index + direction
   if (newIndex < 0 || newIndex >= localCategories.value.length) return
-  
   const temp = [...localCategories.value]
   const [movedItem] = temp.splice(index, 1)
   temp.splice(newIndex, 0, movedItem)
-  
   localCategories.value = temp
   isOrderChanged.value = true
 }
 
-// ✅ [2번 수정] 일괄 저장 후 스토어 데이터 부분 교체
+// 2번 반영: 부분 업데이트
 async function handleSaveOrder() {
   try {
-    const payload = localCategories.value.map((cat, idx) => ({
-      id: cat.id,
-      sortOrder: idx,
-      name: cat.name
-    }))
+    const payload = localCategories.value.map((cat, idx) => ({ id: cat.id, sortOrder: idx, name: cat.name }))
     await api.patch(`/boards/${boardId.value}/post-categories/batch`, payload)
-    
-    // 스토어 데이터만 즉시 업데이트 (전체 fetch 생략)
-    boardStore.categories = [...localCategories.value]
+    boardStore.categories = [...localCategories.value] // 스토어 즉시 업데이트
     isOrderChanged.value = false
-    alert('순서가 저장되었습니다.')
-  } catch (err) {
-    alert(err?.response?.data?.message || '저장 실패')
-  }
+    alert('저장되었습니다.')
+  } catch (err) { alert('저장 실패') }
 }
 
-// --- 카테고리 관리 ---
+// --- 카테고리 관리 로직 ---
 const newCategoryName = ref('')
-// ✅ [2번 수정] 추가 성공 시 스토어 배열에 직접 푸시
 async function handleAddCategory() {
   const name = newCategoryName.value.trim()
   if (name.length < 2 || name.length > 10) return alert('2~10자로 입력해주세요.')
   try {
     const res = await api.post(`/boards/${boardId.value}/post-categories`, { name })
-    boardStore.categories.push(res.data) // 스토어 부분 업데이트
+    boardStore.categories.push(res.data) // 부분 업데이트
     newCategoryName.value = ''
   } catch (err) { alert(err?.response?.data?.message || '추가 실패') }
 }
 
-// ✅ [2번 수정] 수정 성공 시 스토어 객체 속성만 변경
 async function openEditPrompt(category) {
   const newName = prompt(`'${category.name}'의 새로운 이름을 입력하세요.`, category.name)
   if (!newName || newName === category.name) return
   try {
     const res = await api.patch(`/boards/${boardId.value}/post-categories`, { id: category.id, name: newName })
-    
-    // 스토어에서 해당 카테고리 찾아 이름만 변경
     const target = boardStore.categories.find(c => c.id === category.id)
-    if (target) target.name = res.data.name
-  } catch (err) { alert(err?.response?.data?.message || '수정 실패') }
+    if (target) target.name = res.data.name // 부분 업데이트
+  } catch (err) { alert('수정 실패') }
 }
 
-// ✅ [2번 수정] 삭제 성공 시 스토어 배열에서 필터링
-async function handleDeleteCategory(categoryId, categoryName) {
-  const targetCategory = localCategories.value.find(c => c.id !== categoryId && getType(c) !== 'NOTICE')
-  if (!targetCategory) return alert('대체할 카테고리가 없습니다.')
-  
-  if (!confirm(`'${categoryName}' 삭제 시 모든 글이 '${targetCategory.name}'으로 이동합니다.`)) return
+// --- 삭제 개선 로직 ---
+function startDelete(id) {
+  deletingCategoryId.value = id
+  selectedMoveToId.value = '' // 초기화
+}
+
+function getMoveDestinations(targetId) {
+  // 나 자신과 공지사항을 제외한 모든 카테고리가 이동 대상이 될 수 있음
+  return localCategories.value.filter(c => c.id !== targetId && getType(c) !== 'NOTICE')
+}
+
+async function handleConfirmDelete() {
+  const targetId = deletingCategoryId.value
+  const moveToId = selectedMoveToId.value
+  const categoryName = localCategories.value.find(c => c.id === targetId)?.name
+
+  if (!confirm(`'${categoryName}'을(를) 삭제하고 모든 게시글을 이동하시겠습니까?`)) return
+
   try {
-    await api.delete(`/boards/${boardId.value}/post-categories/${categoryId}`, { params: { moveToId: targetCategory.id } })
-    
-    // 스토어에서 삭제된 아이템 제거
-    boardStore.categories = boardStore.categories.filter(c => c.id !== categoryId)
+    await api.delete(`/boards/${boardId.value}/post-categories/${targetId}`, { params: { moveToId } })
+    boardStore.categories = boardStore.categories.filter(c => c.id !== targetId) // 부분 업데이트
+    deletingCategoryId.value = null
   } catch (err) { alert('삭제 실패') }
 }
 
-// --- 정책/서브매니저 로직 ---
+// --- 기타 정책 로직 (부분 업데이트 적용) ---
 const localThreshold = ref(0)
 watch(() => boardPolicy.value?.likeThreshold, (n) => localThreshold.value = n || 0, { immediate: true })
 
-// ✅ [2번 수정] 임계값 수정 후 스토어 값만 변경
 async function handleUpdateThreshold() {
   try {
     await api.patch(`/boards/${boardId.value}/policy`, { likeThreshold: localThreshold.value })
-    
-    if (boardStore.currentPolicy) {
-      boardStore.currentPolicy.likeThreshold = localThreshold.value
-    }
+    if (boardStore.currentPolicy) boardStore.currentPolicy.likeThreshold = localThreshold.value
     alert('저장되었습니다.')
   } catch (err) { alert('저장 실패') }
 }
@@ -277,25 +270,18 @@ async function handleSearchUser() {
   searchResults.value = res.data.content || []
 }
 
-// ✅ [2번 수정] 서브매니저 추가 시 스토어 리스트에 직접 추가
 async function handleAddSubManager(nickname) {
   try {
     const res = await api.post(`/boards/${boardId.value}/policy/sub-managers`, { nickname })
-    
-    // res.data가 추가된 매니저 객체라고 가정할 때 스토어 업데이트
-    if (boardStore.currentPolicy) {
-      boardStore.currentPolicy.subManagers.push(res.data)
-    }
+    if (boardStore.currentPolicy) boardStore.currentPolicy.subManagers.push(res.data)
     searchResults.value = []; searchNickname.value = ''
-  } catch (err) { alert(err?.response?.data?.message || '추가 실패') }
+  } catch (err) { alert('추가 실패') }
 }
 
-// ✅ [2번 수정] 서브매니저 해임 시 스토어 리스트에서 필터링
 async function handleRemoveSubManager(nickname) {
   if (!confirm(`${nickname}님을 해임하시겠습니까?`)) return
   try {
     await api.delete(`/boards/${boardId.value}/policy/sub-managers`, { data: { nickname } })
-    
     if (boardStore.currentPolicy) {
       boardStore.currentPolicy.subManagers = boardStore.currentPolicy.subManagers.filter(sm => sm.nickname !== nickname)
     }
@@ -308,12 +294,6 @@ async function handleRemoveSubManager(nickname) {
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #f1f5f9; border-radius: 10px; }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #e2e8f0; }
-
-section {
-  animation: fadeIn 0.2s ease-out;
-}
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(5px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+section { animation: fadeIn 0.2s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 </style>
