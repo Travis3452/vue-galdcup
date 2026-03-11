@@ -51,14 +51,16 @@
 
           <section v-show="activeTab === 'managers'" class="space-y-8">
             <div class="flex gap-2">
-              <input v-model="searchNickname" @keyup.enter="handleSearchUser(0)" class="flex-1 border border-slate-200 px-5 py-3 rounded-2xl text-sm outline-none focus:border-indigo-500" placeholder="닉네임으로 유저 검색" />
-              <button @click="handleSearchUser(0)" class="px-6 bg-slate-800 text-white rounded-2xl text-sm font-bold shadow-sm">검색</button>
+              <input v-model="searchNickname" @keyup.enter="handleSearchUser" class="flex-1 border border-slate-200 px-5 py-3 rounded-2xl text-sm outline-none focus:border-indigo-500" placeholder="닉네임으로 유저 검색" />
+              <button @click="handleSearchUser" class="px-6 bg-slate-800 text-white rounded-2xl text-sm font-bold shadow-sm">검색</button>
             </div>
 
-            <div v-if="searchResults.length > 0" class="bg-slate-50 rounded-2xl p-4 mb-4 border border-slate-100">
-              <div v-for="user in searchResults" :key="user.id" class="flex justify-between items-center p-3 bg-white rounded-xl mb-2 shadow-sm">
-                <span class="text-sm font-bold text-slate-700">👤 {{ user.nickname }}</span>
-                <button @click="handleAddSubManager(user.nickname)" class="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-600 hover:text-white transition">권한부여</button>
+            <div class="min-h-[100px]">
+              <div v-if="searchResults.length > 0" class="bg-slate-50 rounded-2xl p-4 mb-4 border border-slate-100">
+                <div v-for="user in searchResults" :key="user.id" class="flex justify-between items-center p-3 bg-white rounded-xl mb-2 shadow-sm">
+                  <span class="text-sm font-bold text-slate-700">👤 {{ user.nickname }}</span>
+                  <button @click="handleAddSubManager(user.nickname)" class="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-600 hover:text-white transition">권한부여</button>
+                </div>
               </div>
             </div>
 
@@ -155,7 +157,6 @@ const boardId = computed(() => route.params.boardId)
 const boardPolicy = computed(() => boardStore.currentPolicy)
 const categories = computed(() => boardStore.categories)
 
-// ✅ [최적화] 권한 체크 로직 (Number 캐스팅 및 옵셔널 체이닝)
 const isMainManager = computed(() => {
   const managerId = boardPolicy.value?.boardManager?.id
   const myId = userStore.id
@@ -163,14 +164,13 @@ const isMainManager = computed(() => {
   return Number(managerId) === Number(myId)
 })
 
-// ✅ [최적화] 타입 추출 헬퍼 (필드명 유연성 확보)
 const getType = (cat) => (cat.categoryType || cat.type || '').toUpperCase()
 
 // --- 정렬 상태 관리 ---
 const localCategories = ref([])
 const isOrderChanged = ref(false)
 
-// [최적화] 무거운 JSON 클론 대신 Shallow Copy 사용
+// [최적화] 얕은 복사를 사용해 반응성 유지 및 성능 최적화
 watch(categories, (newVal) => {
   if (newVal) {
     localCategories.value = [...newVal]
@@ -178,6 +178,7 @@ watch(categories, (newVal) => {
   }
 }, { immediate: true })
 
+// ✅ [2번 수정] 전체 새로고침 대신 부분 업데이트를 위해 refreshData는 초기 로드용으로만 사용
 async function refreshData() {
   await boardStore.fetchBoardDetails(boardId.value)
 }
@@ -194,6 +195,7 @@ function moveOrder(index, direction) {
   isOrderChanged.value = true
 }
 
+// ✅ [2번 수정] 일괄 저장 후 스토어 데이터 부분 교체
 async function handleSaveOrder() {
   try {
     const payload = localCategories.value.map((cat, idx) => ({
@@ -202,8 +204,11 @@ async function handleSaveOrder() {
       name: cat.name
     }))
     await api.patch(`/boards/${boardId.value}/post-categories/batch`, payload)
+    
+    // 스토어 데이터만 즉시 업데이트 (전체 fetch 생략)
+    boardStore.categories = [...localCategories.value]
+    isOrderChanged.value = false
     alert('순서가 저장되었습니다.')
-    await refreshData()
   } catch (err) {
     alert(err?.response?.data?.message || '저장 실패')
   }
@@ -211,34 +216,41 @@ async function handleSaveOrder() {
 
 // --- 카테고리 관리 ---
 const newCategoryName = ref('')
+// ✅ [2번 수정] 추가 성공 시 스토어 배열에 직접 푸시
 async function handleAddCategory() {
   const name = newCategoryName.value.trim()
   if (name.length < 2 || name.length > 10) return alert('2~10자로 입력해주세요.')
   try {
-    await api.post(`/boards/${boardId.value}/post-categories`, { name })
-    newCategoryName.value = ''; await refreshData()
+    const res = await api.post(`/boards/${boardId.value}/post-categories`, { name })
+    boardStore.categories.push(res.data) // 스토어 부분 업데이트
+    newCategoryName.value = ''
   } catch (err) { alert(err?.response?.data?.message || '추가 실패') }
 }
 
+// ✅ [2번 수정] 수정 성공 시 스토어 객체 속성만 변경
 async function openEditPrompt(category) {
   const newName = prompt(`'${category.name}'의 새로운 이름을 입력하세요.`, category.name)
   if (!newName || newName === category.name) return
   try {
-    // 백엔드 UpdatePostCategoryRequest 규격에 맞춰 ID 포함 전송
-    await api.patch(`/boards/${boardId.value}/post-categories`, { id: category.id, name: newName })
-    await refreshData()
+    const res = await api.patch(`/boards/${boardId.value}/post-categories`, { id: category.id, name: newName })
+    
+    // 스토어에서 해당 카테고리 찾아 이름만 변경
+    const target = boardStore.categories.find(c => c.id === category.id)
+    if (target) target.name = res.data.name
   } catch (err) { alert(err?.response?.data?.message || '수정 실패') }
 }
 
+// ✅ [2번 수정] 삭제 성공 시 스토어 배열에서 필터링
 async function handleDeleteCategory(categoryId, categoryName) {
-  // 공지사항을 제외한 이동 대상 찾기
   const targetCategory = localCategories.value.find(c => c.id !== categoryId && getType(c) !== 'NOTICE')
   if (!targetCategory) return alert('대체할 카테고리가 없습니다.')
   
   if (!confirm(`'${categoryName}' 삭제 시 모든 글이 '${targetCategory.name}'으로 이동합니다.`)) return
   try {
     await api.delete(`/boards/${boardId.value}/post-categories/${categoryId}`, { params: { moveToId: targetCategory.id } })
-    await refreshData()
+    
+    // 스토어에서 삭제된 아이템 제거
+    boardStore.categories = boardStore.categories.filter(c => c.id !== categoryId)
   } catch (err) { alert('삭제 실패') }
 }
 
@@ -246,10 +258,15 @@ async function handleDeleteCategory(categoryId, categoryName) {
 const localThreshold = ref(0)
 watch(() => boardPolicy.value?.likeThreshold, (n) => localThreshold.value = n || 0, { immediate: true })
 
+// ✅ [2번 수정] 임계값 수정 후 스토어 값만 변경
 async function handleUpdateThreshold() {
   try {
     await api.patch(`/boards/${boardId.value}/policy`, { likeThreshold: localThreshold.value })
-    await refreshData(); alert('저장되었습니다.')
+    
+    if (boardStore.currentPolicy) {
+      boardStore.currentPolicy.likeThreshold = localThreshold.value
+    }
+    alert('저장되었습니다.')
   } catch (err) { alert('저장 실패') }
 }
 
@@ -260,18 +277,28 @@ async function handleSearchUser() {
   searchResults.value = res.data.content || []
 }
 
+// ✅ [2번 수정] 서브매니저 추가 시 스토어 리스트에 직접 추가
 async function handleAddSubManager(nickname) {
   try {
-    await api.post(`/boards/${boardId.value}/policy/sub-managers`, { nickname })
-    await refreshData(); searchResults.value = []; searchNickname.value = ''
+    const res = await api.post(`/boards/${boardId.value}/policy/sub-managers`, { nickname })
+    
+    // res.data가 추가된 매니저 객체라고 가정할 때 스토어 업데이트
+    if (boardStore.currentPolicy) {
+      boardStore.currentPolicy.subManagers.push(res.data)
+    }
+    searchResults.value = []; searchNickname.value = ''
   } catch (err) { alert(err?.response?.data?.message || '추가 실패') }
 }
 
+// ✅ [2번 수정] 서브매니저 해임 시 스토어 리스트에서 필터링
 async function handleRemoveSubManager(nickname) {
   if (!confirm(`${nickname}님을 해임하시겠습니까?`)) return
   try {
     await api.delete(`/boards/${boardId.value}/policy/sub-managers`, { data: { nickname } })
-    await refreshData()
+    
+    if (boardStore.currentPolicy) {
+      boardStore.currentPolicy.subManagers = boardStore.currentPolicy.subManagers.filter(sm => sm.nickname !== nickname)
+    }
   } catch (err) { alert('해임 실패') }
 }
 </script>
@@ -282,7 +309,6 @@ async function handleRemoveSubManager(nickname) {
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #f1f5f9; border-radius: 10px; }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #e2e8f0; }
 
-/* 탭 전환 애니메이션이 필요하다면 간단히 추가 가능 */
 section {
   animation: fadeIn 0.2s ease-out;
 }
