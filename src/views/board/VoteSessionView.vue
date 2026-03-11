@@ -89,9 +89,8 @@ import { Client } from '@stomp/stompjs';
 const route = useRoute();
 const router = useRouter();
 const boardStore = useBoardStore();
-const userStore = useUserStore(); // ✅ 유저 스토어 사용
+const userStore = useUserStore();
 
-// ✅ boardId를 computed로 관리하여 경로 변경에 즉각 반응하게 함
 const boardId = computed(() => route.params.boardId);
 
 const isExpanded = ref(true); 
@@ -99,7 +98,6 @@ let client = null;
 
 const voteSession = computed(() => boardStore.activeVoteSession);
 
-// ✅ 매니저 권한 체크 로직을 직접 비교 방식으로 강화
 const isManager = computed(() => {
   const managerId = boardStore.currentPolicy?.boardManager?.id;
   if (!managerId || !userStore.id) return false;
