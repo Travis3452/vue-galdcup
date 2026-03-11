@@ -1,57 +1,42 @@
 import { defineStore } from 'pinia'
-import api from '@/axios'
-import { useUserStore } from '@/stores/user'
+import axios from '../axios'
 
 export const useBoardStore = defineStore('board', {
   state: () => ({
-    currentBoard: null,       // 현재 게시판 상세 정보
-    currentVoteSession: null, // 진행 중인 투표 세션
-    isBoardManager: false,    // 매니저 여부
-    isSubManager: false,      // 부매니저 여부
-    loading: false,
-    error: null
+    currentBoard: null,
+    currentPolicy: null,
+    categories: [],
+    activeVoteSession: null,
+    isLoading: false, // 로딩 상태 추가
   }),
+
   actions: {
-    // 1. 게시판 기본 정보 가져오기 (방문 기록용 topic 포함)
-    async fetchBoard(boardId) {
+    // 🚀 통합 API 단일 호출 액션
+    async fetchBoardDetails(boardId) {
+      this.isLoading = true;
       try {
-        const res = await api.get(`/boards/${boardId}`)
-        this.currentBoard = res.data
-      } catch (err) {
-        console.error('게시판 정보 로드 실패', err)
-        this.currentBoard = null
-      }
-    },
-
-    // 2. 게시판 관리 권한 확인
-    async fetchBoardPolicy(boardId) {
-      this.loading = true
-      try {
-        const res = await api.get(`/boards/${boardId}/policy`)
-        const userStore = useUserStore()
-        const currentUserId = userStore.id
-
-        this.isBoardManager = res.data?.boardManager?.id === currentUserId
-        this.isSubManager = res.data?.subManagers?.some(sm => sm.id === currentUserId) || false
-        this.error = null
-      } catch (err) {
-        this.isBoardManager = false
-        this.isSubManager = false
-        this.error = err.message
-      } finally {
-        this.loading = false
-      }
-    },
-
-    // 3. 현재 진행 중인 투표 정보 가져오기
-    async fetchVoteSession(boardId) {
-      try {
-        const response = await api.get(`/boards/${boardId}/vote-session`);
-        this.currentVoteSession = response.data;
+        const response = await axios.get(`/boards/${boardId}/details`);
+        const data = response.data;
+        
+        // 한 번의 응답으로 모든 상태 업데이트
+        this.currentBoard = data.board;
+        this.currentPolicy = data.policy;
+        this.categories = data.categories;
+        this.activeVoteSession = data.activeVoteSession;
       } catch (error) {
-        // 투표가 없는 경우(404/409 등) null 처리
-        this.currentVoteSession = null;
+        console.error('게시판 상세 정보를 불러오는데 실패했습니다.', error);
+        throw error;
+      } finally {
+        this.isLoading = false;
       }
+    },
+
+    // (선택) 상태 초기화
+    clearBoardDetails() {
+      this.currentBoard = null;
+      this.currentPolicy = null;
+      this.categories = [];
+      this.activeVoteSession = null;
     }
   }
 })

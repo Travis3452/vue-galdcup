@@ -49,26 +49,28 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
-import { useRoute } from 'vue-router'
-import api from '@/axios'
+import { ref, onMounted, onUnmounted, nextTick, computed, watch } from 'vue'
+import { useBoardStore } from '@/stores/board' // 1. ✨ 스토어 임포트
 import Chart from 'chart.js/auto'
-import { Client } from '@stomp/stompjs' // ✨ 추가
+import { Client } from '@stomp/stompjs'
 
-const route = useRoute()
-const voteStatus = ref(null)
-const isLoading = ref(true) // ✨ 로딩 상태
-let chartInstance = null // ✨ 차트 인스턴스 관리
-let client = null // ✨ 웹소켓 클라이언트
+const boardStore = useBoardStore()
+
+// 2. ✨ 로컬 상태 대신 스토어 데이터 참조
+const voteStatus = computed(() => boardStore.currentVoteSession)
+const isLoading = computed(() => boardStore.isLoading)
+
+let chartInstance = null
+let client = null
 
 const hasVotes = computed(() => {
   if (!voteStatus.value?.options) return false
   return voteStatus.value.options.some(o => o.count > 0)
 })
 
-// --- ✨ WebSocket 연결 로직 ---
+// --- WebSocket 연결 로직 (실시간 차트 반영) ---
 const connectWebSocket = () => {
-  if (!voteStatus.value?.id) return
+  if (!voteStatus.value?.id || client) return
 
   const baseURL = import.meta.env.VITE_API_BASE_URL
   const socketURL = baseURL.replace(/^http/, 'ws') + '/ws-galdcup'
@@ -76,21 +78,20 @@ const connectWebSocket = () => {
   client = new Client({
     brokerURL: socketURL,
     onConnect: () => {
-      console.log('차트 페이지 실시간 연결 성공')
       client.subscribe(`/topic/votes/${voteStatus.value.id}`, (message) => {
         const countsMap = JSON.parse(message.body)
         
-        // 1. 데이터 업데이트
+        // 스토어 데이터 업데이트 (반응형)
         voteStatus.value.options.forEach((opt, index) => {
           if (countsMap[index] !== undefined) {
             opt.count = countsMap[index]
           }
         })
 
-        // 2. ✨ 차트 실시간 업데이트
+        // 차트 실시간 업데이트
         if (chartInstance) {
           chartInstance.data.datasets[0].data = voteStatus.value.options.map(o => o.count)
-          chartInstance.update('none') // 'none' 옵션으로 애니메이션 튀지 않게 업데이트
+          chartInstance.update('none') 
         }
       })
     }
@@ -102,11 +103,11 @@ const connectWebSocket = () => {
 const initChart = async () => {
   await nextTick()
   const canvas = document.getElementById('votePieChart')
-  if (!canvas) return
+  if (!canvas || chartInstance) return
   
   const ctx = canvas.getContext('2d')
 
-  // 이미지 패턴 생성
+  // 이미지 패턴 생성 (CLOB/URL 최적화)
   const images = await Promise.all(
     voteStatus.value.options.map(opt => {
       return new Promise(resolve => {
@@ -125,14 +126,12 @@ const initChart = async () => {
     type: 'pie',
     data: {
       labels: voteStatus.value.options.map(o => o.label),
-      datasets: [
-        {
-          data: voteStatus.value.options.map(o => o.count),
-          backgroundColor: patterns,
-          borderWidth: 2,
-          borderColor: '#ffffff'
-        }
-      ]
+      datasets: [{
+        data: voteStatus.value.options.map(o => o.count),
+        backgroundColor: patterns,
+        borderWidth: 2,
+        borderColor: '#ffffff'
+      }]
     },
     options: {
       responsive: true,
@@ -144,34 +143,35 @@ const initChart = async () => {
   })
 }
 
-onMounted(async () => {
-  isLoading.value = true
-  try {
-    const res = await api.get(`/boards/${route.params.boardId}/vote-session`)
-    voteStatus.value = res.data
-
-    if (hasVotes.value) {
-      await initChart()
-    }
-    
-    // 데이터 로드 후 웹소켓 연결
+// 3. ✨ 데이터 감시 및 초기화
+// BoardLayout에서 데이터를 다 가져왔거나, 가져오는 중일 때 대응
+watch(voteStatus, async (newVal) => {
+  if (newVal && hasVotes.value) {
+    await initChart()
     connectWebSocket()
-  } catch (err) {
-    console.error('현황 로드 실패:', err)
-  } finally {
-    setTimeout(() => { isLoading.value = false }, 400)
+  }
+}, { immediate: true })
+
+onMounted(() => {
+  // onMounted 시점에 이미 데이터가 있다면 차트 초기화 시도
+  if (voteStatus.value && hasVotes.value) {
+    initChart()
+    connectWebSocket()
   }
 })
 
 onUnmounted(() => {
   if (client) client.deactivate()
-  if (chartInstance) chartInstance.destroy()
+  if (chartInstance) {
+    chartInstance.destroy()
+    chartInstance = null
+  }
 })
-</script>
 
-<style scoped>
-/* 차트 캔버스 높이 확보 */
-#votePieChart {
-  max-height: 300px !important;
+// 퍼센트 계산 로직 (기존 유지)
+const calculatePercentage = (count) => {
+  if (!voteStatus.value?.options) return 0
+  const total = voteStatus.value.options.reduce((acc, cur) => acc + Number(cur.count || 0), 0)
+  return total === 0 ? 0 : (Number(count || 0) / total) * 100
 }
-</style>
+</script>

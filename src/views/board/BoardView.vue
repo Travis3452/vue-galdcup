@@ -7,10 +7,14 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useBoardStore } from '@/stores/board'
 import PostList from '@/views/board/PostListView.vue'
 import VoteSession from '@/views/board/VoteSessionView.vue'
 
 const route = useRoute()
-const boardId = route.params.boardId
+const boardStore = useBoardStore()
+
+const boardId = computed(() => route.params.boardId)
 </script>

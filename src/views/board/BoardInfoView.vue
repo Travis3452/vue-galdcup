@@ -1,11 +1,8 @@
 <template>
   <div class="bg-white rounded-[2rem] shadow-xl p-8 md:p-10 mb-8 relative overflow-hidden border border-indigo-50">
-    <div class="absolute -top-24 -right-24 w-64 h-64 bg-indigo-50 rounded-full blur-3xl pointer-events-none opacity-60"></div>
-
     <div class="relative z-10">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
         <div class="space-y-4">
-          
           <div class="flex items-center gap-4">
             <div v-if="isLoading" class="w-10 h-10 rounded-xl bg-slate-200 animate-pulse shrink-0"></div>
             <span v-else class="w-10 h-10 flex items-center justify-center rounded-xl bg-indigo-600 text-white text-xl font-black shadow-md shrink-0">G</span>
@@ -41,7 +38,7 @@
           <div class="h-10 w-24 bg-slate-200 rounded-xl animate-pulse"></div>
           <div class="h-10 w-16 bg-slate-200 rounded-xl animate-pulse"></div>
         </div>
-        <div v-else-if="boardStore.isBoardManager" class="flex gap-2 shrink-0">
+        <div v-else-if="isBoardManager" class="flex gap-2 shrink-0">
           <button @click="showPolicyModal = true" class="px-4 py-2.5 bg-yellow-500 text-white rounded-xl hover:bg-yellow-600 transition text-sm font-bold shadow-sm">
             정책 변경
           </button>
@@ -71,54 +68,42 @@
 
     <BoardPolicyModal
       v-if="showPolicyModal"
-      :boardId="boardId"
+      :boardId="String(boardId)"
       :boardPolicy="boardPolicy"
       @close="showPolicyModal = false"
-      @updated="fetchBoardPolicy"
+      @updated="boardStore.fetchBoardDetails(String(boardId))"
     />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import api from '@/axios'
 import { useUserStore } from '@/stores/user'
 import { useBoardStore } from '@/stores/board'
 import BoardPolicyModal from '@/views/board/BoardPolicyView.vue'
 
-const route = useRoute()
 const router = useRouter()
-const store = useUserStore()
+const userStore = useUserStore()
 const boardStore = useBoardStore()
 
-const boardId = route.params.boardId
-
 const board = computed(() => boardStore.currentBoard)
-const boardPolicy = ref(null)
+const boardPolicy = computed(() => boardStore.currentPolicy)
+const boardId = computed(() => boardStore.currentBoard?.id)
+const isLoading = computed(() => boardStore.isLoading)
+
+// ✅ 템플릿의 v-else-if="isBoardManager"와 일치하도록 computed 정의
+const isBoardManager = computed(() => {
+  if (!boardPolicy.value?.boardManager || !userStore.id) return false
+  return Number(boardPolicy.value.boardManager.id) === Number(userStore.id)
+})
+
 const showPolicyModal = ref(false)
 
-// ✨ 로딩 상태 변수 추가 (기본값 true)
-const isLoading = ref(true)
-
-async function fetchBoardPolicy() {
-  try {
-    const res = await api.get(`/boards/${boardId}/policy`)
-    boardPolicy.value = res.data
-
-    const currentUserId = store.id
-    boardStore.isBoardManager = boardPolicy.value?.boardManager?.id === currentUserId
-    boardStore.isSubManager = boardPolicy.value?.subManagers?.some(sm => sm.id === currentUserId) || false
-  } catch {
-    boardStore.isBoardManager = false
-    boardStore.isSubManager = false
-  }
-}
-
-// ... 나머지 메서드(deleteBoard, applyForBoardManager 등)는 기존과 동일 ...
 async function deleteBoard() {
   try {
-    await api.delete(`/boards/${boardId}`)
+    await api.delete(`/boards/${boardId.value}`)
     router.push('/')
   } catch (err) {
     console.error('게시판 삭제 실패', err)
@@ -128,7 +113,7 @@ async function deleteBoard() {
 
 async function applyForBoardManager() {
   try {
-    await api.post(`/board-manager-requests/${boardId}/apply`)
+    await api.post(`/board-manager-requests/${boardId.value}/apply`)
     alert('권한 위임 신청이 접수되었습니다.')
   } catch (err) {
     console.error('권한 위임 신청 실패', err)
@@ -148,7 +133,6 @@ function formatDate(dateStr) {
 
 function confirmDeleteBoard() {
   if (!confirm('정말 이 갈드컵을 삭제하시겠습니까?')) return
-
   const input = prompt(`삭제하려면 갈드컵 주제를 똑같이 입력하세요.\n ex) ${board.value?.topic}`)
   if (input !== board.value?.topic) {
     alert('입력한 주제가 일치하지 않습니다. 삭제가 취소되었습니다.')
@@ -156,21 +140,4 @@ function confirmDeleteBoard() {
   }
   deleteBoard()
 }
-
-onMounted(async () => {
-  isLoading.value = true // 시작할 때 로딩 ON
-
-  try {
-    // 만약 현재 스토어에 있는 보드 정보가 없거나, 다른 게시판 정보라면 새로 가져옴
-    if (!boardStore.currentBoard || String(boardStore.currentBoard.id) !== String(boardId)) {
-      await boardStore.fetchBoard(boardId)
-    }
-    await fetchBoardPolicy()
-  } catch (err) {
-    console.error('데이터 로드 실패:', err)
-  } finally {
-    // 모든 통신이 끝나면 무조건 로딩 OFF
-    isLoading.value = false
-  }
-})
 </script>

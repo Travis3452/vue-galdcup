@@ -41,6 +41,7 @@
           전체 삭제
         </button>
       </div>
+
       <div v-if="!$route.meta.noLayout" class="w-full border-t-4 border-slate-100 relative z-20"></div>
 
       <router-view :key="$route.fullPath" class="!rounded-none !shadow-none !border-0" />
@@ -61,24 +62,28 @@ const boardStore = useBoardStore()
 
 const boardId = computed(() => route.params.boardId)
 
+/**
+ * 🛠️ API 호출 로직
+ */
 const loadBoardData = async (id) => {
   if (!id) return
   try {
-    await Promise.all([
-      boardStore.fetchBoard(id),
-      boardStore.fetchBoardPolicy(id)
-    ])
+    await boardStore.fetchBoardDetails(id)
   } catch (err) {
     console.error('데이터 갱신 실패:', err)
   }
 }
 
+// URL의 boardId가 바뀔 때마다 통합 데이터 로드
 watch(boardId, (newId) => {
   if (newId) {
     loadBoardData(newId)
   }
 }, { immediate: true })
 
+/**
+ * 통합 API 결과로 currentBoard가 업데이트되면 자동으로 최근 목록에 추가됩니다.
+ */
 watch(() => boardStore.currentBoard, (newBoard) => {
   if (newBoard && newBoard.id && newBoard.topic) {
     recentStore.addBoard({

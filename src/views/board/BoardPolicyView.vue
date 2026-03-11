@@ -145,17 +145,28 @@
 </template>
 
 <script setup>
-// 스크립트 부분은 기존 로직을 완벽히 유지했습니다!
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import api from '@/axios'
+import { useBoardStore } from '@/stores/board'
 
-const props = defineProps({
-  boardId: { type: String, required: true },
-  boardPolicy: { type: Object, required: true }
+const route = useRoute()
+const boardStore = useBoardStore()
+
+const emit = defineEmits(['close'])
+
+// 1. ✨ Props 의존성 제거 및 스토어 데이터 참조
+const boardId = computed(() => route.params.boardId)
+const boardPolicy = computed(() => boardStore.currentPolicy)
+
+// 2. ✨ 로컬 상태 초기화 로직 (스토어 값 기반)
+const localThreshold = ref(boardPolicy.value?.likeThreshold || 0)
+
+// 정책 데이터가 변경될 때 로컬 입력값 동기화
+watch(() => boardPolicy.value?.likeThreshold, (newVal) => {
+  localThreshold.value = newVal || 0
 })
-const emit = defineEmits(['close', 'updated'])
 
-const localThreshold = ref(props.boardPolicy?.likeThreshold || 0)
 const searchNickname = ref('')
 const searchResults = ref([])
 const totalPages = ref(0)
@@ -171,13 +182,17 @@ const visiblePages = computed(() => {
   return pages
 })
 
+// 3. ✨ 데이터 갱신 방식 변경 (통합 API 재호출)
+async function refreshData() {
+  await boardStore.fetchBoardDetails(boardId.value)
+}
+
 async function handleUpdateThreshold() {
   try {
-    await api.patch(`/boards/${props.boardId}/policy`, { likeThreshold: localThreshold.value })
-    emit('updated')
+    await api.patch(`/boards/${boardId.value}/policy`, { likeThreshold: localThreshold.value })
+    await refreshData() // 스토어 갱신
     alert('정책이 업데이트되었습니다.')
   } catch (err) {
-    console.error(err)
     alert(err?.response?.data?.message || '정책 업데이트 중 오류가 발생했습니다.')
   }
 }
@@ -195,21 +210,18 @@ async function handleSearchUser(page = 0, size = 5) {
     totalPages.value = res.data.totalPages || 0
     currentPage.value = res.data.number || 0
   } catch (err) {
-    console.error(err)
     alert(err?.response?.data?.message || '유저 검색 중 오류가 발생했습니다.')
   }
 }
 
 async function handleAddSubManager(nickname) {
   try {
-    await api.post(`/boards/${props.boardId}/policy/sub-managers`, { nickname })
-    emit('updated')
+    await api.post(`/boards/${boardId.value}/policy/sub-managers`, { nickname })
+    await refreshData() // 스토어 갱신
     alert(`${nickname} 님이 서브 매니저로 추가되었습니다.`)
-    // 추가 완료 시 검색 결과 비우기 (선택 사항)
     searchResults.value = []
     searchNickname.value = ''
   } catch (err) {
-    console.error(err)
     alert(err?.response?.data?.message || '서브 매니저 추가 중 오류가 발생했습니다.')
   }
 }
@@ -217,37 +229,17 @@ async function handleAddSubManager(nickname) {
 async function handleRemoveSubManager(nickname) {
   if (!confirm(`${nickname} 님을 서브 매니저에서 해임하시겠습니까?`)) return
   try {
-    await api.delete(`/boards/${props.boardId}/policy/sub-managers`, { data: { nickname } })
-    emit('updated')
+    await api.delete(`/boards/${boardId.value}/policy/sub-managers`, { data: { nickname } })
+    await refreshData() // 스토어 갱신
   } catch (err) {
-    console.error(err)
     alert(err?.response?.data?.message || '서브 매니저 삭제 중 오류가 발생했습니다.')
   }
 }
 
 function prevPageGroup() {
-  if (pageGroupStart.value >= 5) {
-    pageGroupStart.value -= 5
-  }
+  if (pageGroupStart.value >= 5) pageGroupStart.value -= 5
 }
 function nextPageGroup() {
-  if (pageGroupStart.value + 5 < totalPages.value) {
-    pageGroupStart.value += 5
-  }
+  if (pageGroupStart.value + 5 < totalPages.value) pageGroupStart.value += 5
 }
 </script>
-
-<style scoped>
-.z-60 { z-index: 60; }
-
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-}
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #cbd5e1;
-  border-radius: 20px;
-}
-</style>
