@@ -43,13 +43,8 @@
                 게시글의 좋아요 수가 설정값에 도달하면<br/>인기 게시판 목록에 자동으로 노출됩니다.
               </p>
               <div class="flex gap-3">
-                <input 
-                  v-model="localThreshold" type="number" 
-                  class="flex-1 border-2 border-white px-6 py-4 rounded-2xl text-lg font-black focus:ring-4 focus:ring-indigo-100 outline-none transition shadow-inner bg-white/50" 
-                />
-                <button @click="handleUpdateThreshold" class="px-8 bg-indigo-600 text-white rounded-2xl font-black hover:bg-indigo-700 transition shadow-lg shadow-indigo-100">
-                  저장
-                </button>
+                <input v-model="localThreshold" type="number" class="flex-1 border-2 border-white px-6 py-4 rounded-2xl text-lg font-black focus:ring-4 focus:ring-indigo-100 outline-none transition shadow-inner bg-white/50" />
+                <button @click="handleUpdateThreshold" class="px-8 bg-indigo-600 text-white rounded-2xl font-black hover:bg-indigo-700 transition">저장</button>
               </div>
             </div>
           </section>
@@ -59,14 +54,6 @@
               <input v-model="searchNickname" @keyup.enter="handleSearchUser(0)" class="flex-1 border border-slate-200 px-5 py-3 rounded-2xl text-sm outline-none focus:border-indigo-500" placeholder="닉네임으로 유저 검색" />
               <button @click="handleSearchUser(0)" class="px-6 bg-slate-800 text-white rounded-2xl text-sm font-bold">검색</button>
             </div>
-
-            <div v-if="searchResults.length > 0" class="bg-slate-50 rounded-2xl p-4">
-              <div v-for="user in searchResults" :key="user.id" class="flex justify-between items-center p-3 bg-white rounded-xl mb-2 shadow-sm">
-                <span class="text-sm font-bold text-slate-700">👤 {{ user.nickname }}</span>
-                <button @click="handleAddSubManager(user.nickname)" class="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-600 hover:text-white transition">권한부여</button>
-              </div>
-            </div>
-
             <div class="space-y-3">
               <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Current Sub-Managers</p>
               <div v-for="sm in boardPolicy?.subManagers" :key="sm.id" class="flex justify-between items-center p-4 border border-slate-100 rounded-2xl hover:bg-slate-50 transition">
@@ -89,39 +76,50 @@
               <table class="w-full text-left border-collapse bg-white">
                 <thead class="bg-slate-50 border-b border-slate-100">
                   <tr>
+                    <th class="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-tighter w-16">Order</th>
                     <th class="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-tighter">Category Name</th>
                     <th class="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-tighter text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-50">
-                  <tr v-for="cat in categories" :key="cat.id" class="hover:bg-slate-50/50 transition-colors group">
+                  <tr v-for="(cat, index) in localCategories" :key="cat.id" class="hover:bg-slate-50/50 transition-colors group">
+                    <td class="px-6 py-4">
+                      <div v-if="isMainManager" class="flex flex-col items-center gap-1">
+                        <button 
+                          @click="moveOrder(index, -1)" 
+                          :disabled="index === 0"
+                          class="text-slate-300 hover:text-indigo-600 disabled:opacity-20 transition"
+                        >▲</button>
+                        <button 
+                          @click="moveOrder(index, 1)" 
+                          :disabled="index === localCategories.length - 1"
+                          class="text-slate-300 hover:text-indigo-600 disabled:opacity-20 transition"
+                        >▼</button>
+                      </div>
+                      <span v-else class="text-xs font-bold text-slate-300 text-center block">{{ index + 1 }}</span>
+                    </td>
                     <td class="px-6 py-4">
                       <div class="flex items-center gap-3">
-                        <span v-if="cat.type === 'NOTICE'" class="px-2 py-0.5 bg-red-100 text-red-600 text-[10px] font-black rounded-md">공지</span>
-                        <span v-else-if="cat.type === 'GENERAL'" class="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-black rounded-md">기본</span>
+                        <span v-if="cat.categoryType === 'NOTICE'" class="px-2 py-0.5 bg-red-100 text-red-600 text-[10px] font-black rounded-md">공지</span>
+                        <span v-else-if="cat.categoryType === 'GENERAL'" class="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-black rounded-md">기본</span>
                         <span class="font-bold text-slate-700">{{ cat.name }}</span>
                       </div>
                     </td>
                     <td class="px-6 py-4 text-right">
                       <div class="flex justify-end gap-2">
-                        <button 
-                          @click="openEditPrompt(cat)"
-                          class="p-2 text-slate-400 hover:text-indigo-600 transition"
-                        >
-                          <span class="text-xs font-bold">수정</span>
-                        </button>
-                        <button 
-                          v-if="cat.type === 'CUSTOM' && isMainManager"
-                          @click="handleDeleteCategory(cat.id, cat.name)"
-                          class="p-2 text-slate-400 hover:text-red-500 transition"
-                        >
-                          <span class="text-xs font-bold">삭제</span>
-                        </button>
+                        <button @click="openEditPrompt(cat)" class="p-2 text-slate-400 hover:text-indigo-600 transition"><span class="text-xs font-bold">수정</span></button>
+                        <button v-if="cat.categoryType === 'CUSTOM' && isMainManager" @click="handleDeleteCategory(cat.id, cat.name)" class="p-2 text-slate-400 hover:text-red-500 transition"><span class="text-xs font-bold">삭제</span></button>
                       </div>
                     </td>
                   </tr>
                 </tbody>
               </table>
+            </div>
+
+            <div v-if="isOrderChanged" class="flex justify-center pt-4">
+              <button @click="handleSaveOrder" class="px-10 py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-xl shadow-indigo-100 hover:bg-indigo-700 transform hover:-translate-y-1 transition-all">
+                변경된 순서 저장하기
+              </button>
             </div>
           </section>
 
@@ -144,7 +142,6 @@ const userStore = useUserStore()
 
 const emit = defineEmits(['close'])
 
-// --- 탭 설정 ---
 const activeTab = ref('threshold')
 const tabs = [
   { id: 'threshold', label: '인기글 기준', icon: '🔥' },
@@ -153,7 +150,6 @@ const tabs = [
 ]
 const currentTabLabel = computed(() => tabs.find(t => t.id === activeTab.value)?.label)
 
-// --- 데이터 참조 ---
 const boardId = computed(() => route.params.boardId)
 const boardPolicy = computed(() => boardStore.currentPolicy)
 const categories = computed(() => boardStore.categories)
@@ -163,19 +159,52 @@ const isMainManager = computed(() => {
   return Number(mainManagerId) === Number(userStore.id)
 })
 
-const localThreshold = ref(boardPolicy.value?.likeThreshold || 0)
-const newCategoryName = ref('')
+// --- ✨ 정렬 순서 관리 상태 ---
+const localCategories = ref([])
+const isOrderChanged = ref(false)
 
-watch(() => boardPolicy.value?.likeThreshold, (newVal) => {
-  localThreshold.value = newVal || 0
+// 스토어 카테고리가 변경되면 로컬 리스트 초기화
+watch(categories, (newVal) => {
+  localCategories.value = JSON.parse(JSON.stringify(newVal))
+  isOrderChanged.value = false
 }, { immediate: true })
 
 async function refreshData() {
   await boardStore.fetchBoardDetails(boardId.value)
 }
 
-// --- ✨ 카테고리 관리 로직 (수정 기능 추가) ---
+// 순서 이동 로직
+function moveOrder(index, direction) {
+  const newIndex = index + direction
+  if (newIndex < 0 || newIndex >= localCategories.value.length) return
+  
+  const temp = [...localCategories.value]
+  const [movedItem] = temp.splice(index, 1)
+  temp.splice(newIndex, 0, movedItem)
+  
+  localCategories.value = temp
+  isOrderChanged.value = true
+}
 
+// 순서 일괄 저장
+async function handleSaveOrder() {
+  try {
+    const payload = localCategories.value.map((cat, idx) => ({
+      id: cat.id,
+      sortOrder: idx,
+      name: cat.name
+    }))
+    
+    await api.patch(`/boards/${boardId.value}/post-categories/batch`, payload)
+    alert('카테고리 순서가 저장되었습니다.')
+    await refreshData()
+  } catch (err) {
+    alert(err?.response?.data?.message || '순서 저장에 실패했습니다.')
+  }
+}
+
+// --- 카테고리 기본 관리 로직 ---
+const newCategoryName = ref('')
 async function handleAddCategory() {
   const name = newCategoryName.value.trim()
   if (name.length < 2 || name.length > 10) return alert('2~10자로 입력해주세요.')
@@ -188,36 +217,30 @@ async function handleAddCategory() {
 async function openEditPrompt(category) {
   const newName = prompt(`'${category.name}' 카테고리의 새로운 이름을 입력하세요.`, category.name)
   if (!newName || newName === category.name) return
-  if (newName.length < 2 || newName.length > 10) return alert('2~10자로 입력해주세요.')
-
   try {
-    // PATCH /api/boards/{boardId}/post-categories/{categoryId}
-    await api.patch(`/boards/${boardId.value}/post-categories/${category.id}`, { name: newName })
+    await api.patch(`/boards/${boardId.value}/post-categories`, { id: category.id, name: newName })
     await refreshData()
   } catch (err) { alert(err?.response?.data?.message || '수정 실패') }
 }
 
 async function handleDeleteCategory(categoryId, categoryName) {
-  const targetCategory = categories.value.find(c => c.id !== categoryId && c.type !== 'NOTICE')
-  if (!targetCategory) return alert('삭제 후 이동할 대체 카테고리가 없습니다.')
-  
-  if (!confirm(`'${categoryName}'을 삭제하면 모든 게시글이 '${targetCategory.name}'으로 이동합니다.`)) return
+  const targetCategory = localCategories.value.find(c => c.id !== categoryId && c.categoryType !== 'NOTICE')
+  if (!targetCategory) return alert('대체할 카테고리가 없습니다.')
+  if (!confirm(`'${categoryName}' 삭제 시 모든 글이 '${targetCategory.name}'으로 이동합니다.`)) return
   try {
-    await api.delete(`/boards/${boardId.value}/post-categories/${categoryId}`, {
-      params: { moveToId: targetCategory.id }
-    })
+    await api.delete(`/boards/${boardId.value}/post-categories/${categoryId}`, { params: { moveToId: targetCategory.id } })
     await refreshData()
-  } catch (err) { alert(err?.response?.data?.message || '삭제 실패') }
+  } catch (err) { alert('삭제 실패') }
 }
 
 // --- 정책/서브매니저 로직 ---
-const searchNickname = ref(''); const searchResults = ref([])
+const localThreshold = ref(boardPolicy.value?.likeThreshold || 0)
+watch(() => boardPolicy.value?.likeThreshold, (n) => localThreshold.value = n || 0)
 async function handleUpdateThreshold() {
-  try {
-    await api.patch(`/boards/${boardId.value}/policy`, { likeThreshold: localThreshold.value })
-    await refreshData(); alert('저장되었습니다.')
-  } catch (err) { alert('저장 실패') }
+  await api.patch(`/boards/${boardId.value}/policy`, { likeThreshold: localThreshold.value })
+  await refreshData(); alert('저장되었습니다.')
 }
+const searchNickname = ref(''); const searchResults = ref([])
 async function handleSearchUser(page = 0) {
   const res = await api.get(`/users/nickname/${encodeURIComponent(searchNickname.value.trim())}`, { params: { page, size: 5 } })
   searchResults.value = res.data.content || []
@@ -237,5 +260,4 @@ async function handleRemoveSubManager(nickname) {
 .custom-scrollbar::-webkit-scrollbar { width: 5px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #f1f5f9; border-radius: 10px; }
-.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #e2e8f0; }
 </style>
