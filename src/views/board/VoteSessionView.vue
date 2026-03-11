@@ -5,8 +5,12 @@
       <div class="relative z-10 space-y-8">
         <div class="flex items-center justify-between">
           <div v-if="voteStatus === 'UPCOMING'" class="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-600 rounded-2xl font-black text-sm uppercase tracking-widest shadow-sm border border-amber-100">
+            <span class="relative flex h-3 w-3">
+              <span class="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
+            </span>
             Upcoming
           </div>
+
           <div v-else-if="voteStatus === 'LIVE'" class="inline-flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-2xl font-black text-sm uppercase tracking-widest shadow-sm">
             <span class="relative flex h-3 w-3">
               <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -14,9 +18,11 @@
             </span>
             LIVE
           </div>
+
           <div v-else class="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-500 rounded-2xl font-black text-sm uppercase tracking-widest border border-slate-200">
             Finished
           </div>
+
           <button @click="toggleExpanded" class="p-2 text-slate-400 hover:text-indigo-600 rounded-full transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 transition-transform duration-300" :class="{'rotate-180': !isExpanded}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7" />
@@ -86,7 +92,7 @@
 import { computed, onUnmounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useBoardStore } from '@/stores/board';
-import { useUserStore } from '@/stores/user'; // ✅ 유저 스토어 추가
+import { useUserStore } from '@/stores/user';
 import api from '@/axios';
 import { Client } from '@stomp/stompjs';
 
