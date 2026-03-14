@@ -207,8 +207,9 @@ const handleFinishVote = async () => {
   try {
     await api.post(`/boards/${boardId.value}/vote-session/${voteSession.value.id}/finish`);
     alert("투표가 종료되었습니다.");
-    // 마감 후 전체 상태 동기화를 위해 통합 API 재호출
-    await boardStore.fetchBoardDetails(boardId.value);
+    
+    // 변경: 전체를 다시 불러오지 않고 투표 세션 정보만 갱신
+    await boardStore.fetchActiveVoteSession(boardId.value);
   } catch (error) {
     alert(error.response?.data?.message || "마감 처리에 실패했습니다.");
   }

@@ -68,7 +68,11 @@ const boardId = computed(() => route.params.boardId)
 const loadBoardData = async (id) => {
   if (!id) return
   try {
-    await boardStore.fetchBoardDetails(id)
+    // 두 API를 동시에 호출하여 로딩 최적화
+    await Promise.all([
+      boardStore.fetchBoardDetails(id),
+      boardStore.fetchActiveVoteSession(id)
+    ])
   } catch (err) {
     console.error('데이터 갱신 실패:', err)
   }
