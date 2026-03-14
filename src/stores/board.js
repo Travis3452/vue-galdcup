@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import axios from '../axios'
+import { useUserStore } from '@/stores/user'
 
 export const useBoardStore = defineStore('board', {
   state: () => ({
@@ -7,36 +8,51 @@ export const useBoardStore = defineStore('board', {
     currentPolicy: null,
     categories: [],
     activeVoteSession: null,
-    isLoading: false, // 로딩 상태 추가
+    isBoardManager: false,
+    isSubManager: false,
+    isLoading: false,
   }),
 
   actions: {
-    // 🚀 통합 API 단일 호출 액션
     async fetchBoardDetails(boardId) {
       this.isLoading = true;
       try {
         const response = await axios.get(`/boards/${boardId}/details`);
         const data = response.data;
         
-        // 한 번의 응답으로 모든 상태 업데이트
+        // 1. 기본 정보 매핑
         this.currentBoard = data.board;
         this.currentPolicy = data.policy;
         this.categories = data.categories;
         this.activeVoteSession = data.activeVoteSession;
+
+        // 2. 권한 체크 로직 복구 (누락 방지)
+        const userStore = useUserStore();
+        const currentUserId = userStore.id;
+
+        if (currentUserId && data.policy) {
+          // 관리자 ID 비교
+          this.isBoardManager = data.policy.boardManager?.id === currentUserId;
+          // 부관리자 목록 중 현재 유저가 있는지 확인
+          this.isSubManager = data.policy.subManagers?.some(sm => sm.id === currentUserId) || false;
+        } else {
+          this.isBoardManager = false;
+          this.isSubManager = false;
+        }
+
       } catch (error) {
-        console.error('게시판 상세 정보를 불러오는데 실패했습니다.', error);
+        console.error('게시판 정보를 불러오는데 실패했습니다.', error);
         throw error;
       } finally {
         this.isLoading = false;
       }
     },
 
-    // (선택) 상태 초기화
     clearBoardDetails() {
       this.currentBoard = null;
       this.currentPolicy = null;
-      this.categories = [];
-      this.activeVoteSession = null;
+      this.isBoardManager = false;
+      this.isSubManager = false;
     }
   }
 })

@@ -387,20 +387,18 @@ async function goToPage(page) {
 async function prevPage() { if (currentPage.value > 0) await goToPage(currentPage.value - 1) }
 async function nextPage() { if (hasNextPage.value) await goToPage(currentPage.value + 1) }
 
-// --- 라이프사이클 초기화 ---
 onMounted(async () => {
   const postId = route.params.postId
   isLoading.value = true
 
   try {
-    // 병렬 데이터 로딩으로 속도 최적화
     await Promise.all([
       fetchPost(postId),
       fetchComments(postId),
-      boardStore.fetchBoardPolicy(route.params.boardId)
+      boardStore.fetchBoardDetails(route.params.boardId) 
     ])
   } catch (err) {
-    console.error('초기 로딩 실패:', err)
+    console.error('데이터 로딩 실패:', err)
   } finally {
     isLoading.value = false
   }
