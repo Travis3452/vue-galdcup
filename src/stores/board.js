@@ -26,14 +26,11 @@ export const useBoardStore = defineStore('board', {
         this.categories = data.categories;
         this.activeVoteSession = data.activeVoteSession;
 
-        // 2. 권한 체크 로직 복구 (누락 방지)
         const userStore = useUserStore();
         const currentUserId = userStore.id;
 
         if (currentUserId && data.policy) {
-          // 관리자 ID 비교
           this.isBoardManager = data.policy.boardManager?.id === currentUserId;
-          // 부관리자 목록 중 현재 유저가 있는지 확인
           this.isSubManager = data.policy.subManagers?.some(sm => sm.id === currentUserId) || false;
         } else {
           this.isBoardManager = false;
