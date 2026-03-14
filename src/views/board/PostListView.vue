@@ -211,7 +211,7 @@ async function fetchPosts() {
     
     // Page<PostDto> 응답 처리
     posts.value = res.data.content || []
-    totalPages.value = res.data.totalPages || 1
+    totalPages.value = res.data.page?.totalPages || 1
   } catch (err) {
     console.error('게시글 목록 로드 실패:', err)
     posts.value = []
