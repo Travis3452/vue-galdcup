@@ -64,7 +64,7 @@
           <div class="h-48 w-full bg-slate-200 rounded-2xl animate-pulse mt-8"></div>
         </div>
         
-        <div v-else class="prose max-w-none w-full text-slate-800 text-base md:text-lg leading-relaxed min-h-[400px] py-12 break-words" v-html="post?.content"></div>
+        <div v-else class="prose max-w-none w-full text-slate-800 text-base md:text-lg leading-relaxed min-h-[400px] py-12 break-words" v-html="DOMPurify.sanitize(post?.content || '')"></div>
 
         <div v-if="isLoading" class="flex justify-center items-center gap-8 py-10">
           <div class="w-32 h-32 rounded-3xl bg-slate-200 animate-pulse"></div>
@@ -198,6 +198,7 @@ import { useUserStore } from '@/stores/user'
 import { useBoardStore } from '@/stores/board'
 import api from '@/axios'
 import PostList from '@/views/board/PostListView.vue'
+import DOMPurify from 'dompurify' // ✨ 수정된 부분: DOMPurify 임포트
 
 // --- 외부 스토어 및 라우터 설정 ---
 const store = useUserStore()
