@@ -30,14 +30,19 @@ const router = createRouter({
       component: () => import('@/views/board/CreateBoardView.vue'),
       meta: { requiresAuth: true }
     },
-    // ✨ 개인정보처리방침 추가
+    
     {
       path: '/privacy',
       name: 'PrivacyPolicy',
       component: () => import('@/views/PrivacyPolicy.vue')
     },
 
-    // Vote 페이지 (독립 팝업 레이아웃)
+    {
+      path: '/terms',
+      name: 'TermsOfService',
+      component: () => import('@/views/TermsOfService.vue')
+    },
+
     {
       path: '/boards/:boardId/votes/:voteSessionId',
       name: 'Vote',

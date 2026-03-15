@@ -14,11 +14,18 @@
 
       <div class="flex flex-wrap justify-center items-center gap-2">
         <a
-          href="#"
+          href="mailto:your-email@example.com"
           class="flex items-center px-3 py-1.5 bg-white text-slate-800 rounded-lg font-bold text-xs shadow-sm hover:bg-slate-100 transition-all hover:-translate-y-0.5"
         >
-          의견 보내기
+          의견 및 신고
         </a>
+
+        <router-link
+          to="/terms"
+          class="flex items-center px-3 py-1.5 bg-white text-slate-800 rounded-lg font-bold text-xs shadow-sm hover:bg-slate-100 transition-all hover:-translate-y-0.5"
+        >
+          이용약관
+        </router-link>
         
         <router-link
           to="/privacy"
