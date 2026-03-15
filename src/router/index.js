@@ -30,6 +30,12 @@ const router = createRouter({
       component: () => import('@/views/board/CreateBoardView.vue'),
       meta: { requiresAuth: true }
     },
+    // ✨ 개인정보처리방침 추가
+    {
+      path: '/privacy',
+      name: 'PrivacyPolicy',
+      component: () => import('@/views/PrivacyPolicy.vue')
+    },
 
     // Vote 페이지 (독립 팝업 레이아웃)
     {
@@ -98,12 +104,17 @@ const router = createRouter({
   ]
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore()
-  if (to.meta.requiresAuth && !userStore.accessToken) {
+  
+  if (!userStore.accessToken && localStorage.getItem('accessToken')) {
+    await userStore.restore()
+  }
+
+  if (to.meta.requiresAuth && !userStore.isLoggedIn) {
     alert('로그인이 필요한 서비스입니다.')
     next('/')
-  } else if (to.meta.adminOnly && !userStore.role?.includes('ADMIN')) {
+  } else if (to.meta.adminOnly && !userStore.isAdmin) {
     alert('관리자만 접근 가능합니다.')
     next('/')
   } else {

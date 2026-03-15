@@ -20,12 +20,12 @@
           의견 보내기
         </a>
         
-        <a
-          href="/privacy"
+        <router-link
+          to="/privacy"
           class="flex items-center px-3 py-1.5 bg-white text-slate-800 rounded-lg font-bold text-xs shadow-sm hover:bg-slate-100 transition-all hover:-translate-y-0.5"
         >
           개인정보처리방침
-        </a>
+        </router-link>
         
         <a
           href="https://github.com/travis3452/spring-galdcup"
