@@ -97,7 +97,7 @@ import api from '@/axios'
 const store = useUserStore()
 const router = useRouter()
 
-const isLoggedIn = computed(() => !!store.accessToken)
+const isLoggedIn = computed(() => store.isLoggedIn)
 const nickname = computed(() => store.nickname || '')
 
 const searchQuery = ref('')
@@ -107,8 +107,8 @@ const isSearching = ref(false)
 const searchContainerRef = ref(null)
 let searchTimeout = null
 
-onMounted(() => {
-  store.restore()
+onMounted(async () => {
+  await store.restore()
   document.addEventListener('click', handleClickOutside)
 })
 

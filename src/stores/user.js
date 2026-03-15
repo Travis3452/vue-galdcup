@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import axios from 'axios' // reissue에서 직접 사용하기 위해 기본 axios 임포트
+import axios from 'axios'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -30,7 +30,15 @@ export const useUserStore = defineStore('user', {
   getters: {
     isAdmin: (state) => state.role?.includes('ADMIN') || false,
     isManager: (state) => state.role?.includes('MANAGER') || false,
-    isLoggedIn: (state) => !!state.accessToken
+    // 1. 단순히 존재 여부만 보지 않고, 만료되지 않았는지까지 확인하도록 강화
+    isLoggedIn: (state) => {
+      if (!state.accessToken) return false;
+      const payload = parseJwt(state.accessToken);
+      if (!payload || !payload.exp) return false;
+      
+      // 현재 시간(초)보다 만료 시간이 큰지 확인
+      return Math.floor(Date.now() / 1000) < payload.exp;
+    }
   },
   
   actions: {
@@ -59,24 +67,32 @@ export const useUserStore = defineStore('user', {
       localStorage.removeItem('role')
     },
 
-    restore() {
+    // 2. 앱 실행 시 호출되는 restore 로직 강화
+    async restore() {
       const token = localStorage.getItem('accessToken')
-      const idStr = localStorage.getItem('id')
-      const name = localStorage.getItem('nickname')
-      const roleStr = localStorage.getItem('role')
+      if (!token) return;
 
-      if (token) {
+      const payload = parseJwt(token);
+      const now = Math.floor(Date.now() / 1000);
+
+      // 토큰이 존재하지만 만료되었다면 자동으로 재발급 시도
+      if (payload && now >= payload.exp) {
+        console.log("액세스 토큰 만료 감지, 재발급 시도...");
+        const success = await this.reissue();
+        if (!success) {
+          this.logout();
+        }
+      } else {
+        // 아직 유효하다면 그대로 스토어에 복원
         this.accessToken = token
-        this.id = idStr ? Number(idStr) : null
-        this.nickname = name || null
-        this.role = roleStr || null
+        this.id = localStorage.getItem('id') ? Number(localStorage.getItem('id')) : null
+        this.nickname = localStorage.getItem('nickname')
+        this.role = localStorage.getItem('role')
       }
     },
 
-    // ✨ reissue 액션 추가 (NavBar.vue 에러 해결)
     async reissue() {
       try {
-        // 인터셉터가 없는 기본 axios 인스턴스로 요청 (무한루프 방지)
         const response = await axios.post(
           `${API_BASE_URL}/api/auth/refresh`,
           {},
@@ -87,7 +103,7 @@ export const useUserStore = defineStore('user', {
         this.login(accessToken, nickname);
         return true;
       } catch (error) {
-        console.error("토큰 재발급 실패:", error);
+        console.error("토큰 재발급 실패 (리프레시 토큰 만료 또는 서버 에러):", error);
         this.logout();
         return false;
       }
