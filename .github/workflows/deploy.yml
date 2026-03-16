@@ -22,7 +22,7 @@ jobs:
           echo "VITE_SUPABASE_PUBLIC_KEY=${{ secrets.VITE_SUPABASE_PUBLIC_KEY }}" >> .env
           echo "VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}" >> .env
           echo "VITE_GOOGLE_CLIENT_ID=${{ secrets.VITE_GOOGLE_CLIENT_ID }}" >> .env
-
+          echo "VITE_GOOGLE_REDIRECT_URI=${{ secrets.VITE_GOOGLE_REDIRECT_URI }}" >> .env
       - name: Install dependencies & Build
         run: |
           npm install

@@ -164,25 +164,26 @@ function formatDate(dateString) {
 async function handleLogin() {
   const success = await store.reissue()
   if (success) return
+  
+  store.clearLocalData()
   loginWithGoogle()
 }
 
 function loginWithGoogle() {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
-  const redirectUri = `${import.meta.env.VITE_API_BASE_URL}/api/auth/callback/google`
+  const redirectUri = import.meta.env.VITE_GOOGLE_REDIRECT_URI
+  
   const scope = "openid email profile"
 
-  const googleAuthUrl =
-    "https://accounts.google.com/o/oauth2/v2/auth?" +
-    new URLSearchParams({
-      client_id: clientId,
-      redirect_uri: redirectUri,
-      response_type: "code",
-      scope,
-      prompt: "select_account"
-    })
+  const params = new URLSearchParams({
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    response_type: "code",
+    scope: scope,
+    prompt: "select_account"
+  })
 
-  window.location.href = googleAuthUrl
+  window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`
 }
 
 async function logout() {

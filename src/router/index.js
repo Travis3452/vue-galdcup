@@ -2,7 +2,6 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 
 import HomeView from '@/views/HomeView.vue'
-import GoogleCallback from '@/views/auth/GoogleCallback.vue'
 import BoardLayout from '@/views/board/BoardLayout.vue'
 
 const router = createRouter({
@@ -15,8 +14,8 @@ const router = createRouter({
     },
     {
       path: '/auth/callback/google',
-      name: 'googleCallback',
-      component: GoogleCallback
+      name: 'GoogleCallback',
+      component: () => import('@/views/auth/GoogleCallback.vue')
     },
     {
       path: '/mypage',
@@ -30,19 +29,16 @@ const router = createRouter({
       component: () => import('@/views/board/CreateBoardView.vue'),
       meta: { requiresAuth: true }
     },
-    
     {
       path: '/privacy',
       name: 'PrivacyPolicy',
       component: () => import('@/views/PrivacyPolicy.vue')
     },
-
     {
       path: '/terms',
       name: 'TermsOfService',
       component: () => import('@/views/TermsOfService.vue')
     },
-
     {
       path: '/boards/:boardId/votes/:voteSessionId',
       name: 'Vote',
@@ -53,7 +49,6 @@ const router = createRouter({
         noLayout: true 
       }
     },
-
     {
       path: '/boards/:boardId',
       component: BoardLayout,
@@ -109,17 +104,20 @@ const router = createRouter({
   ]
 })
 
+/**
+ * 네비게이션 가드: 쿠키 기반 인증 상태 복구 및 권한 체크
+ */
 router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore()
   
-  if (!userStore.accessToken && localStorage.getItem('accessToken')) {
+  if (!userStore.userId && localStorage.getItem('isLoggedIn') === 'true') {
     await userStore.restore()
   }
 
   if (to.meta.requiresAuth && !userStore.isLoggedIn) {
     alert('로그인이 필요한 서비스입니다.')
     next('/')
-  } else if (to.meta.adminOnly && !userStore.isAdmin) {
+  } else if (to.meta.adminOnly && userStore.role !== 'ADMIN') {
     alert('관리자만 접근 가능합니다.')
     next('/')
   } else {
