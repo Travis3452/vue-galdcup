@@ -14,7 +14,7 @@ export const useUserStore = defineStore('user', {
   
   actions: {
     setProfile({ userId, nickname, role }) {
-      this.userId = userId;
+      this.id = userId;
       this.nickname = nickname;
       this.role = role;
       this.isLoggedIn = true;
