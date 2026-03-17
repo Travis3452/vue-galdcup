@@ -176,10 +176,10 @@ const getType = (cat) => (cat.categoryType || cat.type || '').toUpperCase()
 // --- 상태 관리 ---
 const localCategories = ref([])
 const isOrderChanged = ref(false)
+const newCategoryName = ref('')
 const deletingCategoryId = ref(null) // 현재 삭제 확인 중인 카테고리 ID
 const selectedMoveToId = ref('')      // 이관할 대상 카테고리 ID
 
-// [INP 최적화] 무거운 클론 대신 얕은 복사 사용
 watch(categories, (newVal) => {
   if (newVal) {
     localCategories.value = [...newVal]
@@ -211,11 +211,20 @@ async function handleSaveOrder() {
 async function handleAddCategory() {
   const name = newCategoryName.value.trim()
   if (name.length < 2 || name.length > 10) return alert('2~10자로 입력해주세요.')
+  
   try {
     const res = await api.post(`/boards/${boardId.value}/post-categories`, { name })
-    boardStore.categories.push(res.data) // 부분 업데이트
+    
+    boardStore.categories.push(res.data) 
+    
+    localCategories.value.push(res.data) 
+    
     newCategoryName.value = ''
-  } catch (err) { alert('추가 실패') }
+    alert('카테고리가 추가되었습니다.')
+  } catch (err) { 
+    console.error(err)
+    alert('추가 실패: 관리자 권한을 확인하거나 이미 존재하는 이름인지 확인하세요.') 
+  }
 }
 
 async function openEditPrompt(category) {
