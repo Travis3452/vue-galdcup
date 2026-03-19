@@ -4,7 +4,6 @@
       
       <aside class="w-full md:w-1/3 lg:w-1/4 shrink-0">
         <div class="bg-white rounded-2xl md:rounded-[2rem] shadow-xl p-5 md:p-8 border border-indigo-50 relative overflow-hidden flex flex-col items-center">
-          
           <div class="absolute -top-16 -right-16 w-32 h-32 bg-indigo-50 rounded-full blur-3xl pointer-events-none opacity-60"></div>
           
           <div v-if="isLoading" class="relative z-10 w-full animate-pulse">
@@ -95,15 +94,33 @@
             </div>
           </div>
 
-          <div v-else-if="currentTab === 'role'" class="flex-1 space-y-6 md:space-y-8 text-center sm:text-left">
+          <div v-else-if="currentTab === 'role'" class="flex-1 space-y-6 md:space-y-8">
             <div class="bg-slate-50 border border-slate-100 rounded-xl md:rounded-2xl p-6 md:p-8">
               <p class="text-sm md:text-lg font-bold text-slate-600">
                 현재 등급: <span class="ml-1 md:ml-2 text-base md:text-xl px-3 py-1.5 bg-white border-2 rounded-lg md:rounded-xl shadow-sm text-indigo-600 border-indigo-100">{{ user.role || 'USER' }}</span>
               </p>
             </div>
-            <div class="flex justify-center sm:justify-end">
-              <button v-if="user.role !== 'ADMIN' && user.role !== 'MANAGER'" @click="requestRole" class="w-full sm:w-auto bg-emerald-500 text-white px-8 py-3.5 rounded-xl font-bold text-base md:text-lg hover:bg-emerald-600 shadow-md">매니저 권한 신청하기</button>
-              <p v-else class="text-slate-400 font-bold italic text-sm">이미 상위 권한을 보유 중입니다.</p>
+
+            <div v-if="latestRequest" class="bg-white border-2 border-dashed border-slate-200 rounded-xl md:rounded-2xl p-6 md:p-8">
+              <h4 class="text-base md:text-lg font-black text-slate-800 mb-4 flex items-center gap-2">
+                <span>📋</span> 최근 권한 신청 현황
+              </h4>
+              <div class="flex items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-100">
+                <div>
+                  <p class="text-xs md:text-sm font-bold text-slate-500 mb-1">신청 권한: {{ latestRequest.requestedRole }}</p>
+                  <span v-if="latestRequest.status === 'PENDING'" class="px-3 py-1 bg-indigo-100 text-indigo-600 rounded-full text-[10px] md:text-xs font-black">⏳ 심사 중</span>
+                  <span v-else-if="latestRequest.status === 'APPROVED'" class="px-3 py-1 bg-emerald-100 text-emerald-600 rounded-full text-[10px] md:text-xs font-black">✅ 승인 완료</span>
+                  <span v-else-if="latestRequest.status === 'DENIED'" class="px-3 py-1 bg-rose-100 text-rose-600 rounded-full text-[10px] md:text-xs font-black">❌ 거절됨</span>
+                </div>
+                <button v-if="latestRequest.status === 'DENIED' && user.role === 'USER'" @click="requestRole" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold text-xs hover:bg-indigo-700 transition">재신청</button>
+              </div>
+            </div>
+
+            <div v-else-if="user.role === 'USER'" class="flex justify-center sm:justify-end">
+              <button @click="requestRole" class="w-full sm:w-auto bg-emerald-500 text-white px-8 py-3.5 rounded-xl font-bold text-base md:text-lg hover:bg-emerald-600 shadow-md">매니저 권한 신청하기</button>
+            </div>
+            <div v-else class="text-center py-8">
+              <p class="text-slate-400 font-bold italic text-sm md:text-base">이미 상위 권한을 보유 중입니다. ✨</p>
             </div>
           </div>
 
@@ -115,7 +132,7 @@
                   <div class="w-10 h-10 md:w-12 md:h-12 bg-purple-600 text-white rounded-lg md:rounded-xl flex items-center justify-center font-black text-lg shadow-md">{{ (req.applicantNickname || '익').charAt(0) }}</div>
                   <div>
                     <h4 class="font-bold text-slate-800 text-base md:text-lg leading-none mb-1">{{ req.applicantNickname }}</h4>
-                    <p class="text-[9px] text-purple-600 font-black tracking-widest uppercase">REQUEST</p>
+                    <p class="text-[9px] text-purple-600 font-black tracking-widest uppercase"> 요청 권한: {{ req.requestedRole }}</p>
                   </div>
                 </div>
                 <div class="flex gap-2 w-full sm:w-auto">
@@ -123,6 +140,12 @@
                   <button @click="denyRole(req.id)" class="flex-1 sm:flex-none px-5 py-2.5 bg-red-50 text-red-600 rounded-lg md:rounded-xl font-bold hover:bg-red-100 text-xs md:text-sm">거절</button>
                 </div>
               </div>
+            </div>
+            <div v-if="roleTotalPages > 1" class="flex justify-center gap-1.5 mt-4">
+               <button v-for="p in roleTotalPages" :key="p" @click="fetchRoleRequests(p-1)"
+                :class="['px-3 py-1 rounded font-bold text-xs', roleCurrentPage === p-1 ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-600']">
+                {{ p }}
+              </button>
             </div>
           </div>
 
@@ -178,8 +201,11 @@ const isLoading = ref(true)
 const currentTab = ref('posts')
 const items = ref([])
 const roleRequests = ref([])
+const latestRequest = ref(null) // ✨ 나의 최신 신청 현황 상태
 const currentPage = ref(0)
 const totalPages = ref(1)
+const roleCurrentPage = ref(0) 
+const roleTotalPages = ref(1)  
 const user = ref({})
 const newNickname = ref('')
 const confirmEmail = ref('')
@@ -200,6 +226,7 @@ onMounted(async () => {
 async function changeTab(tab) {
   currentTab.value = tab
   currentPage.value = 0
+  roleCurrentPage.value = 0
   errorMessage.value = ''
   router.replace({ query: { tab, page: 0 } })
   
@@ -214,6 +241,7 @@ async function changeTab(tab) {
 async function handleTabData() {
   if (['posts', 'comments'].includes(currentTab.value)) await fetchData()
   if (currentTab.value === 'approval') await fetchRoleRequests()
+  if (currentTab.value === 'role') await fetchMyLatestRequest() // ✨ 탭 전환 시 내 신청 현황 조회
 }
 
 // --- API 로직 ---
@@ -235,26 +263,44 @@ async function fetchData() {
   } catch (err) { items.value = [] }
 }
 
-async function fetchRoleRequests() {
+// ✨ 나의 최신 신청 정보 가져오기
+async function fetchMyLatestRequest() {
   try {
-    const res = await api.get('/role-changes')
-    roleRequests.value = res.data
-  } catch (err) { console.error('요청 목록 로드 실패') }
+    const res = await api.get('/users/me/role-requests')
+    // 백엔드에서 Page<Dto>를 주기로 했으므로 첫 번째 요소를 가져옵니다.
+    latestRequest.value = res.data.content?.[0] || null
+  } catch (err) {
+    latestRequest.value = null
+  }
+}
+
+async function fetchRoleRequests(page = 0) {
+  try {
+    roleCurrentPage.value = page
+    const res = await api.get('/users/role-requests', { 
+      params: { status: 'PENDING', page: page, size: 10 } 
+    })
+    roleRequests.value = res.data.content || []
+    roleTotalPages.value = res.data.totalPages || 1
+  } catch (err) { 
+    console.error('요청 목록 로드 실패')
+    roleRequests.value = []
+  }
 }
 
 async function approveRole(id) {
   try {
-    await api.post(`/role-changes/${id}/approve`)
+    await api.post(`/users/role-requests/${id}/approve`)
     alert('승인되었습니다.')
-    fetchRoleRequests()
+    fetchRoleRequests(roleCurrentPage.value)
   } catch (err) { alert('승인 처리 실패') }
 }
 
 async function denyRole(id) {
   if (!confirm('거절하시겠습니까?')) return
   try {
-    await api.post(`/role-changes/${id}/deny`)
-    fetchRoleRequests()
+    await api.post(`/users/role-requests/${id}/deny`)
+    fetchRoleRequests(roleCurrentPage.value)
   } catch (err) { alert('거절 처리 실패') }
 }
 
@@ -285,16 +331,20 @@ async function deleteAccount() {
 
 async function requestRole() {
   try {
-    await api.post(`/role-changes`, { requestedRole: 'MANAGER' })
+    await api.post(`/users/role-requests`, { requestedRole: 'MANAGER' })
     alert('매니저 신청이 완료되었습니다. 관리자 승인 후 반영됩니다.')
-  } catch (err) { alert('이미 신청했거나 요청 중 오류가 발생했습니다.') }
+    await fetchMyLatestRequest() // 신청 직후 상태 갱신
+  } catch (err) { 
+    alert(err.response?.data?.message || '이미 신청했거나 요청 중 오류가 발생했습니다.') 
+  }
 }
 
 const getItemLink = (item) => {
+  const boardId = item.boardId || 1
   if (currentTab.value === 'comments') {
-    return `/boards/${item.boardId || 1}/posts/${item.postId}`
+    return `/boards/${boardId}/posts/${item.postId}`
   }
-  return `/boards/${item.boardId || 1}/posts/${item.id}`
+  return `/boards/${boardId}/posts/${item.id}`
 }
 
 const formatDate = (str) => str ? new Date(str).toLocaleDateString('ko-KR') : ''
