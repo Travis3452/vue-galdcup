@@ -181,7 +181,7 @@ const router = useRouter()
 const route = useRoute()
 
 // --- 상태 관리 ---
-const isLoading = ref(true) // ✨ 로딩 상태 추가
+const isLoading = ref(true) 
 const currentTab = ref('posts')
 const items = ref([])
 const roleRequests = ref([])
@@ -195,12 +195,11 @@ const errorMessage = ref('')
 onMounted(async () => {
   if (route.query.tab) currentTab.value = route.query.tab
   
-  isLoading.value = true // 로딩 시작
+  isLoading.value = true
   try {
     await fetchUser()
     await handleTabData()
   } finally {
-    // 자연스러운 전환을 위해 0.4초 지연
     setTimeout(() => {
       isLoading.value = false
     }, 400)
@@ -227,7 +226,6 @@ async function handleTabData() {
 }
 
 // --- API 로직 ---
-
 async function fetchUser() {
   try {
     const res = await api.get('/users/me')
@@ -238,6 +236,7 @@ async function fetchUser() {
 
 async function fetchData() {
   if (!user.value.nickname) return
+  // ✨ 백엔드 컨트롤러에 정의된 URL과 정확히 일치하는지 확인
   const endpoint = currentTab.value === 'posts' ? `/posts/user/${user.value.nickname}` : `/comments/user/${user.value.nickname}`
   try {
     const res = await api.get(endpoint, { params: { page: currentPage.value, size: 10 } })
@@ -301,8 +300,18 @@ async function requestRole() {
 }
 
 // --- 유틸리티 ---
-const getItemLink = (item) => `/boards/${item.boardId || 1}/posts/${currentTab.value === 'comments' ? item.postId : item.id}`
+
+// ✨ 핵심 수정: 댓글(CommentDto) 데이터일 때 게시판(boardId)과 게시글(postId) 정보 매핑
+const getItemLink = (item) => {
+  if (currentTab.value === 'comments') {
+    // 주의: CommentDto에 postId와 boardId가 포함되어 있어야 이 링크가 정상 작동합니다.
+    return `/boards/${item.boardId || 1}/posts/${item.postId}`
+  }
+  return `/boards/${item.boardId || 1}/posts/${item.id}`
+}
+
 const formatDate = (str) => str ? new Date(str).toLocaleDateString('ko-KR') : ''
+
 const goToPage = async (p) => { 
   currentPage.value = p
   isLoading.value = true
@@ -310,12 +319,4 @@ const goToPage = async (p) => {
   isLoading.value = false
 }
 
-const closePopup = () => {
-  if (window.opener && !window.opener.closed) {
-    window.close();
-  } else {
-    alert("브라우저 보안 설정으로 인해 창을 자동으로 닫을 수 없습니다. 탭을 직접 닫아주세요.");
-    self.close();
-  }
-};
 </script>
