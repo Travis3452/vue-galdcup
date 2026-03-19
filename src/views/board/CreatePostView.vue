@@ -1,32 +1,41 @@
 <template>
-  <div class="w-full font-sans">
-    <div class="w-full bg-white p-8 md:p-12 flex flex-col relative overflow-hidden">
-      <div class="absolute -top-32 -right-32 w-64 h-64 bg-indigo-50 rounded-full blur-3xl pointer-events-none opacity-60"></div>
+  <div class="w-full font-sans bg-slate-50 md:bg-transparent min-h-screen md:min-h-0">
+    <div class="w-full bg-white p-5 md:p-12 flex flex-col relative overflow-hidden min-h-screen md:min-h-0 md:rounded-[2.5rem] md:shadow-xl md:border md:border-slate-200">
       
-      <h1 class="text-3xl md:text-4xl font-extrabold text-slate-800 mb-8 tracking-tight flex items-center gap-3 relative z-10 pb-6 border-b-2 border-slate-100">
-        📝 새로운 게시글 작성
+      <div class="absolute -top-20 -right-20 md:-top-32 md:-right-32 w-48 h-48 md:w-64 md:h-64 bg-indigo-50 rounded-full blur-3xl pointer-events-none opacity-60"></div>
+      
+      <h1 class="text-2xl md:text-4xl font-extrabold text-slate-800 mb-6 md:mb-8 tracking-tight flex items-center gap-2 md:gap-3 relative z-10 pb-4 md:pb-6 border-b-2 border-slate-100">
+        <span class="text-xl md:text-3xl">📝</span> 새로운 게시글 작성
       </h1>
 
-      <div class="space-y-6 relative z-10 flex-1 flex flex-col">
-        <div class="flex flex-col md:flex-row gap-4">
+      <div class="space-y-4 md:space-y-6 relative z-10 flex-1 flex flex-col">
+        
+        <div class="flex flex-col md:flex-row gap-3 md:gap-4">
           <div class="w-full md:w-48 shrink-0">
-            <select
-              v-model="selectedCategoryId"
-              class="w-full h-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 text-base font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition appearance-none cursor-pointer"
-              aria-label="카테고리 선택"
-            >
-              <option :value="null" disabled>카테고리 선택</option>
-              <option v-for="cat in categories" :key="cat.id" :value="cat.id">
-                {{ cat.type === 'NOTICE' ? '📢 ' + cat.name : '📁 ' + cat.name }}
-              </option>
-            </select>
+            <div class="relative">
+              <select
+                v-model="selectedCategoryId"
+                class="w-full bg-slate-50 border border-slate-200 rounded-xl md:rounded-2xl px-4 py-3.5 md:py-4 text-sm md:text-base font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition appearance-none cursor-pointer"
+                aria-label="카테고리 선택"
+              >
+                <option :value="null" disabled>카테고리 선택</option>
+                <option v-for="cat in categories" :key="cat.id" :value="cat.id">
+                  {{ cat.categoryType === 'NOTICE' ? '📢 ' + cat.name : '📁 ' + cat.name }}
+                </option>
+              </select>
+              <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
           </div>
 
           <div class="flex-1">
             <input
               v-model="title"
               type="text"
-              class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-5 text-xl font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+              class="w-full bg-slate-50 border border-slate-200 rounded-xl md:rounded-2xl px-4 py-3.5 md:px-6 md:py-4 text-base md:text-xl font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
               placeholder="제목을 입력하세요."
               aria-label="제목 입력"
               @input="errorMessage = ''"
@@ -34,31 +43,31 @@
           </div>
         </div>
 
-        <div class="flex-1 flex flex-col border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent transition-all min-h-[500px]">
+        <div class="flex-1 flex flex-col border border-slate-200 rounded-xl md:rounded-2xl overflow-hidden bg-white shadow-sm focus-within:ring-2 focus-within:ring-indigo-500 transition-all min-h-[350px] md:min-h-[500px]">
           <div ref="editorRef" class="w-full flex-1" aria-label="게시글 내용 에디터"></div>
         </div>
 
-        <div v-if="errorMessage" class="bg-red-50 border border-red-200 text-red-600 px-6 py-4 rounded-2xl flex items-center space-x-3 animate-pulse">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div v-if="errorMessage" class="bg-red-50 border border-red-200 text-red-600 px-4 py-3 md:px-6 md:py-4 rounded-xl md:rounded-2xl flex items-center gap-2 md:gap-3 animate-pulse">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-6 md:w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <span class="text-lg font-semibold">{{ errorMessage }}</span>
+          <span class="text-sm md:text-lg font-semibold">{{ errorMessage }}</span>
         </div>
 
-        <div class="flex justify-end gap-4 mt-8 pt-6 border-t-2 border-slate-100">
-          <router-link
-            :to="`/boards/${boardId}`"
-            class="px-8 py-4 rounded-2xl font-bold text-lg text-slate-600 bg-slate-100 hover:bg-slate-200 transition text-center"
+        <div class="flex flex-col-reverse sm:flex-row justify-end gap-3 md:gap-4 mt-4 md:mt-8 pt-6 border-t-2 border-slate-100">
+          <button
+            @click="router.back()"
+            class="px-8 py-3.5 md:py-4 rounded-xl md:rounded-2xl font-bold text-sm md:text-lg text-slate-600 bg-slate-100 hover:bg-slate-200 transition text-center w-full sm:w-auto"
           >
             취소
-          </router-link>
+          </button>
           
           <button
             @click="createPost"
             :disabled="submitting || !title.trim() || !selectedCategoryId"
-            class="relative flex items-center justify-center gap-2 px-10 py-4 rounded-2xl font-extrabold text-lg text-white bg-indigo-600 shadow-lg hover:bg-indigo-700 hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed transition transform hover:-translate-y-1 disabled:hover:translate-y-0 min-w-[160px]"
+            class="relative flex items-center justify-center gap-2 px-10 py-3.5 md:py-4 rounded-xl md:rounded-2xl font-extrabold text-sm md:text-lg text-white bg-indigo-600 shadow-lg hover:bg-indigo-700 disabled:opacity-70 disabled:cursor-not-allowed transition transform active:scale-95 sm:min-w-[160px] w-full sm:w-auto"
           >
-            <svg v-if="submitting" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <svg v-if="submitting" class="animate-spin h-4 w-4 md:h-5 md:w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
@@ -94,20 +103,18 @@ const submitting = ref(false)
 const errorMessage = ref('')
 
 onMounted(async () => {
-  await fetchCategories() // 카테고리 먼저 로드
+  await fetchCategories()
   await nextTick()
   initQuill()
 })
 
-// 카테고리 목록 가져오기
 async function fetchCategories() {
   try {
-    // 백엔드의 @RequestMapping("/api/boards/{boardId}/post-categories")과 일치시켜야 합니다.
     const res = await api.get(`/boards/${boardId}/post-categories`)
     categories.value = res.data || []
     
-    // (PostCreate의 경우) 기본값 설정 로직 유지
-    const generalCat = categories.value.find(c => c.type === 'GENERAL')
+    // 기본 카테고리(GENERAL) 자동 선택 로직
+    const generalCat = categories.value.find(c => c.categoryType === 'GENERAL' || c.type === 'GENERAL')
     if (generalCat) {
       selectedCategoryId.value = generalCat.id
     }
@@ -118,8 +125,9 @@ async function fetchCategories() {
 }
 
 function initQuill() {
-  const container = editorRef.value
-  quill = new Quill(container, {
+  if (!editorRef.value) return
+  
+  quill = new Quill(editorRef.value, {
     theme: 'snow',
     placeholder: '당신의 논리와 의견을 자유롭게 펼쳐보세요.',
     modules: {
@@ -132,7 +140,6 @@ function initQuill() {
     },
   })
 
-  // 이미지 핸들러 로직 (기존과 동일)
   const toolbar = quill.getModule('toolbar')
   if (toolbar) {
     toolbar.addHandler('image', async () => {
@@ -157,13 +164,13 @@ function initQuill() {
 }
 
 async function createPost() {
+  if (submitting.value) return
   errorMessage.value = ''
   
   if (!selectedCategoryId.value) {
     errorMessage.value = '카테고리를 선택하세요.'
     return
   }
-
   if (!title.value.trim()) {
     errorMessage.value = '제목을 입력하세요.'
     return
@@ -174,25 +181,17 @@ async function createPost() {
     const content = quill?.root?.innerHTML || ''
     const postData = {
       boardId,
-      categoryId: selectedCategoryId.value, // 수정된 부분: categoryId 추가
+      categoryId: selectedCategoryId.value,
       title: title.value.trim(),
       content,
     }
 
     await api.post('/posts', postData)
-    
     alert('게시글이 성공적으로 등록되었습니다!')
     router.push(`/boards/${boardId}`)
   } catch (err) {
     console.error('게시글 생성 실패', err)
-    // 백엔드에서 보낸 에러 메시지 처리 (예: NOTICE 권한 부족 등)
-    if (err.response?.data?.message) {
-      errorMessage.value = err.response.data.message
-    } else if (err.response?.status === 403) {
-      errorMessage.value = '이 카테고리(공지사항 등)에 글을 쓸 권한이 없습니다.'
-    } else {
-      errorMessage.value = '게시글 생성 중 오류가 발생했습니다.'
-    }
+    errorMessage.value = err.response?.data?.message || '게시글 생성 중 오류가 발생했습니다.'
   } finally {
     submitting.value = false
   }
@@ -200,14 +199,21 @@ async function createPost() {
 </script>
 
 <style scoped>
-/* 기존 스타일 유지 */
+/* 🎨 Quill 에디터 최적화 스타일 */
 :deep(.ql-toolbar.ql-snow) {
   background-color: #f8fafc;
   border: none !important;
   border-bottom: 1px solid #e2e8f0 !important;
-  border-top-left-radius: 1rem;
-  border-top-right-radius: 1rem;
-  padding: 1rem;
+  padding: 0.75rem; /* 기본 모바일 패딩 */
+  display: flex;
+  flex-wrap: wrap;
+}
+
+/* 데스크탑(md 이상) 패딩 설정 */
+@media (min-width: 768px) {
+  :deep(.ql-toolbar.ql-snow) {
+    padding: 1rem; 
+  }
 }
 
 :deep(.ql-container.ql-snow) {
@@ -216,14 +222,24 @@ async function createPost() {
 }
 
 :deep(.ql-editor) {
-  min-height: 400px;
-  font-size: 1.125rem;
-  line-height: 1.75;
+  min-height: 350px; /* 기본 모바일 높이 */
+  font-size: 1rem;
+  line-height: 1.6;
   color: #334155;
-  padding: 1.5rem;
+  padding: 1rem;
 }
 
-/* 드롭다운 화살표 커스텀 (필요시) */
+/* 데스크탑(md 이상) 상세 설정 */
+@media (min-width: 768px) {
+  :deep(.ql-editor) {
+    min-height: 450px;
+    font-size: 1.125rem;
+    line-height: 1.75;
+    padding: 1.5rem;
+  }
+}
+
+/* 드롭다운 화살표 커스텀 */
 select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
   background-repeat: no-repeat;

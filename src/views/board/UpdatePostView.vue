@@ -1,47 +1,55 @@
 <template>
-  <div class="w-full font-sans">
-    <div class="w-full bg-white p-8 md:p-12 flex flex-col relative overflow-hidden">
-      <div class="absolute -top-32 -right-32 w-64 h-64 bg-indigo-50 rounded-full blur-3xl pointer-events-none opacity-60"></div>
+  <div class="w-full font-sans bg-slate-50 md:bg-transparent min-h-screen md:min-h-0">
+    <div class="w-full bg-white p-5 md:p-12 flex flex-col relative overflow-hidden min-h-screen md:min-h-0 md:rounded-[2.5rem] md:shadow-xl md:border md:border-slate-200">
       
-      <h1 class="text-3xl md:text-4xl font-extrabold text-slate-800 mb-8 tracking-tight flex items-center gap-3 relative z-10 pb-6 border-b-2 border-slate-100">
-        📝 게시글 수정
+      <div class="absolute -top-20 -right-20 md:-top-32 md:-right-32 w-48 h-48 md:w-64 md:h-64 bg-indigo-50 rounded-full blur-3xl pointer-events-none opacity-60"></div>
+      
+      <h1 class="text-2xl md:text-4xl font-extrabold text-slate-800 mb-6 md:mb-8 tracking-tight flex items-center gap-2 md:gap-3 relative z-10 pb-4 md:pb-6 border-b-2 border-slate-100">
+        <span class="text-xl md:text-3xl">📝</span> 게시글 수정
       </h1>
 
-      <div class="space-y-6 relative z-10 flex-1 flex flex-col">
+      <div class="space-y-4 md:space-y-6 relative z-10 flex-1 flex flex-col">
         <div>
           <input
             v-model="title"
             type="text"
-            class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-5 text-xl font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+            class="w-full bg-slate-50 border border-slate-200 rounded-xl md:rounded-2xl px-4 py-3.5 md:px-6 md:py-5 text-base md:text-xl font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
             placeholder="제목을 입력하세요."
             aria-label="제목 입력"
+            @input="errorMessage = ''"
           />
         </div>
 
-        <div class="flex-1 flex flex-col border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent transition-all min-h-[500px]">
+        <div class="flex-1 flex flex-col border border-slate-200 rounded-xl md:rounded-2xl overflow-hidden bg-white shadow-sm focus-within:ring-2 focus-within:ring-indigo-500 transition-all min-h-[350px] md:min-h-[500px]">
           <div ref="editorRef" class="w-full flex-1" aria-label="게시글 내용 에디터"></div>
         </div>
 
-        <div v-if="errorMessage" class="bg-red-50 border border-red-200 text-red-600 px-6 py-4 rounded-2xl flex items-center space-x-3 animate-pulse">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div v-if="errorMessage" class="bg-red-50 border border-red-200 text-red-600 px-4 py-3 md:px-6 md:py-4 rounded-xl md:rounded-2xl flex items-center gap-2 md:gap-3 animate-pulse">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-6 md:w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <span class="text-lg font-semibold">{{ errorMessage }}</span>
+          <span class="text-sm md:text-lg font-semibold">{{ errorMessage }}</span>
         </div>
 
-        <div class="flex justify-end gap-4 mt-8 pt-6 border-t-2 border-slate-100">
+        <div class="flex flex-col-reverse sm:flex-row justify-end gap-3 md:gap-4 mt-4 md:mt-8 pt-6 border-t-2 border-slate-100">
           <router-link
             :to="`/boards/${boardId}/posts/${postId}`"
-            class="px-8 py-4 rounded-2xl font-bold text-lg text-slate-600 bg-slate-100 hover:bg-slate-200 transition"
+            class="px-8 py-3.5 md:py-4 rounded-xl md:rounded-2xl font-bold text-sm md:text-lg text-slate-600 bg-slate-100 hover:bg-slate-200 transition text-center w-full sm:w-auto"
           >
             취소
           </router-link>
+          
           <button
             @click="updatePost"
             :disabled="submitting || !title.trim()"
-            class="px-10 py-4 rounded-2xl font-extrabold text-lg text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transition transform hover:-translate-y-1"
+            class="relative flex items-center justify-center gap-2 px-10 py-3.5 md:py-4 rounded-xl md:rounded-2xl font-extrabold text-sm md:text-lg text-white bg-indigo-600 shadow-lg hover:bg-indigo-700 disabled:opacity-70 disabled:cursor-not-allowed transition transform active:scale-95 sm:min-w-[160px] w-full sm:w-auto"
           >
-            {{ submitting ? '수정 중...' : '수정 완료' }}
+            <svg v-if="submitting" class="animate-spin h-4 w-4 md:h-5 md:w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            
+            <span>{{ submitting ? '수정 중...' : '수정 완료' }}</span>
           </button>
         </div>
       </div>
@@ -76,8 +84,9 @@ onMounted(async () => {
 })
 
 function initQuill() {
-  const container = editorRef.value
-  quill = new Quill(container, {
+  if (!editorRef.value) return
+  
+  quill = new Quill(editorRef.value, {
     theme: 'snow',
     placeholder: '게시글 내용을 작성해주세요.',
     modules: {
@@ -90,7 +99,6 @@ function initQuill() {
     },
   })
 
-  // 이미지 업로드 핸들러
   const toolbar = quill.getModule('toolbar')
   if (toolbar) {
     toolbar.addHandler('image', async () => {
@@ -107,7 +115,6 @@ function initQuill() {
           quill.insertEmbed(range.index, 'image', url, 'user')
           quill.setSelection(range.index + 1)
         } catch (err) {
-          console.error('이미지 업로드 실패', err)
           errorMessage.value = '이미지 업로드에 실패했습니다.'
         }
       }
@@ -115,7 +122,6 @@ function initQuill() {
   }
 }
 
-// 기존 게시글 데이터 로드 (수동 헤더 제거)
 async function loadPost() {
   try {
     const { data } = await api.get(`/posts/${postId}`)
@@ -124,15 +130,15 @@ async function loadPost() {
       quill.root.innerHTML = data.content
     }
   } catch (err) {
-    console.error('게시글 불러오기 실패', err)
     errorMessage.value = err.response?.data?.message || '게시글을 불러오지 못했습니다.'
   }
 }
 
-// 게시글 수정 실행 (수동 헤더 제거)
 async function updatePost() {
+  if (submitting.value) return
   errorMessage.value = ''
-  if (!title.value || title.value.trim() === '') {
+  
+  if (!title.value.trim()) {
     errorMessage.value = '제목을 입력하세요.'
     return
   }
@@ -140,23 +146,15 @@ async function updatePost() {
   submitting.value = true
   try {
     const content = quill?.root?.innerHTML || ''
-    const postData = {
+    await api.put(`/posts/${postId}`, {
       title: title.value.trim(),
       content,
-    }
-    
-    // axios 인터셉터가 토큰을 자동으로 주입함
-    await api.put(`/posts/${postId}`, postData)
+    })
     
     alert('게시글이 성공적으로 수정되었습니다!')
     router.push(`/boards/${boardId}/posts/${postId}`)
   } catch (err) {
-    console.error('게시글 수정 실패', err)
-    if (err.response?.data?.message) {
-      errorMessage.value = err.response.data.message
-    } else {
-      errorMessage.value = '게시글 수정에 실패했습니다.'
-    }
+    errorMessage.value = err.response?.data?.message || '게시글 수정에 실패했습니다.'
   } finally {
     submitting.value = false
   }
@@ -164,13 +162,20 @@ async function updatePost() {
 </script>
 
 <style scoped>
+/* 🎨 Quill 에디터 최적화 스타일 */
 :deep(.ql-toolbar.ql-snow) {
-  background-color: #f8fafc; /* slate-50 */
+  background-color: #f8fafc;
   border: none !important;
-  border-bottom: 1px solid #e2e8f0 !important; /* slate-200 */
-  border-top-left-radius: 1rem;
-  border-top-right-radius: 1rem;
-  padding: 1rem;
+  border-bottom: 1px solid #e2e8f0 !important;
+  padding: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+@media (min-width: 768px) {
+  :deep(.ql-toolbar.ql-snow) {
+    padding: 1rem;
+  }
 }
 
 :deep(.ql-container.ql-snow) {
@@ -179,15 +184,25 @@ async function updatePost() {
 }
 
 :deep(.ql-editor) {
-  min-height: 400px;
-  font-size: 1.125rem; /* text-lg */
-  line-height: 1.75;
-  color: #334155; /* slate-700 */
-  padding: 1.5rem;
+  min-height: 350px;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #334155;
+  padding: 1rem;
 }
 
+@media (min-width: 768px) {
+  :deep(.ql-editor) {
+    min-height: 450px;
+    font-size: 1.125rem;
+    line-height: 1.75;
+    padding: 1.5rem;
+  }
+}
+
+/* 플레이스홀더 색상 */
 :deep(.ql-editor.ql-blank::before) {
-  color: #94a3b8; /* slate-400 */
+  color: #94a3b8;
   font-style: normal;
 }
 </style>
