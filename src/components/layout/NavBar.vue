@@ -83,7 +83,7 @@
         >
           <span class="bg-indigo-600 text-white w-5 h-5 rounded-full flex items-center justify-center font-black text-[10px]">G</span>
           <span class="hidden xs:block">로그인</span>
-          <span class="xs:hidden">Login</span>
+          <span class="xs:hidden">로그인</span>
         </button>
       </template>
     </nav>
