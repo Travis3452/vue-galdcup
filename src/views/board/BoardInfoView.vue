@@ -93,7 +93,9 @@ const boardPolicy = computed(() => boardStore.currentPolicy)
 const boardId = computed(() => boardStore.currentBoard?.id)
 const isLoading = computed(() => boardStore.isLoading)
 
-// ✅ 템플릿의 v-else-if="isBoardManager"와 일치하도록 computed 정의
+/** * 현재 사용자가 이 게시판의 메인 관리자인지 확인 
+ * (백엔드에서 이제 일반 USER 권한도 소유권이 있으면 관리 기능을 수행할 수 있습니다.)
+ */
 const isBoardManager = computed(() => {
   if (!boardPolicy.value?.boardManager || !userStore.id) return false
   return Number(boardPolicy.value.boardManager.id) === Number(userStore.id)
@@ -101,9 +103,12 @@ const isBoardManager = computed(() => {
 
 const showPolicyModal = ref(false)
 
+/** 게시판 삭제 API 호출 */
 async function deleteBoard() {
   try {
+    // 백엔드: DELETE /api/boards/{boardId}
     await api.delete(`/boards/${boardId.value}`)
+    alert('게시판이 삭제되었습니다.')
     router.push('/')
   } catch (err) {
     console.error('게시판 삭제 실패', err)
@@ -111,16 +116,29 @@ async function deleteBoard() {
   }
 }
 
+/** * 관리자 권한 신청 API 호출 
+ * 변경사항: 경로가 /board-manager-requests에서 /boards로 통합됨
+ */
 async function applyForBoardManager() {
   try {
-    await api.post(`/board-manager-requests/${boardId.value}/apply`)
-    alert('권한 위임 신청이 접수되었습니다.')
+    // 백엔드: POST /api/boards/{boardId}/apply
+    const res = await api.post(`/boards/${boardId.value}/apply`)
+    
+    // 만약 관리자가 없어서 즉시 승인(APPROVED)된 경우
+    if (res.data.status === 'APPROVED') {
+      alert('관리자가 공석이기 때문에 즉시 관리자로 임명되었습니다!')
+      // 변경된 관리자 정보를 반영하기 위해 게시판 정보 재조회
+      await boardStore.fetchBoardDetails(String(boardId.value))
+    } else {
+      alert('권한 위임 신청이 접수되었습니다. 기존 관리자의 승인을 기다려주세요.')
+    }
   } catch (err) {
     console.error('권한 위임 신청 실패', err)
     alert(err.response?.data?.message || '권한 위임 신청 실패')
   }
 }
 
+/** 날짜 포맷 헬퍼 */
 function formatDate(dateStr) {
   if (!dateStr) return ''
   const date = new Date(dateStr)
@@ -131,9 +149,10 @@ function formatDate(dateStr) {
   })
 }
 
+/** 삭제 확인 프롬프트 */
 function confirmDeleteBoard() {
   if (!confirm('정말 이 갈드컵을 삭제하시겠습니까?')) return
-  const input = prompt(`삭제하려면 갈드컵 주제를 똑같이 입력하세요.\n ex) ${board.value?.topic}`)
+  const input = prompt(`보안을 위해 갈드컵 주제를 똑같이 입력하세요.\n입력 예시: ${board.value?.topic}`)
   if (input !== board.value?.topic) {
     alert('입력한 주제가 일치하지 않습니다. 삭제가 취소되었습니다.')
     return
