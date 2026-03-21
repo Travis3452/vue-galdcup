@@ -9,15 +9,38 @@
       </h1>
 
       <div class="space-y-4 md:space-y-6 relative z-10 flex-1 flex flex-col">
-        <div>
-          <input
-            v-model="title"
-            type="text"
-            class="w-full bg-slate-50 border border-slate-200 rounded-xl md:rounded-2xl px-4 py-3.5 md:px-6 md:py-5 text-base md:text-xl font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
-            placeholder="제목을 입력하세요."
-            aria-label="제목 입력"
-            @input="errorMessage = ''"
-          />
+        
+        <div class="flex flex-col md:flex-row gap-3 md:gap-4">
+          <div class="w-full md:w-48 shrink-0">
+            <div class="relative">
+              <select
+                v-model="selectedCategoryId"
+                class="w-full bg-slate-50 border border-slate-200 rounded-xl md:rounded-2xl px-4 py-3.5 md:py-4 text-sm md:text-base font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition appearance-none cursor-pointer"
+                aria-label="카테고리 선택"
+              >
+                <option :value="null" disabled>카테고리 선택</option>
+                <option v-for="cat in categories" :key="cat.id" :value="cat.id">
+                  {{ cat.categoryType === 'NOTICE' ? '📢 ' + cat.name : '📁 ' + cat.name }}
+                </option>
+              </select>
+              <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex-1">
+            <input
+              v-model="title"
+              type="text"
+              class="w-full bg-slate-50 border border-slate-200 rounded-xl md:rounded-2xl px-4 py-3.5 md:px-6 md:py-4 text-base md:text-xl font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+              placeholder="제목을 입력하세요."
+              aria-label="제목 입력"
+              @input="errorMessage = ''"
+            />
+          </div>
         </div>
 
         <div class="flex-1 flex flex-col border border-slate-200 rounded-xl md:rounded-2xl overflow-hidden bg-white shadow-sm focus-within:ring-2 focus-within:ring-indigo-500 transition-all min-h-[350px] md:min-h-[500px]">
@@ -41,7 +64,7 @@
           
           <button
             @click="updatePost"
-            :disabled="submitting || !title.trim()"
+            :disabled="submitting || !title.trim() || !selectedCategoryId"
             class="relative flex items-center justify-center gap-2 px-10 py-3.5 md:py-4 rounded-xl md:rounded-2xl font-extrabold text-sm md:text-lg text-white bg-indigo-600 shadow-lg hover:bg-indigo-700 disabled:opacity-70 disabled:cursor-not-allowed transition transform active:scale-95 sm:min-w-[160px] w-full sm:w-auto"
           >
             <svg v-if="submitting" class="animate-spin h-4 w-4 md:h-5 md:w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -68,20 +91,49 @@ import { uploadImage } from '@/services/uploadImage'
 const route = useRoute()
 const router = useRouter()
 
+// 파라미터 정보
+const boardId = Number(route.params.boardId || 0)
+const postId = Number(route.params.postId || 0)
+
+// 상태 변수
 const title = ref('')
+const categories = ref([])
+const selectedCategoryId = ref(null) // 현재 게시글의 카테고리 ID 저장
 const editorRef = ref(null)
 let quill = null
 const submitting = ref(false)
 const errorMessage = ref('')
 
-const boardId = Number(route.params.boardId || 0)
-const postId = Number(route.params.postId || 0)
-
 onMounted(async () => {
+  // 1. 카테고리 목록을 먼저 가져오고 2. 기존 게시글 데이터를 로드함
+  await fetchCategories()
   await nextTick()
   initQuill()
-  loadPost()
+  await loadPost()
 })
+
+async function fetchCategories() {
+  try {
+    const res = await api.get(`/boards/${boardId}/post-categories`)
+    categories.value = res.data || []
+  } catch (err) {
+    console.error('카테고리 로드 실패', err)
+    errorMessage.value = '카테고리 정보를 불러오지 못했습니다.'
+  }
+}
+
+async function loadPost() {
+  try {
+    const { data } = await api.get(`/posts/${postId}`)
+    title.value = data.title
+    selectedCategoryId.value = data.categoryId // 서버에서 받은 카테고리 ID 할당
+    if (quill) {
+      quill.root.innerHTML = data.content
+    }
+  } catch (err) {
+    errorMessage.value = err.response?.data?.message || '게시글을 불러오지 못했습니다.'
+  }
+}
 
 function initQuill() {
   if (!editorRef.value) return
@@ -122,22 +174,14 @@ function initQuill() {
   }
 }
 
-async function loadPost() {
-  try {
-    const { data } = await api.get(`/posts/${postId}`)
-    title.value = data.title
-    if (quill) {
-      quill.root.innerHTML = data.content
-    }
-  } catch (err) {
-    errorMessage.value = err.response?.data?.message || '게시글을 불러오지 못했습니다.'
-  }
-}
-
 async function updatePost() {
   if (submitting.value) return
   errorMessage.value = ''
   
+  if (!selectedCategoryId.value) {
+    errorMessage.value = '카테고리를 선택하세요.'
+    return
+  }
   if (!title.value.trim()) {
     errorMessage.value = '제목을 입력하세요.'
     return
@@ -146,7 +190,10 @@ async function updatePost() {
   submitting.value = true
   try {
     const content = quill?.root?.innerHTML || ''
+    
+    // 백엔드 UpdatePostRequest 규격에 맞춰 전송
     await api.put(`/posts/${postId}`, {
+      categoryId: selectedCategoryId.value,
       title: title.value.trim(),
       content,
     })
@@ -162,7 +209,7 @@ async function updatePost() {
 </script>
 
 <style scoped>
-/* 🎨 Quill 에디터 최적화 스타일 */
+/* Quill 및 Select 스타일은 생성 페이지와 동일하게 유지 */
 :deep(.ql-toolbar.ql-snow) {
   background-color: #f8fafc;
   border: none !important;
@@ -173,9 +220,7 @@ async function updatePost() {
 }
 
 @media (min-width: 768px) {
-  :deep(.ql-toolbar.ql-snow) {
-    padding: 1rem;
-  }
+  :deep(.ql-toolbar.ql-snow) { padding: 1rem; }
 }
 
 :deep(.ql-container.ql-snow) {
@@ -200,9 +245,10 @@ async function updatePost() {
   }
 }
 
-/* 플레이스홀더 색상 */
-:deep(.ql-editor.ql-blank::before) {
-  color: #94a3b8;
-  font-style: normal;
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1.5em;
 }
 </style>
