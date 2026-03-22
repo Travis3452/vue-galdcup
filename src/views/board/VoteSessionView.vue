@@ -27,11 +27,15 @@
           </button>
         </div>
 
-        <div class="space-y-1 md:space-y-2 cursor-pointer text-center" @click="isExpanded = !isExpanded">
-          <h2 class="text-xl md:text-5xl font-black text-slate-800 tracking-tighter hover:text-indigo-600 transition-colors leading-tight">
-            {{ voteStatus === 'UPCOMING' ? '준비 중인 갈드컵' : '진행 중인 갈드컵' }}
+        <div class="space-y-2 md:space-y-4 text-center cursor-pointer group" @click="isExpanded = !isExpanded">
+          <h2 class="text-2xl md:text-4xl font-black text-slate-800 tracking-tight group-hover:text-indigo-600 transition-colors leading-snug break-keep px-2">
+            {{ voteSession.topic }}
           </h2>
-          <div class="flex flex-col items-center gap-0.5">
+          <p v-if="voteSession.description" class="text-sm md:text-base text-slate-500 font-medium px-4">
+            {{ voteSession.description }}
+          </p>
+
+          <div class="flex flex-col items-center gap-0.5 pt-2">
             <p class="text-[9px] md:text-[11px] font-black text-slate-400 uppercase tracking-widest">진행 기간</p>
             <p class="text-xs md:text-sm text-slate-500 font-bold">
               {{ formatDateTime(voteSession.startTime) }} ~ {{ formatDateTime(voteSession.endTime) }}
@@ -43,71 +47,101 @@
           <div :class="layoutClass" class="py-4 md:py-8">
             <template v-for="(opt, idx) in voteSession.options" :key="idx">
               
-              <div v-if="isDuel" class="flex flex-col items-center group w-[40%] md:w-full md:max-w-[200px]">
-                <div class="relative w-full aspect-square rounded-2xl md:rounded-[2.5rem] overflow-hidden border-2 md:border-4 border-white shadow-lg md:shadow-2xl mb-3 md:mb-6 ring-1 ring-slate-100">
-                  <img :src="opt.imageUrl || 'https://via.placeholder.com/300'" class="w-full h-full object-cover group-hover:scale-110 transition duration-500" />
-                  <div v-if="voteStatus === 'LIVE'" class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent p-2 md:p-4">
-                      <span class="text-white font-black text-sm md:text-xl">{{ calculatePercentage(opt.count).toFixed(0) }}%</span>
+              <div v-if="isDuel" class="flex flex-col items-center group w-[45%] md:w-full md:max-w-[280px]">
+                <div class="relative w-full aspect-square rounded-2xl md:rounded-[2.5rem] overflow-hidden border-2 md:border-4 border-white shadow-lg md:shadow-2xl mb-3 md:mb-6 ring-1 ring-slate-100 bg-slate-50 flex items-center justify-center">
+                  <img v-if="opt.imageUrl" :src="opt.imageUrl" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" />
+                  <div v-else class="text-slate-300">
+                    <svg class="w-16 h-16 md:w-24 md:h-24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                  </div>
+                  
+                  <div v-if="voteStatus === 'LIVE'" class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-12 pb-3 px-3 md:p-6 flex flex-col items-center">
+                      <span class="text-white font-black text-lg md:text-3xl drop-shadow-md">{{ calculatePercentage(opt.count).toFixed(0) }}%</span>
                   </div>
                 </div>
-                <span class="text-sm md:text-2xl font-black text-slate-800 mb-1 truncate w-full text-center px-1">{{ opt.label }}</span>
-                <span v-if="voteStatus !== 'UPCOMING'" class="text-[10px] md:text-lg text-indigo-600 font-black">{{ (opt.count || 0).toLocaleString() }}표</span>
+                
+                <div class="w-full px-2 text-center" :title="opt.label">
+                  <span class="text-sm md:text-xl font-black text-slate-800 break-keep leading-snug" 
+                        :class="expandedTextIndex === idx ? '' : 'line-clamp-3'"
+                        @click="toggleTextExpand(idx)">
+                    {{ opt.label }}
+                  </span>
+                  <div v-if="opt.label.length > 30" @click="toggleTextExpand(idx)" class="text-[10px] md:text-xs text-slate-400 mt-1 cursor-pointer hover:text-indigo-500">
+                    {{ expandedTextIndex === idx ? '접기 ▲' : '더보기 ▼' }}
+                  </div>
+                </div>
+
+                <span v-if="voteStatus !== 'UPCOMING'" class="mt-2 text-[11px] md:text-base text-indigo-600 font-black bg-indigo-50 px-3 py-1 rounded-full">{{ (opt.count || 0).toLocaleString() }}표</span>
               </div>
 
-              <div v-else class="w-full max-w-2xl mx-auto flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-white/50 backdrop-blur-sm border border-slate-100 rounded-xl md:rounded-[1.5rem] hover:shadow-md transition">
-                <div class="w-6 md:w-10 text-center font-black text-slate-300 text-xs md:text-base">#{{ idx + 1 }}</div>
-                <img :src="opt.imageUrl || 'https://via.placeholder.com/100'" class="w-10 h-10 md:w-14 md:h-14 rounded-lg md:rounded-2xl object-cover shadow-sm" />
-                <div class="flex-1 min-w-0">
-                  <div class="flex justify-between items-end mb-1 md:mb-2">
-                    <span class="font-black text-slate-700 text-xs md:text-base truncate pr-2">{{ opt.label }}</span>
-                    <span class="text-[10px] md:text-xs font-black text-indigo-600 shrink-0">{{ opt.count.toLocaleString() }}표</span>
+              <div v-else class="w-full max-w-2xl mx-auto flex items-stretch gap-3 md:gap-5 p-3 md:p-5 bg-white border border-slate-100 rounded-xl md:rounded-[1.5rem] shadow-sm hover:shadow-md transition group">
+                <div class="w-6 md:w-10 flex flex-col items-center justify-center font-black text-slate-300 text-xs md:text-base shrink-0">#{{ idx + 1 }}</div>
+                
+                <div class="w-12 h-12 md:w-20 md:h-20 shrink-0 rounded-lg md:rounded-2xl overflow-hidden bg-slate-100 flex items-center justify-center border border-slate-100">
+                  <img v-if="opt.imageUrl" :src="opt.imageUrl" class="w-full h-full object-cover" />
+                  <svg v-else class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                </div>
+
+                <div class="flex-1 min-w-0 flex flex-col justify-center py-1">
+                  <div class="flex justify-between items-start mb-2 md:mb-3 gap-2">
+                    <div class="flex-1 min-w-0 cursor-pointer" @click="toggleTextExpand(idx)" :title="opt.label">
+                      <span class="font-bold text-slate-700 text-sm md:text-base break-keep leading-tight block"
+                            :class="expandedTextIndex === idx ? '' : 'line-clamp-2 md:line-clamp-1'">
+                        {{ opt.label }}
+                      </span>
+                    </div>
+                    <span class="text-[10px] md:text-sm font-black text-indigo-600 shrink-0 bg-indigo-50 px-2.5 py-1 rounded-lg">{{ (opt.count || 0).toLocaleString() }}표</span>
                   </div>
-                  <div class="w-full h-1.5 md:h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div class="h-full bg-indigo-500 rounded-full transition-all duration-1000" :style="{ width: calculatePercentage(opt.count) + '%' }"></div>
+                  
+                  <div class="w-full h-2 md:h-3 bg-slate-100 rounded-full overflow-hidden mt-auto">
+                    <div class="h-full bg-gradient-to-r from-indigo-400 to-indigo-600 rounded-full transition-all duration-1000 relative" :style="{ width: calculatePercentage(opt.count) + '%' }">
+                      <div class="absolute inset-0 bg-white/20" style="background-image: linear-gradient(45deg,rgba(255,255,255,.15) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.15) 50%,rgba(255,255,255,.15) 75%,transparent 75%,transparent); background-size: 1rem 1rem;"></div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div v-if="isDuel && idx === 0" class="text-2xl md:text-7xl font-black italic text-red-600 animate-pulse select-none px-2">VS</div>
+              <div v-if="isDuel && idx === 0" class="text-3xl md:text-7xl font-black italic text-slate-200 animate-pulse select-none px-2 tracking-tighter self-center">VS</div>
             </template>
           </div>
 
-          <div class="flex flex-col items-center gap-4 md:gap-6 pt-6 md:pt-10">
+          <div class="flex flex-col items-center gap-4 md:gap-6 pt-6 md:pt-10 border-t border-slate-100 mt-4">
             <button @click="onVoteClick" :disabled="voteStatus !== 'LIVE'" 
-                    class="w-full md:w-auto md:px-20 py-3.5 md:py-5 rounded-xl md:rounded-[2rem] font-black text-lg md:text-2xl shadow-xl transform hover:-translate-y-1 active:scale-95 transition-all disabled:opacity-30"
-                    :class="voteStatus === 'LIVE' ? 'bg-indigo-600 text-white shadow-indigo-200' : 'bg-slate-200 text-slate-400'">
-              투표 참여하기
+                    class="w-full md:w-auto md:px-24 py-4 md:py-5 rounded-2xl md:rounded-[2rem] font-black text-lg md:text-2xl shadow-xl transform hover:-translate-y-1 active:scale-95 transition-all disabled:opacity-30 disabled:hover:translate-y-0"
+                    :class="voteStatus === 'LIVE' ? 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-indigo-200' : 'bg-slate-200 text-slate-400'">
+              {{ voteStatus === 'UPCOMING' ? '투표 시작 전입니다' : (voteStatus === 'FINISHED' ? '종료된 투표입니다' : '투표 참여하기 🚀') }}
             </button>
-            <router-link :to="{ name: 'VoteHistory', params: { boardId }}" class="text-xs md:text-sm text-slate-400 hover:text-indigo-600 font-bold flex items-center gap-2 transition">
-              <span>📜 지난 투표 결과 보기</span>
+            
+            <router-link :to="{ name: 'VoteHistory', params: { boardId }}" class="text-xs md:text-sm text-slate-400 hover:text-indigo-600 font-bold flex items-center gap-2 transition group">
+              <span class="group-hover:-translate-x-1 transition-transform">📜</span> 지난 투표 결과 보기
             </router-link>
           </div>
         </div>
       </div>
     </div>
 
-    <div v-else class="bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl md:rounded-[2.5rem] py-10 md:py-16 text-center space-y-4 md:space-y-6 px-4">
-      <div class="text-3xl md:text-5xl mb-2">🗳️</div>
-      <p class="text-base md:text-xl text-slate-400 font-bold italic">현재 진행 중인 갈드컵이 없습니다.</p>
-      <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
-        <router-link :to="{ name: 'VoteHistory', params: { boardId: boardId }}" class="w-full sm:w-auto px-6 py-3 bg-white text-indigo-600 rounded-xl font-black text-sm md:text-lg shadow-sm border border-indigo-100">
-          📜 지난 투표 결과 보기
+    <div v-else class="bg-white/50 backdrop-blur border-2 border-dashed border-slate-200 rounded-2xl md:rounded-[2.5rem] py-16 md:py-24 text-center space-y-6 px-4">
+      <div class="text-4xl md:text-6xl mb-4 opacity-50">🗳️</div>
+      <p class="text-lg md:text-2xl text-slate-400 font-black tracking-tight">현재 진행 중인 갈드컵이 없습니다.</p>
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-6">
+        <router-link :to="{ name: 'VoteHistory', params: { boardId: boardId }}" class="w-full sm:w-auto px-8 py-3.5 bg-white text-slate-600 hover:text-indigo-600 rounded-xl font-black text-sm md:text-base shadow-sm border border-slate-200 hover:border-indigo-200 transition-colors">
+          📜 지난 투표 보기
         </router-link>
-        <button v-if="isManager" @click="handleCreateVote" class="w-full sm:w-auto px-6 py-3 bg-indigo-600 text-white rounded-xl font-black text-sm md:text-lg shadow-lg">
-          새로운 갈드컵 생성
+        <button v-if="isManager" @click="handleCreateVote" class="w-full sm:w-auto px-8 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-sm md:text-base shadow-lg shadow-indigo-200 transition-all transform hover:-translate-y-0.5">
+          ✨ 새로운 갈드컵 생성
         </button>
       </div>
     </div>
 
-    <div v-if="isManager && voteSession" class="bg-indigo-900 rounded-xl md:rounded-2xl p-4 md:p-6 flex flex-col sm:flex-row justify-between items-center shadow-lg gap-4">
+    <div v-if="isManager && voteSession" class="bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-5 flex flex-col sm:flex-row justify-between items-center shadow-lg gap-4">
       <div class="flex items-center gap-3 self-start sm:self-center">
-        <div class="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-indigo-700 flex items-center justify-center text-white text-sm">⚙️</div>
-        <h4 class="text-white font-bold tracking-tight text-sm md:text-lg">갈드컵 관리 도구</h4>
+        <div class="w-8 h-8 rounded-lg bg-slate-700 flex items-center justify-center text-white text-sm shadow-inner">⚙️</div>
+        <h4 class="text-white font-bold tracking-tight text-sm md:text-base">매니저 관리 도구</h4>
       </div>
-      <button v-if="!voteSession.isFinished" @click="handleFinishVote" class="w-full sm:w-auto px-5 py-2 bg-red-500 text-white text-xs md:text-sm font-bold rounded-lg shadow-md hover:bg-red-600 transition">
+      <button v-if="!voteSession.isFinished" @click="handleFinishVote" class="w-full sm:w-auto px-6 py-2.5 bg-red-500 hover:bg-red-600 text-white text-sm font-black rounded-lg shadow-md transition-colors">
         투표 즉시 마감
       </button>
     </div>
+
   </div>
 </template>
 
@@ -155,6 +189,12 @@ const voteStatus = computed(() => {
   if (now > end) return 'FINISHED';
   return 'LIVE';
 });
+
+// 💡 확장된 텍스트 인덱스 관리 (어떤 선택지가 클릭되어 확장되었는지 추적)
+const expandedTextIndex = ref(null);
+const toggleTextExpand = (index) => {
+  expandedTextIndex.value = expandedTextIndex.value === index ? null : index;
+};
 
 /** * 레이아웃 및 스타일 동적 계산 
  */
