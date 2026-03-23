@@ -28,8 +28,18 @@
       <div 
         v-for="session in historyList" 
         :key="session.id" 
-        class="group bg-white border border-slate-200 rounded-3xl md:rounded-[2.5rem] p-5 md:p-8 shadow-sm hover:shadow-xl transition-all duration-300 relative overflow-hidden"
+        class="group bg-white border border-slate-200 rounded-3xl md:rounded-[2.5rem] p-5 md:p-8 shadow-sm hover:shadow-xl transition-all duration-300 relative overflow-hidden flex flex-col"
       >
+        
+        <div class="mb-4 md:mb-6 px-1 md:px-2 border-b border-slate-100 pb-4 md:pb-6">
+          <h4 class="text-lg md:text-2xl font-black text-slate-800 tracking-tight leading-snug break-keep mb-2">
+            {{ session.topic }}
+          </h4>
+          <p v-if="session.description" class="text-xs md:text-sm text-slate-500 font-medium line-clamp-2 md:line-clamp-none bg-slate-50 px-3 py-2 rounded-lg inline-block border border-slate-100">
+            <span class="text-indigo-400 mr-1">💡</span>{{ session.description }}
+          </p>
+        </div>
+
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 md:mb-8 px-1 md:px-2 gap-4">
           <div class="space-y-1.5 w-full sm:w-auto">
             <div class="flex items-center gap-2">
@@ -41,6 +51,7 @@
               <span class="text-slate-700 whitespace-nowrap">{{ formatDateTime(session.endTime) }}</span>
             </div>
           </div>
+          
           <div class="bg-slate-50 px-4 py-2 md:px-5 md:py-3 rounded-2xl border border-slate-100 text-left sm:text-right w-full sm:w-auto">
             <span class="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-0.5">Participants</span>
             <span class="text-base md:text-lg font-black text-slate-800">{{ getTotalVotes(session.options) }}명 참여</span>
@@ -52,7 +63,7 @@
             v-for="(opt, idx) in getVisibleOptions(session)" 
             :key="idx"
             class="relative flex items-center gap-3 md:gap-4 p-4 md:p-5 rounded-2xl md:rounded-[1.5rem] border transition-all duration-500"
-            :class="idx === 0 ? 'bg-indigo-50/50 border-indigo-100 shadow-sm' : 'bg-white border-slate-50'"
+            :class="idx === 0 ? 'bg-indigo-50/50 border-indigo-100 shadow-sm' : 'bg-white border-slate-50 hover:border-slate-200'"
           >
             <div class="w-8 md:w-10 shrink-0 text-center">
               <span v-if="idx === 0" class="text-xl md:text-2xl animate-bounce-slow block">👑</span>
@@ -61,20 +72,23 @@
 
             <img 
               :src="opt.imageUrl || 'https://via.placeholder.com/150'" 
-              class="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl object-cover border border-white shadow-sm shrink-0"
+              class="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl object-cover border border-slate-100 shadow-sm shrink-0"
             />
 
             <div class="flex-1 min-w-0">
               <div class="flex flex-col xs:flex-row justify-between items-start xs:items-end mb-1 md:mb-2 gap-0.5">
-                <span class="font-black text-slate-700 text-sm md:text-base truncate w-full pr-2">{{ opt.label }}</span>
+                <span class="font-black text-slate-700 text-sm md:text-base break-keep w-full pr-2 line-clamp-2 md:line-clamp-1" :title="opt.label">
+                  {{ opt.label }}
+                </span>
                 <span class="text-[10px] md:text-sm font-black shrink-0" :class="idx === 0 ? 'text-indigo-600' : 'text-slate-400'">
                   {{ opt.count.toLocaleString() }}표 ({{ getPercentage(opt.count, session.options) }}%)
                 </span>
               </div>
+              
               <div class="w-full h-1.5 md:h-2.5 bg-slate-100 rounded-full overflow-hidden">
                 <div 
                   class="h-full rounded-full transition-all duration-1000 ease-out"
-                  :class="idx === 0 ? 'bg-indigo-500' : 'bg-slate-300'"
+                  :class="idx === 0 ? 'bg-gradient-to-r from-indigo-400 to-indigo-600' : 'bg-slate-300'"
                   :style="{ width: getPercentage(opt.count, session.options) + '%' }"
                 ></div>
               </div>
@@ -82,7 +96,7 @@
           </div>
         </div>
 
-        <div v-if="session.options.length > 2" class="mt-4 md:mt-6 border-t border-dashed border-slate-100 pt-4 md:pt-6 text-center">
+        <div v-if="session.options.length > 2" class="mt-4 md:mt-6 border-t border-dashed border-slate-100 pt-4 md:pt-6 text-center mt-auto">
           <button 
             @click="toggleSession(session.id)"
             class="px-4 py-2 md:px-6 md:py-2 text-[10px] md:text-xs font-black text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-all flex items-center justify-center gap-2 mx-auto"
@@ -93,6 +107,7 @@
             </svg>
           </button>
         </div>
+
       </div>
     </div>
 

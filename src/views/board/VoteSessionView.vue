@@ -27,17 +27,24 @@
           </button>
         </div>
 
-        <div class="space-y-2 md:space-y-4 text-center cursor-pointer group" @click="isExpanded = !isExpanded">
-          <h2 class="text-2xl md:text-4xl font-black text-slate-800 tracking-tight group-hover:text-indigo-600 transition-colors leading-snug break-keep px-2">
+        <div class="flex flex-col items-center space-y-3 md:space-y-5 text-center cursor-pointer group px-4 py-2" @click="isExpanded = !isExpanded">
+          
+          <h2 class="text-2xl md:text-4xl lg:text-5xl font-black tracking-tight leading-tight break-keep px-2 transition-all duration-300 group-hover:scale-[1.02]"
+              :class="isDuel ? 'bg-gradient-to-r from-slate-800 via-indigo-900 to-slate-800 bg-clip-text text-transparent' : 'text-slate-800 group-hover:text-indigo-600'">
             {{ voteSession.topic }}
           </h2>
-          <p v-if="voteSession.description" class="text-sm md:text-base text-slate-500 font-medium px-4">
-            {{ voteSession.description }}
-          </p>
+          
+          <div v-if="voteSession.description" class="max-w-2xl mt-1">
+            <p class="text-sm md:text-base text-slate-600 font-medium px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl shadow-sm inline-block">
+              <span class="text-indigo-400 mr-1">💡</span> {{ voteSession.description }}
+            </p>
+          </div>
 
-          <div class="flex flex-col items-center gap-0.5 pt-2">
-            <p class="text-[9px] md:text-[11px] font-black text-slate-400 uppercase tracking-widest">진행 기간</p>
-            <p class="text-xs md:text-sm text-slate-500 font-bold">
+          <div class="flex flex-col items-center gap-1 pt-3 md:pt-4">
+            <p class="text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-widest bg-white px-2 rounded-full shadow-sm border border-slate-100">
+              진행 기간
+            </p>
+            <p class="text-xs md:text-sm text-slate-500 font-bold bg-slate-50 px-3 py-1 rounded-full">
               {{ formatDateTime(voteSession.startTime) }} ~ {{ formatDateTime(voteSession.endTime) }}
             </p>
           </div>
