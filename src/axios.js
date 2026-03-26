@@ -14,7 +14,19 @@ api.interceptors.response.use(
     const store = useUserStore();
     const originalRequest = err.config;
 
-    // 1. 401 에러(인증 만료)가 발생했고, 아직 재시도하지 않은 요청인 경우
+    // [Case 1] 429 Too Many Requests (트래픽 제한 초과)
+    if (err.response?.status === 429) {
+      // 백엔드 ExceptionResponse에서 보낸 메시지 추출
+      const limitMessage = err.response.data?.message || "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.";
+      
+      console.warn(`[Rate Limit] ${limitMessage}`);
+      alert(limitMessage); // 사용자에게 알림
+      
+      // 추가적인 재시도 없이 즉시 거절하여 서버 부하 방지
+      return Promise.reject(err);
+    }
+
+    // [Case 2] 401 Unauthorized (인증 만료)
     if (err.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
@@ -29,11 +41,8 @@ api.interceptors.response.use(
         }
       } catch (refreshErr) {
         console.error("세션이 완전히 만료되었습니다. 로그인이 필요합니다.");
-        
         alert("로그인 세션이 만료되었습니다. 다시 로그인해 주세요.");
-        
         window.location.href = "/login"; 
-        
         return Promise.reject(refreshErr);
       }
     }
