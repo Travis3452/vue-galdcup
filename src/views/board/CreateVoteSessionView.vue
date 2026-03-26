@@ -19,21 +19,27 @@
           <div class="mt-4 md:mt-0">
             <button 
               @click="fetchAiRecommendation" 
-              :disabled="isAiLoading"
-              class="group relative inline-flex items-center justify-center px-6 py-3 font-bold text-white transition-all duration-200 bg-gradient-to-r from-purple-500 to-indigo-600 border border-transparent rounded-xl hover:from-purple-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+              :disabled="isAiButtonDisabled"
+              class="group relative inline-flex items-center justify-center px-6 py-3 font-bold text-white transition-all duration-200 bg-gradient-to-r from-purple-500 to-indigo-600 border border-transparent rounded-xl hover:from-purple-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg min-w-[180px]"
             >
-              <svg v-if="!isAiLoading" class="w-5 h-5 mr-2 -ml-1 text-yellow-300" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              <svg v-if="!isAiLoading && cooldownRemaining === 0" class="w-5 h-5 mr-2 -ml-1 text-yellow-300" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.476.859h4.002z"></path>
               </svg>
-              <svg v-else class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              
+              <svg v-else-if="isAiLoading" class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              {{ isAiLoading ? 'AI가 고민 중...' : 'Gemini에게 추천받기' }}
+              
+              <svg v-else class="w-5 h-5 mr-2 -ml-1 text-slate-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+
+              {{ cooldownText }}
             </button>
           </div>
-        </div>
 
+        </div>
         <div class="grid grid-cols-1 gap-6">
           <div class="space-y-2">
             <label class="block text-sm font-bold text-slate-700">투표 주제 <span class="text-red-500">*</span></label>
@@ -172,18 +178,19 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '@/axios'
 import { uploadImage } from '@/services/uploadImage'
-// ✨ Pinia Store import 추가
 import { useBoardStore } from '@/stores/board'
 
 const router = useRouter()
 const route = useRoute()
-const boardStore = useBoardStore() // ✨ Store 인스턴스 생성
+const boardStore = useBoardStore()
 
-// 폼 데이터
+// ==========================================
+// 1. 폼 데이터 및 상태 관리
+// ==========================================
 const topic = ref('')
 const description = ref('')
 const startTime = ref('')
@@ -195,15 +202,67 @@ const fileInputs = ref([])
 const optionPreviews = ref([null, null]) 
 const optionImages = ref([null, null])
 
-// UI 상태
+// UI 처리 상태
 const isSubmitting = ref(false)
 const isAiLoading = ref(false) 
 
-// ✨ 게시판 제목을 Store에서 computed로 안전하게 가져오기
+// ✨ 쿨타임 관련 상태
+const cooldownRemaining = ref(0)
+let cooldownTimer = null
+
+// ==========================================
+// 2. Computed 속성
+// ==========================================
+
+// 게시판 제목 가져오기
 const boardTitle = computed(() => boardStore.currentBoard?.title || boardStore.currentBoard?.topic || '게시판')
 
-// AI 추천 로직
+// AI 추천 버튼 텍스트
+const cooldownText = computed(() => {
+  if (isAiLoading.value) return 'AI가 고민 중...'
+  if (cooldownRemaining.value > 0) return `${cooldownRemaining.value}초 후 재추천 가능`
+  return 'Gemini에게 추천받기'
+})
+
+// AI 추천 버튼 활성화 여부
+const isAiButtonDisabled = computed(() => isAiLoading.value || cooldownRemaining.value > 0)
+
+// 전체 폼 유효성 검사
+const isFormValid = computed(() => {
+  const validOptionsCount = options.value.filter(opt => opt.trim() !== '').length
+  return validOptionsCount >= 2 && startTime.value && endTime.value && topic.value.trim() !== ''
+})
+
+// ==========================================
+// 3. AI 추천 및 쿨타임 로직
+// ==========================================
+
+/** 쿨타임 타이머 시작 */
+const startCooldown = (seconds) => {
+  cooldownRemaining.value = seconds
+  if (cooldownTimer) clearInterval(cooldownTimer)
+  
+  cooldownTimer = setInterval(() => {
+    if (cooldownRemaining.value > 0) {
+      cooldownRemaining.value--
+    } else {
+      stopCooldown()
+    }
+  }, 1000)
+}
+
+/** 쿨타임 타이머 중지 */
+const stopCooldown = () => {
+  if (cooldownTimer) {
+    clearInterval(cooldownTimer)
+    cooldownTimer = null
+  }
+}
+
+/** Gemini API 추천 호출 */
 const fetchAiRecommendation = async () => {
+  if (cooldownRemaining.value > 0) return
+
   if (topic.value.trim() !== '' || options.value.some(opt => opt.trim() !== '')) {
     const confirmOverwrite = confirm("현재 입력된 내용이 지워지고 AI 추천 내용으로 덮어씌워집니다. 진행하시겠습니까?")
     if (!confirmOverwrite) return
@@ -216,20 +275,36 @@ const fetchAiRecommendation = async () => {
     const response = await api.get(`/boards/${boardId}/vote-session/recommend`)
     const data = response.data
 
+    // 데이터 바인딩
     topic.value = data.topic
     description.value = data.description || '' 
+    options.value = data.options // List<String> 구조 대응
 
-    options.value = data.options
+    // 추천 시 이미지 정보는 초기화 (사용자가 직접 선택)
     optionPreviews.value = new Array(data.options.length).fill(null)
     optionImages.value = new Array(data.options.length).fill(null)
     
+    // ✨ 성공 시 60초 쿨타임 적용
+    startCooldown(60)
+    
   } catch (error) {
     console.error('AI 추천 실패:', error)
-    alert('AI 추천을 불러오는데 실패했습니다. 직접 입력해주세요.')
+    
+    // 백엔드 레이트 리밋(429)에 걸린 경우 클라이언트도 즉시 쿨타임 적용
+    if (error.response?.status === 429) {
+      startCooldown(30) // 서버가 바쁘면 일단 30초 대기
+    }
+    
+    const errorMsg = error.response?.data?.message || 'AI 추천을 불러오는데 실패했습니다.'
+    alert(errorMsg)
   } finally {
     isAiLoading.value = false
   }
 }
+
+// ==========================================
+// 4. 선택지 및 이미지 관리 로직
+// ==========================================
 
 const addOption = () => {
   options.value.push('')
@@ -265,14 +340,13 @@ const handleImageChange = async (event, idx) => {
   }
 }
 
-const isFormValid = computed(() => {
-  const validOptionsCount = options.value.filter(opt => opt.trim() !== '').length
-  return validOptionsCount >= 2 && startTime.value && endTime.value && topic.value.trim() !== ''
-})
+// ==========================================
+// 5. 최종 제출 로직
+// ==========================================
 
+/** 서울 시간대 ISO 포맷 변환 헬퍼 */
 function toSeoulOffsetDateTime(localDateTimeStr) {
   const dateObj = new Date(localDateTimeStr)
-  
   const pad = (num) => String(num).padStart(2, '0')
   const YYYY = dateObj.getFullYear()
   const MM = pad(dateObj.getMonth() + 1)
@@ -284,9 +358,11 @@ function toSeoulOffsetDateTime(localDateTimeStr) {
   return `${YYYY}-${MM}-${DD}T${HH}:${MIN}:${SS}+09:00`
 }
 
+/** 갈드컵 세션 생성 요청 */
 async function createVoteSession() {
   const boardId = route.params.boardId
 
+  // 이미지 업로드 중인지 체크
   const isUploading = optionPreviews.value.some((preview, idx) => preview !== null && optionImages.value[idx] === null)
   if (isUploading) {
     alert("이미지가 아직 서버에 업로드 중입니다. 잠시만 기다려주세요.")
@@ -316,21 +392,21 @@ async function createVoteSession() {
     router.replace(`/boards/${boardId}`)
   } catch (error) {
     console.error('투표 생성 실패:', error)
-    if (error.response?.data?.message) {
-      alert(error.response.data.message)
-    } else {
-      alert('투표 생성 중 오류가 발생했습니다.')
-    }
+    const msg = error.response?.data?.message || '투표 생성 중 오류가 발생했습니다.'
+    alert(msg)
   } finally {
     isSubmitting.value = false
   }
 }
 
-// ✨ 초기화 로직 수정
+// ==========================================
+// 6. 생명주기 훅
+// ==========================================
+
 onMounted(async () => {
   const boardId = route.params.boardId
   
-  // 1. Store에 게시판 정보가 없다면 새로 fetch (에러 발생했던 직접 API 호출 로직 대체)
+  // 게시판 정보 로드
   if (!boardStore.currentBoard || String(boardStore.currentBoard.id) !== String(boardId)) {
     try {
       await boardStore.fetchBoardDetails(boardId)
@@ -339,16 +415,19 @@ onMounted(async () => {
     }
   }
 
-  // 2. 시간 설정 로직 유지
+  // 기본 시간 설정 (현재 시간 ~ 1주일 뒤)
   const now = new Date()
   const offset = now.getTimezoneOffset() * 60000 
   const localISOTime = (new Date(now - offset)).toISOString().slice(0, 16)
-  
   startTime.value = localISOTime
   
   const oneWeekLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
   const localEndISOTime = (new Date(oneWeekLater - offset)).toISOString().slice(0, 16)
-  
   endTime.value = localEndISOTime
+})
+
+onUnmounted(() => {
+  // 컴포넌트 파괴 시 타이머 정리
+  stopCooldown()
 })
 </script>
