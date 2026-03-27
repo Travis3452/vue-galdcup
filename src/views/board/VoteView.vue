@@ -106,12 +106,11 @@ const selectedOptionIndex = ref(null)
 const isSubmitting = ref(false)
 const isLoading = ref(true)
 
+// 팝업 닫기 로직
 const closePopup = () => {
-  // 팝업창 닫기 시도
   if (window.opener && !window.opener.closed) {
     window.close();
   } else {
-    // 팝업이 아닌 일반 탭으로 열렸을 경우 알림 후 뒤로가기
     if (confirm("투표창을 닫으시겠습니까?")) {
       window.close() || history.back();
     }
@@ -129,11 +128,13 @@ function formatDate(dateStr) {
   })
 }
 
+// 1. 투표 세션 정보 가져오기 (기존과 동일하지만 응답 구조에 맞게 처리)
 async function fetchVoteSession() {
   isLoading.value = true
   try {
     const res = await api.get(`/boards/${route.params.boardId}/vote-session`)
-    voteSession.value = res.data
+    // Optional로 감싸져서 올 경우 .data 혹은 .data.value 체크가 필요할 수 있음
+    voteSession.value = res.data; 
   } catch (err) {
     console.error('투표 정보 로드 실패', err)
   } finally {
@@ -141,19 +142,33 @@ async function fetchVoteSession() {
   }
 }
 
+// 2. 수정된 API 경로에 따른 투표 제출 함수
 async function submitVote() {
   if (selectedOptionIndex.value === null || isSubmitting.value) return
+  
+  const boardId = route.params.boardId;
+  const voteSessionId = voteSession.value?.id;
+
+  if (!boardId || !voteSessionId) {
+    alert("투표 세션 정보를 찾을 수 없습니다.");
+    return;
+  }
+
   isSubmitting.value = true
   try {
-    await api.post('/votes', {
-      voteSessionId: voteSession.value.id,
+    // ✅ 수정된 경로: /api/boards/{boardId}/vote-session/{voteSessionId}/votes
+    await api.post(`/boards/${boardId}/vote-session/${voteSessionId}/votes`, {
       selectedOptionIndex: selectedOptionIndex.value
+      // voteSessionId는 이제 URL 경로에 포함되므로 body에서는 제거해도 됩니다.
     })
+
     alert('🎉 투표가 성공적으로 완료되었습니다!')
     if (window.opener) window.opener.location.reload()
     window.close()
   } catch (err) {
-    alert(err.response?.data?.message || '이미 투표하셨거나 오류가 발생했습니다.')
+    // 에러 메시지 처리 (429 Too Many Requests 등)
+    const errorMsg = err.response?.data?.message || '이미 투표하셨거나 오류가 발생했습니다.';
+    alert(errorMsg)
   } finally {
     isSubmitting.value = false
   }
