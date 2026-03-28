@@ -118,6 +118,14 @@
               {{ voteStatus === 'UPCOMING' ? '투표 시작 전입니다' : (voteStatus === 'FINISHED' ? '종료된 투표입니다' : '투표 참여하기 🚀') }}
             </button>
             
+            <router-link 
+              v-if="voteSession"
+              :to="{ name: 'OpinionAnalysis', params: { boardId, voteSessionId: voteSession.id }}" 
+              class="text-xs md:text-sm text-indigo-600 hover:text-indigo-700 font-black flex items-center gap-2 transition group bg-indigo-50 hover:bg-indigo-100 px-6 py-2.5 rounded-full border border-indigo-100"
+            >
+              <span class="animate-pulse">🤖</span> AI가 분석한 현재 민심 보기
+            </router-link>
+
             <router-link :to="{ name: 'VoteHistory', params: { boardId }}" class="text-xs md:text-sm text-slate-400 hover:text-indigo-600 font-bold flex items-center gap-2 transition group">
               <span class="group-hover:-translate-x-1 transition-transform">📜</span> 지난 투표 결과 보기
             </router-link>

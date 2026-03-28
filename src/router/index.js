@@ -87,9 +87,9 @@ const router = createRouter({
           props: true
         },
         {
-          path: 'votes/:voteSessionId/status',
-          name: 'VoteStatus',
-          component: () => import('@/views/board/VoteStatusView.vue'),
+          path: 'votes/:voteSessionId/analysis',
+          name: 'OpinionAnalysis',
+          component: () => import('@/views/board/OpinionAnalysisView.vue'),
           props: true
         },
         {
