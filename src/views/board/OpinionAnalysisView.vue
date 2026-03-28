@@ -78,17 +78,22 @@
                :class="idx === 0 ? 'bg-gradient-to-br from-indigo-500 to-blue-600' : 'bg-slate-200'">
             
             <div class="bg-white p-6 md:p-9 rounded-[2.3rem] flex flex-col gap-6">
-              <div class="flex justify-between items-start gap-4">
-                <div class="flex items-center gap-5">
-                  <div class="w-14 h-14 rounded-3xl flex items-center justify-center font-black text-xl shadow-inner border shrink-0"
+              
+              <div class="flex justify-between items-center gap-4">
+                
+                <div class="flex items-center gap-4 md:gap-5 flex-1 min-w-0">
+                  <div class="w-12 h-12 md:w-14 md:h-14 rounded-2xl md:rounded-3xl flex items-center justify-center font-black text-lg md:text-xl shadow-inner border shrink-0"
                        :style="{ backgroundColor: getCandidateTheme(idx).bg, color: getCandidateTheme(idx).main, borderColor: getCandidateTheme(idx).border }">
                     {{ idx + 1 }}
                   </div>
-                  <div class="overflow-hidden">
-                    <h4 class="font-black text-slate-900 text-xl md:text-3xl tracking-tight truncate">{{ result.label }}</h4>
-                    <p class="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Preference Score</p>
+                  <div class="flex-1 min-w-0">
+                    <h4 class="font-black text-slate-900 text-xl md:text-3xl tracking-tight truncate w-full" :title="result.label">
+                      {{ result.label }}
+                    </h4>
+                    <p class="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-widest mt-1 truncate w-full">Preference Score</p>
                   </div>
                 </div>
+
                 <div class="text-right shrink-0 pl-2">
                   <span class="font-black text-4xl md:text-6xl tracking-tighter" :style="{ color: getCandidateTheme(idx).main }">
                     {{ result.supportRate.toFixed(1) }}<span class="text-lg md:text-2xl ml-0.5">%</span>
@@ -124,7 +129,9 @@
             
             <p v-if="insightData" class="break-keep text-base md:text-lg">
               현재 갈드컵의 민심 분석 결과, 
-              <span class="text-indigo-400 font-bold underline underline-offset-4 decoration-2 decoration-indigo-500/50">#{{ insightData.topCandidate }}</span> 후보가 
+              <span class="text-indigo-400 font-bold underline underline-offset-4 decoration-2 decoration-indigo-500/50 break-all" :title="insightData.topCandidate">
+                #{{ insightData.topCandidate.length > 20 ? insightData.topCandidate.substring(0,20) + '...' : insightData.topCandidate }}
+              </span> 후보가 
               
               <template v-if="insightData.isCloseMatch">
                 2위 후보와 불과 <span class="text-amber-400 font-bold">{{ insightData.gap }}%p</span> 차이의 초접전을 벌이며 미세한 우위를 점하고 있습니다. 
@@ -292,16 +299,19 @@ const initChart = async () => {
 };
 
 /**
- * [액션] 사용자 수동 분석 요청
+ * [액션] 사용자 수동 분석 요청 (POST)
  */
 const handleStartAnalysis = async () => {
   await boardStore.startOpinionAnalysis(boardId.value, voteSessionId.value);
 };
 
-// 화면 로드 시 캐시 데이터 확인
+// ⭐ 화면 로드 시 즉시 실행: 캐시 데이터 조회 (GET)
 onMounted(async () => {
+  // 컴포넌트 마운트 시 무조건 최신 상태의 캐시를 먼저 불러옴
   await boardStore.fetchOpinionAnalysis(boardId.value, voteSessionId.value);
-  initChart();
+  if (boardStore.opinionAnalysis) {
+    initChart();
+  }
 });
 
 // 데이터 갱신 시 차트 리렌더링
