@@ -57,15 +57,15 @@
             </div>
             
             <div class="relative aspect-square">
-              <canvas ref="chartCanvas"></canvas>
-              
-              <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none translate-y-1">
+              <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none translate-y-1 z-0">
                 <div class="w-28 h-28 bg-white rounded-full shadow-xl flex flex-col items-center justify-center border-4 border-slate-50 relative z-0">
                   <div class="absolute inset-0 rounded-full shadow-inner bg-slate-50/50"></div>
                   <span class="text-[10px] font-bold text-slate-400 relative z-10">ANALYSIS</span>
                   <span class="text-indigo-600 font-black text-3xl relative z-10 tracking-tight">LIVE</span>
                 </div>
               </div>
+              
+              <canvas ref="chartCanvas" class="relative z-10"></canvas>
             </div>
           </div>
         </div>
@@ -86,22 +86,23 @@
                        :style="{ backgroundColor: getCandidateTheme(idx).bg, color: getCandidateTheme(idx).main, borderColor: getCandidateTheme(idx).border }">
                     {{ idx + 1 }}
                   </div>
-                  <div class="flex-1 min-w-0">
-                    <h4 class="font-black text-slate-900 text-xl md:text-3xl tracking-tight truncate w-full" :title="result.label">
+                  
+                  <div class="flex-1 min-w-0 py-1">
+                    <h4 class="font-black text-slate-900 text-xl md:text-2xl lg:text-3xl tracking-tight leading-snug break-keep">
                       {{ result.label }}
                     </h4>
-                    <p class="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-widest mt-1 truncate w-full">Preference Score</p>
+                    <p class="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Preference Score</p>
                   </div>
                 </div>
 
-                <div class="text-right shrink-0 pl-2">
+                <div class="text-right shrink-0 pl-4">
                   <span class="font-black text-4xl md:text-6xl tracking-tighter" :style="{ color: getCandidateTheme(idx).main }">
                     {{ result.supportRate.toFixed(1) }}<span class="text-lg md:text-2xl ml-0.5">%</span>
                   </span>
                 </div>
               </div>
 
-              <div class="relative w-full h-4 md:h-5 bg-slate-100 rounded-full overflow-hidden shadow-inner p-0.5 border border-slate-200/50">
+              <div class="relative w-full h-4 md:h-5 bg-slate-100 rounded-full overflow-hidden shadow-inner p-0.5 border border-slate-200/50 mt-2">
                 <div class="h-full rounded-full transition-all duration-[1500ms] ease-out relative"
                      :style="{ width: result.supportRate + '%', backgroundColor: getCandidateTheme(idx).main }">
                   <div class="absolute inset-0 opacity-30 bg-[linear-gradient(90deg,transparent_25%,rgba(255,255,255,0.6)_50%,transparent_75%)] bg-[length:200%_100%] animate-[shimmer_2s_infinite]"></div>
@@ -129,8 +130,8 @@
             
             <p v-if="insightData" class="break-keep text-base md:text-lg">
               현재 갈드컵의 민심 분석 결과, 
-              <span class="text-indigo-400 font-bold underline underline-offset-4 decoration-2 decoration-indigo-500/50 break-all" :title="insightData.topCandidate">
-                #{{ insightData.topCandidate.length > 20 ? insightData.topCandidate.substring(0,20) + '...' : insightData.topCandidate }}
+              <span class="text-indigo-400 font-bold underline underline-offset-4 decoration-2 decoration-indigo-500/50 break-keep">
+                #{{ insightData.topCandidate }}
               </span> 후보가 
               
               <template v-if="insightData.isCloseMatch">
@@ -201,7 +202,7 @@ const sortedResults = computed(() => {
   return [...analysisData.value.results].sort((a, b) => b.supportRate - a.supportRate);
 });
 
-// ⭐ 동적 인사이트 로직 (1위와 2위의 격차 계산)
+// 동적 인사이트 로직
 const insightData = computed(() => {
   const results = sortedResults.value;
   if (results.length < 2) return null;
@@ -219,13 +220,13 @@ const insightData = computed(() => {
     secondCandidate: second.label,
     gap: gap,
     ratio: ratio,
-    isCloseMatch: parseFloat(gap) < 5.0, // 5%p 미만이면 초접전
-    isDominant: first.supportRate >= 50.0 // 50% 이상이면 확고한 지지
+    isCloseMatch: parseFloat(gap) < 5.0, 
+    isDominant: first.supportRate >= 50.0 
   };
 });
 
 /**
- * 🎨 최대 10개까지 대응하는 테마 컬러 배열 추가
+ * 최대 10개까지 대응하는 테마 컬러 배열 추가
  */
 const getCandidateTheme = (idx) => {
   const themes = [
@@ -244,7 +245,7 @@ const getCandidateTheme = (idx) => {
 };
 
 /**
- * 📊 Chart.js 초기화 (정렬된 데이터 기반)
+ * Chart.js 초기화
  */
 const initChart = async () => {
   await nextTick();
@@ -305,9 +306,8 @@ const handleStartAnalysis = async () => {
   await boardStore.startOpinionAnalysis(boardId.value, voteSessionId.value);
 };
 
-// ⭐ 화면 로드 시 즉시 실행: 캐시 데이터 조회 (GET)
+// 화면 로드 시 즉시 실행: 캐시 데이터 조회 (GET)
 onMounted(async () => {
-  // 컴포넌트 마운트 시 무조건 최신 상태의 캐시를 먼저 불러옴
   await boardStore.fetchOpinionAnalysis(boardId.value, voteSessionId.value);
   if (boardStore.opinionAnalysis) {
     initChart();
