@@ -93,11 +93,12 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useUserStore } from '@/stores/user'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import api from '@/axios'
 
 const store = useUserStore()
 const router = useRouter()
+const route = useRoute() // 현재 경로 정보를 가져오기 위해 선언
 
 const isLoggedIn = computed(() => store.isLoggedIn)
 const nickname = computed(() => store.nickname || '')
@@ -183,6 +184,8 @@ async function handleLogin() {
 }
 
 function loginWithGoogle() {
+  sessionStorage.setItem('redirectPath', route.fullPath);
+
   const params = new URLSearchParams({
     client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
     redirect_uri: import.meta.env.VITE_GOOGLE_REDIRECT_URI,
@@ -201,7 +204,7 @@ async function logout() {
     console.error('로그아웃 실패:', err)
   } finally {
     store.logout()
-    router.push('/')
+    location.reload()
   }
 }
 </script>
