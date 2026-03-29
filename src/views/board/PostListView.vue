@@ -67,11 +67,15 @@
             <h3 class="text-base md:text-lg font-bold text-slate-800 group-hover:text-indigo-600 transition truncate pr-2">
               {{ post.title }}
             </h3>
+            
+            <span v-if="isNewPost(post.createdAt)" class="text-[10px] font-black text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded shrink-0">N</span>
           </div>
           <div class="flex items-center gap-2 md:gap-3 mt-1 text-xs md:text-sm font-medium text-slate-500">
             <span class="truncate max-w-[100px] md:max-w-none">👤 {{ post.authorNickname }}</span>
             <span class="text-slate-300">|</span>
-            <span class="shrink-0">📅 {{ formatDate(post.createdAt) }}</span>
+            <span class="shrink-0" :class="{'text-indigo-500 font-bold': isNewPost(post.createdAt)}">
+              🕒 {{ formatDate(post.createdAt) }}
+            </span>
           </div>
         </div>
         
@@ -150,7 +154,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '@/axios'
 
@@ -177,6 +181,10 @@ const searchInputKeyword = ref('')
 
 const size = 10
 
+// 화면 너비 반응성 상태 추가
+const windowWidth = ref(window.innerWidth)
+const updateWidth = () => { windowWidth.value = window.innerWidth }
+
 // --- API 호출 함수 ---
 async function fetchCategories() {
   try {
@@ -201,8 +209,13 @@ async function fetchPosts() {
     const res = await api.get(`/posts/board/${props.boardId}`, { params })
     
     posts.value = res.data.content || []
-    // Page 응답 구조에 맞게 수정
-    totalPages.value = res.data.totalPages || 1
+    
+    if (res.data.page) {
+      totalPages.value = res.data.page.totalPages || 1
+      currentPage.value = res.data.page.number || 0
+    } else {
+      totalPages.value = res.data.totalPages || 1
+    }
   } catch (err) {
     console.error('게시글 목록 로드 실패:', err)
     posts.value = []
@@ -234,6 +247,7 @@ function goToPage(page) {
   if (page < 0 || page >= totalPages.value) return
   currentPage.value = page
   updateQueryAndFetch()
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 function updateQueryAndFetch() {
@@ -251,19 +265,59 @@ function updateQueryAndFetch() {
   })
 }
 
+// 💡 시간 표기 포맷 최적화 로직 (상대 시간)
 function formatDate(dateStr) {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
-  // 오늘 날짜면 시간만, 아니면 날짜만 표시하는 식의 커스텀 가능
-  return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  const now = new Date();
+  
+  // 밀리초 단위 차이 계산
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffMins < 1) {
+    return '방금 전';
+  } else if (diffMins < 60) {
+    return `${diffMins}분 전`;
+  } else if (diffHours < 24) {
+    return `${diffHours}시간 전`;
+  } else if (diffDays < 7) {
+    // 1~6일 전은 "N일 전"으로 표기
+    return `${diffDays}일 전`;
+  } else {
+    // 일주일이 넘어가면 날짜로 표기 (예: 10.24)
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    
+    // 해가 넘어갔다면 연도까지 표시 (예: 2023.10.24)
+    if (now.getFullYear() !== date.getFullYear()) {
+      return `${date.getFullYear()}.${month}.${day}`;
+    }
+    return `${month}.${day}`;
+  }
 }
 
-// --- Computed ---
+// 💡 새로운 글(1시간 이내)인지 판별하는 유틸리티
+function isNewPost(dateStr) {
+  if (!dateStr) return false;
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMins = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+  return diffMins < 60; // 1시간 이내
+}
+
+// --- Computed (페이지네이션 로직) ---
 const visiblePages = computed(() => {
+  const total = totalPages.value
+  const current = currentPage.value + 1
   const pages = []
-  const maxVisible = window.innerWidth < 768 ? 3 : 5 // 모바일에서는 더 적게 표시
-  let start = Math.max(1, (currentPage.value + 1) - Math.floor(maxVisible / 2))
-  let end = Math.min(totalPages.value, start + maxVisible - 1)
+  
+  const maxVisible = windowWidth.value < 768 ? 3 : 5 
+  
+  let start = Math.max(1, current - Math.floor(maxVisible / 2))
+  let end = Math.min(total, start + maxVisible - 1)
   
   if (end - start + 1 < maxVisible) {
     start = Math.max(1, end - maxVisible + 1)
@@ -277,6 +331,8 @@ const visiblePages = computed(() => {
 
 // --- Lifecycle & Watch ---
 onMounted(async () => {
+  window.addEventListener('resize', updateWidth)
+
   currentPage.value = Number(route.query.page) || 0
   currentTab.value = route.query.tab || 'latest'
   selectedCategoryId.value = route.query.categoryId ? Number(route.query.categoryId) : null
@@ -288,6 +344,10 @@ onMounted(async () => {
 
   await fetchCategories()
   fetchPosts()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateWidth)
 })
 
 watch(() => props.boardId, async (newId) => {
@@ -304,7 +364,6 @@ watch(() => props.boardId, async (newId) => {
 </script>
 
 <style scoped>
-/* 가로 스크롤바 숨기기 (선택 사항) */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }

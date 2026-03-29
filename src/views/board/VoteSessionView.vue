@@ -141,20 +141,7 @@
         <router-link :to="{ name: 'VoteHistory', params: { boardId: boardId }}" class="w-full sm:w-auto px-8 py-3.5 bg-white text-slate-600 hover:text-indigo-600 rounded-xl font-black text-sm md:text-base shadow-sm border border-slate-200 hover:border-indigo-200 transition-colors">
           📜 지난 투표 보기
         </router-link>
-        <button v-if="isManager" @click="handleCreateVote" class="w-full sm:w-auto px-8 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-sm md:text-base shadow-lg shadow-indigo-200 transition-all transform hover:-translate-y-0.5">
-          ✨ 새로운 갈드컵 생성
-        </button>
       </div>
-    </div>
-
-    <div v-if="isManager && voteSession" class="bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-5 flex flex-col sm:flex-row justify-between items-center shadow-lg gap-4">
-      <div class="flex items-center gap-3 self-start sm:self-center">
-        <div class="w-8 h-8 rounded-lg bg-slate-700 flex items-center justify-center text-white text-sm shadow-inner">⚙️</div>
-        <h4 class="text-white font-bold tracking-tight text-sm md:text-base">매니저 관리 도구</h4>
-      </div>
-      <button v-if="!voteSession.isFinished" @click="handleFinishVote" class="w-full sm:w-auto px-6 py-2.5 bg-red-500 hover:bg-red-600 text-white text-sm font-black rounded-lg shadow-md transition-colors">
-        투표 즉시 마감
-      </button>
     </div>
 
   </div>
@@ -162,16 +149,12 @@
 
 <script setup>
 import { computed, ref, watch, onUnmounted } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 import { useBoardStore } from '@/stores/board';
-import { useUserStore } from '@/stores/user';
-import api from '@/axios';
 import { Client } from '@stomp/stompjs';
 
 const route = useRoute();
-const router = useRouter();
 const boardStore = useBoardStore();
-const userStore = useUserStore();
 
 // 💡 상태 및 초기화
 const isExpanded = ref(true);
@@ -183,13 +166,6 @@ const voteSession = computed(() => boardStore.activeVoteSession);
 
 // 💡 하이브리드 레이아웃 판단 (2명일 때 Duel 모드)
 const isDuel = computed(() => voteSession.value?.options?.length === 2);
-
-// 💡 매니저 권한 체크
-const isManager = computed(() => {
-  const managerId = boardStore.currentPolicy?.boardManager?.id;
-  if (!managerId || !userStore.id) return false;
-  return Number(managerId) === Number(userStore.id);
-});
 
 // 💡 투표 상태 계산 (UPCOMING / LIVE / FINISHED)
 const voteStatus = computed(() => {
@@ -205,14 +181,13 @@ const voteStatus = computed(() => {
   return 'LIVE';
 });
 
-// 💡 확장된 텍스트 인덱스 관리 (어떤 선택지가 클릭되어 확장되었는지 추적)
+// 💡 확장된 텍스트 인덱스 관리
 const expandedTextIndex = ref(null);
 const toggleTextExpand = (index) => {
   expandedTextIndex.value = expandedTextIndex.value === index ? null : index;
 };
 
-/** * 레이아웃 및 스타일 동적 계산 
- */
+/** * 레이아웃 및 스타일 동적 계산 */
 const layoutClass = computed(() => {
   return isDuel.value 
     ? 'flex items-center justify-center gap-4 md:gap-12 flex-wrap' 
@@ -231,9 +206,7 @@ const statusDotClass = computed(() => {
   return 'bg-slate-400';
 });
 
-/**
- * 유틸리티 함수
- */
+/** * 유틸리티 함수 */
 const formatDateTime = (dateStr) => {
   if (!dateStr) return '';
   const date = new Date(dateStr);
@@ -248,9 +221,7 @@ const calculatePercentage = (count) => {
   return total === 0 ? 0 : (Number(count || 0) / total) * 100;
 };
 
-/**
- * 🛰️ WebSocket 실시간 통계 연결
- */
+/** * 🛰️ WebSocket 실시간 통계 연결 */
 const connectWebSocket = () => {
   if (!voteSession.value || voteSession.value.isFinished || client) return;
 
@@ -261,7 +232,6 @@ const connectWebSocket = () => {
     brokerURL: socketURL,
     reconnectDelay: 5000,
     onConnect: () => {
-      // 투표 세션별 토픽 구독
       client.subscribe(`/topic/votes/${voteSession.value.id}`, (message) => {
         if (message.body) {
           const countsMap = JSON.parse(message.body);
@@ -284,24 +254,7 @@ const disconnectWebSocket = () => {
   }
 };
 
-/**
- * 액션 핸들러
- */
-const handleCreateVote = () => {
-  router.push({ name: 'CreateVoteSession', params: { boardId: boardId.value } });
-};
-
-const handleFinishVote = async () => {
-  if (!confirm("현재 투표를 즉시 마감하시겠습니까?")) return;
-  try {
-    await api.post(`/boards/${boardId.value}/vote-session/${voteSession.value.id}/finish`);
-    alert("투표가 종료되었습니다.");
-    await boardStore.fetchActiveVoteSession(boardId.value);
-  } catch (error) {
-    alert(error.response?.data?.message || "마감 처리에 실패했습니다.");
-  }
-};
-
+/** * 액션 핸들러 */
 const onVoteClick = () => {
   if (voteStatus.value !== 'LIVE') return;
   const width = 800;
@@ -315,9 +268,7 @@ const onVoteClick = () => {
   );
 };
 
-/**
- * 감시자 및 라이프사이클
- */
+/** * 감시자 및 라이프사이클 */
 watch(voteStatus, (newVal) => {
   if (newVal === 'LIVE') {
     isExpanded.value = true;

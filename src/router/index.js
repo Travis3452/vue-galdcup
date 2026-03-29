@@ -6,6 +6,19 @@ import BoardLayout from '@/views/board/BoardLayout.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
+  
+  // 💡 스크롤 동작 제어 함수 추가
+  scrollBehavior(to, from, savedPosition) {
+    // 사용자가 '뒤로 가기'나 '앞으로 가기'를 눌렀을 때 (이전 스크롤 위치 기억)
+    if (savedPosition) {
+      return savedPosition
+    } 
+    // 새로운 페이지로 이동할 때는 무조건 맨 위로 이동
+    else {
+      return { top: 0 }
+    }
+  },
+
   routes: [
     {
       path: '/',
@@ -98,7 +111,7 @@ const router = createRouter({
           component: () => import('@/views/board/CreateVoteSessionView.vue'),
           props: true,
           meta: { requiresAuth: true }
-        }
+        },
       ]
     }
   ]

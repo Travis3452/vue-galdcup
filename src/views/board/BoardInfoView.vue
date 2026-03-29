@@ -33,19 +33,6 @@
             </div>
           </div>
         </div>
-
-        <div v-if="isLoading" class="flex gap-2 shrink-0">
-          <div class="h-10 w-24 bg-slate-200 rounded-xl animate-pulse"></div>
-          <div class="h-10 w-16 bg-slate-200 rounded-xl animate-pulse"></div>
-        </div>
-        <div v-else-if="isBoardManager" class="flex gap-2 shrink-0">
-          <button @click="showPolicyModal = true" class="px-4 py-2.5 bg-yellow-500 text-white rounded-xl hover:bg-yellow-600 transition text-sm font-bold shadow-sm">
-            정책 변경
-          </button>
-          <button @click="confirmDeleteBoard" class="px-4 py-2.5 bg-red-500 text-white rounded-xl hover:bg-red-600 transition text-sm font-bold shadow-sm">
-            삭제
-          </button>
-        </div>
       </div>
 
       <div class="relative mt-6">
@@ -65,27 +52,14 @@
         </button>
       </div>
     </div>
-
-    <BoardPolicyModal
-      v-if="showPolicyModal"
-      :boardId="String(boardId)"
-      :boardPolicy="boardPolicy"
-      @close="showPolicyModal = false"
-      @updated="boardStore.fetchBoardDetails(String(boardId))"
-    />
   </div>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed } from 'vue'
 import api from '@/axios'
-import { useUserStore } from '@/stores/user'
 import { useBoardStore } from '@/stores/board'
-import BoardPolicyModal from '@/views/board/BoardPolicyView.vue'
 
-const router = useRouter()
-const userStore = useUserStore()
 const boardStore = useBoardStore()
 
 const board = computed(() => boardStore.currentBoard)
@@ -93,41 +67,13 @@ const boardPolicy = computed(() => boardStore.currentPolicy)
 const boardId = computed(() => boardStore.currentBoard?.id)
 const isLoading = computed(() => boardStore.isLoading)
 
-/** * 현재 사용자가 이 게시판의 메인 관리자인지 확인 
- * (백엔드에서 이제 일반 USER 권한도 소유권이 있으면 관리 기능을 수행할 수 있습니다.)
- */
-const isBoardManager = computed(() => {
-  if (!boardPolicy.value?.boardManager || !userStore.id) return false
-  return Number(boardPolicy.value.boardManager.id) === Number(userStore.id)
-})
-
-const showPolicyModal = ref(false)
-
-/** 게시판 삭제 API 호출 */
-async function deleteBoard() {
-  try {
-    // 백엔드: DELETE /api/boards/{boardId}
-    await api.delete(`/boards/${boardId.value}`)
-    alert('게시판이 삭제되었습니다.')
-    router.push('/')
-  } catch (err) {
-    console.error('게시판 삭제 실패', err)
-    alert(err.response?.data?.message || '게시판 삭제 실패')
-  }
-}
-
-/** * 관리자 권한 신청 API 호출 
- * 변경사항: 경로가 /board-manager-requests에서 /boards로 통합됨
- */
+/** * 관리자 권한 신청 API 호출 (일반 유저용 기능이므로 유지) */
 async function applyForBoardManager() {
   try {
-    // 백엔드: POST /api/boards/{boardId}/apply
     const res = await api.post(`/boards/${boardId.value}/apply`)
     
-    // 만약 관리자가 없어서 즉시 승인(APPROVED)된 경우
     if (res.data.status === 'APPROVED') {
       alert('관리자가 공석이기 때문에 즉시 관리자로 임명되었습니다!')
-      // 변경된 관리자 정보를 반영하기 위해 게시판 정보 재조회
       await boardStore.fetchBoardDetails(String(boardId.value))
     } else {
       alert('권한 위임 신청이 접수되었습니다. 기존 관리자의 승인을 기다려주세요.')
@@ -147,16 +93,5 @@ function formatDate(dateStr) {
     month: 'long', 
     day: 'numeric' 
   })
-}
-
-/** 삭제 확인 프롬프트 */
-function confirmDeleteBoard() {
-  if (!confirm('정말 이 갈드컵을 삭제하시겠습니까?')) return
-  const input = prompt(`보안을 위해 갈드컵 주제를 똑같이 입력하세요.\n입력 예시: ${board.value?.topic}`)
-  if (input !== board.value?.topic) {
-    alert('입력한 주제가 일치하지 않습니다. 삭제가 취소되었습니다.')
-    return
-  }
-  deleteBoard()
 }
 </script>
