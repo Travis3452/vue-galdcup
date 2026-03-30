@@ -48,12 +48,16 @@
             <span class="p-1.5 bg-slate-700 rounded-lg text-xs">🗳️</span> 
             투표 세션 제어
           </h4>
-          <p class="text-slate-400 text-[11px] mt-2 break-keep">현재 설정된 갈드컵의 투표 세션를 즉시 종료합니다.</p>
+          <p class="text-slate-400 text-[11px] mt-2 break-keep">
+            {{ isVoteActive 
+               ? '현재 진행 중인 투표를 즉시 마감하고 결과를 공개합니다.' 
+               : '기존 투표가 종료되었습니다. 새로운 주제로 투표를 개설하세요.' }}
+          </p>
         </div>
 
         <div class="mt-auto">
           <button 
-            v-if="voteSession && !voteSession.isFinished" 
+            v-if="isVoteActive" 
             @click="handleFinishVote" 
             class="w-full py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-xl transition-all text-sm font-black shadow-lg shadow-rose-900/20 flex justify-center items-center gap-2"
           >
@@ -126,6 +130,16 @@ const board = computed(() => boardStore.currentBoard)
 const boardPolicy = computed(() => boardStore.currentPolicy)
 const boardId = computed(() => boardStore.currentBoard?.id)
 const voteSession = computed(() => boardStore.activeVoteSession)
+
+// 💡 추가됨: DB 상태뿐만 아니라 현재 시간(endTime)까지 고려하여 진행 중인지 판단
+const isVoteActive = computed(() => {
+  if (!voteSession.value) return false;
+  if (voteSession.value.isFinished) return false;
+  
+  const now = new Date();
+  const endTime = new Date(voteSession.value.endTime);
+  return now < endTime;
+});
 
 const isBoardManager = computed(() => {
   if (!boardPolicy.value?.boardManager || !userStore.id) return false

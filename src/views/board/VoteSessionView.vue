@@ -40,13 +40,20 @@
             </p>
           </div>
 
-          <div class="flex flex-col items-center gap-1 pt-3 md:pt-4">
-            <p class="text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-widest bg-white px-2 rounded-full shadow-sm border border-slate-100">
-              진행 기간
-            </p>
-            <p class="text-xs md:text-sm text-slate-500 font-bold bg-slate-50 px-3 py-1 rounded-full">
-              {{ formatDateTime(voteSession.startTime) }} ~ {{ formatDateTime(voteSession.endTime) }}
-            </p>
+          <div class="flex flex-col items-center gap-2 pt-3 md:pt-4">
+            <div v-if="voteStatus !== 'UPCOMING'" class="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 border border-indigo-100 rounded-full mb-1">
+              <span class="text-lg">🔥</span>
+              <span class="text-xs md:text-sm font-black text-indigo-700">총 참여자 {{ (voteSession.totalVotes || 0).toLocaleString() }}명</span>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <p class="text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-widest bg-white px-2 py-0.5 rounded-full shadow-sm border border-slate-100">
+                진행 기간
+              </p>
+              <p class="text-xs md:text-sm text-slate-500 font-bold bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
+                {{ formatDateTime(voteSession.startTime) }} ~ {{ formatDateTime(voteSession.endTime) }}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -61,8 +68,12 @@
                     <svg class="w-16 h-16 md:w-24 md:h-24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                   </div>
                   
-                  <div v-if="voteStatus === 'LIVE'" class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-12 pb-3 px-3 md:p-6 flex flex-col items-center">
+                  <div v-if="voteStatus === 'FINISHED'" class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-12 pb-3 px-3 md:p-6 flex flex-col items-center">
                       <span class="text-white font-black text-lg md:text-3xl drop-shadow-md">{{ calculatePercentage(opt.count).toFixed(0) }}%</span>
+                  </div>
+
+                  <div v-else-if="voteStatus === 'LIVE'" class="absolute top-2 right-2 md:top-4 md:right-4 bg-black/40 backdrop-blur text-white text-[10px] md:text-xs font-bold px-2 py-1 rounded-lg">
+                    블라인드
                   </div>
                 </div>
                 
@@ -77,13 +88,13 @@
                   </div>
                 </div>
 
-                <span v-if="voteStatus !== 'UPCOMING'" class="mt-2 text-[11px] md:text-base text-indigo-600 font-black bg-indigo-50 px-3 py-1 rounded-full">{{ (opt.count || 0).toLocaleString() }}표</span>
+                <span v-if="voteStatus === 'FINISHED'" class="mt-2 text-[11px] md:text-base text-indigo-600 font-black bg-indigo-50 px-3 py-1 rounded-full">{{ (opt.count || 0).toLocaleString() }}표</span>
               </div>
 
               <div v-else class="w-full max-w-2xl mx-auto flex items-stretch gap-3 md:gap-5 p-3 md:p-5 bg-white border border-slate-100 rounded-xl md:rounded-[1.5rem] shadow-sm hover:shadow-md transition group">
                 <div class="w-6 md:w-10 flex flex-col items-center justify-center font-black text-slate-300 text-xs md:text-base shrink-0">#{{ idx + 1 }}</div>
                 
-                <div class="w-12 h-12 md:w-20 md:h-20 shrink-0 rounded-lg md:rounded-2xl overflow-hidden bg-slate-100 flex items-center justify-center border border-slate-100">
+                <div class="w-12 h-12 md:w-20 md:h-20 shrink-0 rounded-lg md:rounded-2xl overflow-hidden bg-slate-100 flex items-center justify-center border border-slate-100 relative">
                   <img v-if="opt.imageUrl" :src="opt.imageUrl" class="w-full h-full object-cover" />
                   <svg v-else class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                 </div>
@@ -96,10 +107,12 @@
                         {{ opt.label }}
                       </span>
                     </div>
-                    <span class="text-[10px] md:text-sm font-black text-indigo-600 shrink-0 bg-indigo-50 px-2.5 py-1 rounded-lg">{{ (opt.count || 0).toLocaleString() }}표</span>
+                    <span v-if="voteStatus === 'FINISHED'" class="text-[10px] md:text-sm font-black text-indigo-600 shrink-0 bg-indigo-50 px-2.5 py-1 rounded-lg">
+                      {{ (opt.count || 0).toLocaleString() }}표
+                    </span>
                   </div>
                   
-                  <div class="w-full h-2 md:h-3 bg-slate-100 rounded-full overflow-hidden mt-auto">
+                  <div v-if="voteStatus === 'FINISHED'" class="w-full h-2 md:h-3 bg-slate-100 rounded-full overflow-hidden mt-auto">
                     <div class="h-full bg-gradient-to-r from-indigo-400 to-indigo-600 rounded-full transition-all duration-1000 relative" :style="{ width: calculatePercentage(opt.count) + '%' }">
                       <div class="absolute inset-0 bg-white/20" style="background-image: linear-gradient(45deg,rgba(255,255,255,.15) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.15) 50%,rgba(255,255,255,.15) 75%,transparent 75%,transparent); background-size: 1rem 1rem;"></div>
                     </div>
@@ -143,7 +156,6 @@
         </router-link>
       </div>
     </div>
-
   </div>
 </template>
 
@@ -156,18 +168,14 @@ import { Client } from '@stomp/stompjs';
 const route = useRoute();
 const boardStore = useBoardStore();
 
-// 💡 상태 및 초기화
 const isExpanded = ref(true);
 let client = null;
 
-// 💡 데이터 참조 (Store)
 const boardId = computed(() => route.params.boardId);
 const voteSession = computed(() => boardStore.activeVoteSession);
 
-// 💡 하이브리드 레이아웃 판단 (2명일 때 Duel 모드)
 const isDuel = computed(() => voteSession.value?.options?.length === 2);
 
-// 💡 투표 상태 계산 (UPCOMING / LIVE / FINISHED)
 const voteStatus = computed(() => {
   if (!voteSession.value) return null;
   if (voteSession.value.isFinished) return 'FINISHED';
@@ -181,13 +189,11 @@ const voteStatus = computed(() => {
   return 'LIVE';
 });
 
-// 💡 확장된 텍스트 인덱스 관리
 const expandedTextIndex = ref(null);
 const toggleTextExpand = (index) => {
   expandedTextIndex.value = expandedTextIndex.value === index ? null : index;
 };
 
-/** * 레이아웃 및 스타일 동적 계산 */
 const layoutClass = computed(() => {
   return isDuel.value 
     ? 'flex items-center justify-center gap-4 md:gap-12 flex-wrap' 
@@ -206,7 +212,6 @@ const statusDotClass = computed(() => {
   return 'bg-slate-400';
 });
 
-/** * 유틸리티 함수 */
 const formatDateTime = (dateStr) => {
   if (!dateStr) return '';
   const date = new Date(dateStr);
@@ -215,13 +220,17 @@ const formatDateTime = (dateStr) => {
   }).format(date);
 };
 
+// 🔥 비율 계산 함수 보완 (null 방어 및 totalVotes 필드 우선 사용)
 const calculatePercentage = (count) => {
-  if (!voteSession.value?.options) return 0;
-  const total = voteSession.value.options.reduce((acc, cur) => acc + Number(cur.count || 0), 0);
-  return total === 0 ? 0 : (Number(count || 0) / total) * 100;
+  if (!voteSession.value?.options || count == null) return 0;
+  
+  // Dto의 totalVotes가 있으면 사용하고, 없다면 옵션들의 합으로 계산
+  const total = voteSession.value.totalVotes || voteSession.value.options.reduce((acc, cur) => acc + Number(cur.count || 0), 0);
+  
+  return total === 0 ? 0 : (Number(count) / total) * 100;
 };
 
-/** * 🛰️ WebSocket 실시간 통계 연결 */
+// 🛰️ WebSocket 실시간 통계 (Map -> 단일 숫자 totalVotes 수신으로 변경)
 const connectWebSocket = () => {
   if (!voteSession.value || voteSession.value.isFinished || client) return;
 
@@ -233,13 +242,9 @@ const connectWebSocket = () => {
     reconnectDelay: 5000,
     onConnect: () => {
       client.subscribe(`/topic/votes/${voteSession.value.id}`, (message) => {
-        if (message.body) {
-          const countsMap = JSON.parse(message.body);
-          if (boardStore.activeVoteSession?.options) {
-            boardStore.activeVoteSession.options.forEach((opt, index) => {
-              if (countsMap[index] !== undefined) opt.count = countsMap[index];
-            });
-          }
+        if (message.body && boardStore.activeVoteSession) {
+          // 서버에서 단일 숫자로 totalVotes를 브로드캐스트하므로 바로 치환
+          boardStore.activeVoteSession.totalVotes = Number(message.body);
         }
       });
     }
@@ -254,7 +259,6 @@ const disconnectWebSocket = () => {
   }
 };
 
-/** * 액션 핸들러 */
 const onVoteClick = () => {
   if (voteStatus.value !== 'LIVE') return;
   const width = 800;
@@ -268,7 +272,6 @@ const onVoteClick = () => {
   );
 };
 
-/** * 감시자 및 라이프사이클 */
 watch(voteStatus, (newVal) => {
   if (newVal === 'LIVE') {
     isExpanded.value = true;
@@ -284,7 +287,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* 모바일에서 수평 스크롤이 생기지 않도록 방지 */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
