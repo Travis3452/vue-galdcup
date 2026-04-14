@@ -31,25 +31,26 @@
         </div>
 
         <div v-if="isLoading" 
-            class="grid grid-cols-2 md:grid-cols-none md:grid-rows-5 md:grid-flow-col gap-3 md:gap-4 animate-pulse">
-          <div v-for="i in 10" :key="i" class="flex items-center p-3 md:p-4 rounded-xl md:rounded-2xl bg-slate-50/50">
+            class="grid grid-rows-5 grid-flow-col gap-3 md:gap-4 animate-pulse h-[350px] md:h-[450px]">
+          <div v-for="i in 10" :key="i" class="flex items-center p-3 md:p-4 rounded-xl md:rounded-2xl bg-slate-50/50 w-full min-w-0">
             <div class="w-8 h-8 md:w-12 md:h-12 shrink-0 bg-slate-200 rounded-lg"></div>
             <div class="ml-3 md:ml-5 w-full h-4 bg-slate-200 rounded-lg"></div>
           </div>
         </div>
 
         <div v-else 
-            class="grid grid-cols-2 md:grid-cols-none md:grid-rows-5 md:grid-flow-col gap-3 md:gap-4">
+            class="grid grid-rows-5 grid-flow-col gap-3 md:gap-4 h-[350px] md:h-[450px]">
           <div
             v-for="(board, index) in pagedPopularBoards"
             :key="board.id"
             @click="goToBoard(board.id)"
-            class="group flex items-center p-3 md:p-4 rounded-xl md:rounded-2xl border-2 border-slate-100 bg-slate-50 hover:bg-white hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer overflow-hidden"
+            class="group flex items-center p-3 md:p-4 rounded-xl md:rounded-2xl border-2 border-slate-100 bg-slate-50 hover:bg-white hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer min-w-0 w-full"
           >
-            <span class="w-7 h-7 md:w-12 md:h-12 shrink-0 flex items-center justify-center rounded-lg md:rounded-xl bg-white text-indigo-600 font-black text-[10px] md:text-lg group-hover:bg-indigo-600 group-hover:text-white transition-colors shadow-sm border border-slate-100">
+            <span class="w-7 h-7 md:w-12 md:h-12 shrink-0 flex items-center justify-center rounded-lg md:rounded-xl bg-white text-indigo-600 font-black text-[9px] md:text-lg group-hover:bg-indigo-600 group-hover:text-white transition-colors shadow-sm border border-slate-100">
               {{ index + 1 + popularPage * popularPageSize }}
             </span>
-            <span class="ml-2 md:ml-5 text-slate-700 font-bold text-[11px] md:text-lg truncate group-hover:text-indigo-700 transition-colors">
+            
+            <span class="ml-2 md:ml-5 text-slate-700 font-bold text-[9px] md:text-lg truncate group-hover:text-indigo-700 transition-colors min-w-0 flex-1">
               {{ board.topic }}
             </span>
           </div>
