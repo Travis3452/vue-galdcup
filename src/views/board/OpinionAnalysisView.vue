@@ -51,19 +51,19 @@
       <div class="lg:col-span-5 lg:sticky lg:top-10">
         <div class="bg-white p-8 md:p-12 rounded-[3rem] shadow-2xl shadow-slate-100 border border-slate-100 relative group overflow-hidden">
           <div class="relative z-10">
-            <div class="mb-10 text-center">
-              <span class="text-[11px] font-black text-indigo-500 uppercase tracking-[0.3em] mb-1.5 block">AI Prediction Metrics</span>
-              <h3 class="text-3xl font-black text-slate-900 tracking-tight">여론 점유율 예측</h3>
+            <div class="mb-10 flex justify-between items-end">
+              <div>
+                <span class="text-[11px] font-black text-indigo-500 uppercase tracking-[0.3em] mb-1.5 block">AI Prediction Metrics</span>
+                <h3 class="text-3xl font-black text-slate-900 tracking-tight">여론 점유율 예측</h3>
+              </div>
+              <div class="px-3 py-1 bg-red-50 text-red-600 rounded-full border border-red-100 flex items-center gap-1.5 mb-1">
+                <span class="flex h-2 w-2 rounded-full bg-red-500 animate-ping"></span>
+                <span class="text-[10px] font-black tracking-widest">LIVE</span>
+              </div>
             </div>
             
-            <div class="relative aspect-square">
-              <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none translate-y-1 z-0">
-                <div class="w-28 h-28 bg-white rounded-full shadow-xl flex flex-col items-center justify-center border-4 border-slate-50 relative z-0">
-                  <span class="text-[10px] font-bold text-slate-400 relative z-10 uppercase tracking-tighter">AI Consensus</span>
-                  <span class="text-indigo-600 font-black text-3xl relative z-10 tracking-tight">LIVE</span>
-                </div>
-              </div>
-              <canvas ref="chartCanvas" class="relative z-10"></canvas>
+            <div class="relative w-full h-[300px] md:h-[350px]">
+              <canvas ref="chartCanvas" class="relative z-10 w-full h-full"></canvas>
             </div>
           </div>
         </div>
@@ -233,7 +233,7 @@ const getCandidateTheme = (idx) => {
 };
 
 /**
- * 도넛 차트 초기화
+ * 차트 초기화 (세로 막대 차트로 변경)
  */
 const initChart = async () => {
   await nextTick();
@@ -244,23 +244,22 @@ const initChart = async () => {
   const results = sortedResults.value;
   
   chartInstance = new Chart(ctx, {
-    type: 'doughnut',
+    type: 'bar',
     data: {
-      labels: results.map(r => r.label),
+      // X축 라벨이 길 경우 6글자에서 말줄임표 처리
+      labels: results.map(r => r.label.length > 6 ? r.label.substring(0, 6) + '...' : r.label),
       datasets: [{
         data: results.map(r => r.supportRate),
         backgroundColor: results.map((_, i) => getCandidateTheme(i).main),
-        borderWidth: 0,
-        borderRadius: 20,
-        spacing: 12,
-        hoverOffset: 30
+        borderRadius: 8, // 상단 모서리 둥글게
+        borderSkipped: false,
+        barPercentage: 0.5,
+        categoryPercentage: 0.8
       }]
     },
     options: {
       responsive: true,
-      maintainAspectRatio: true,
-      cutout: '82%',
-      layout: { padding: 30 },
+      maintainAspectRatio: false, // 부모 높이에 맞추기 위해 false 설정
       plugins: {
         legend: { display: false },
         tooltip: {
@@ -269,7 +268,31 @@ const initChart = async () => {
           padding: 15,
           cornerRadius: 15,
           callbacks: {
+            // 툴팁에서는 잘리지 않은 전체 이름 표시
+            title: (context) => results[context[0].dataIndex].label,
             label: (context) => ` 예측 점유율: ${context.raw.toFixed(1)}%`
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100,
+          grid: { 
+            color: '#f1f5f9',
+            drawBorder: false 
+          },
+          ticks: { 
+            color: '#94a3b8', 
+            font: { weight: 'bold' },
+            callback: (value) => value + '%'
+          }
+        },
+        x: {
+          grid: { display: false, drawBorder: false },
+          ticks: { 
+            color: '#475569', 
+            font: { weight: 'bold' }
           }
         }
       },

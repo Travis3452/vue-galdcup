@@ -30,14 +30,16 @@
           </h3>
         </div>
 
-        <div v-if="isLoading" class="grid grid-rows-5 grid-flow-col gap-3 md:gap-4 animate-pulse h-[350px] md:h-[450px]">
+        <div v-if="isLoading" 
+            class="grid grid-cols-1 md:grid-rows-5 md:grid-flow-col gap-3 md:gap-4 animate-pulse min-h-[350px]">
           <div v-for="i in 10" :key="i" class="flex items-center p-3 md:p-4 rounded-xl md:rounded-2xl bg-slate-50/50">
             <div class="w-8 h-8 md:w-12 md:h-12 shrink-0 bg-slate-200 rounded-lg"></div>
             <div class="ml-3 md:ml-5 w-full h-4 bg-slate-200 rounded-lg"></div>
           </div>
         </div>
 
-        <div v-else class="grid grid-rows-5 grid-flow-col gap-3 md:gap-4 h-[350px] md:h-[450px]">
+        <div v-else 
+            class="grid grid-cols-1 md:grid-rows-5 md:grid-flow-col gap-3 md:gap-4">
           <div
             v-for="(board, index) in pagedPopularBoards"
             :key="board.id"
