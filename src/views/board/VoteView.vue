@@ -1,8 +1,14 @@
 <template>
-  <div class="min-h-[100dvh] bg-slate-50 flex items-center justify-center p-3 md:p-6 font-sans overflow-x-hidden">
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-black/60 backdrop-blur-sm overflow-y-auto font-sans" @click.self="closePopup">
     
-    <div class="w-full max-w-2xl bg-white rounded-3xl md:rounded-[2.5rem] shadow-2xl p-5 md:p-10 border border-indigo-50 relative flex flex-col max-h-[95dvh] overflow-y-auto scrollbar-hide">
+    <div class="w-full max-w-2xl bg-white rounded-3xl md:rounded-[2.5rem] shadow-2xl p-5 md:p-10 border border-indigo-50 relative flex flex-col max-h-[90dvh] overflow-y-auto scrollbar-hide">
       
+      <button @click="closePopup" class="absolute top-4 right-4 md:top-6 md:right-6 text-slate-400 hover:text-slate-600 p-2 rounded-full transition-colors z-20">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
       <div class="absolute -top-16 -right-16 md:-top-24 md:-right-24 w-48 h-48 md:w-64 md:h-64 bg-indigo-50 rounded-full blur-3xl pointer-events-none opacity-60"></div>
       
       <div class="relative z-10 space-y-6 md:space-y-8">
@@ -100,22 +106,31 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/axios'
 
+const props = defineProps({
+  boardId: {
+    type: [String, Number],
+    default: null
+  },
+  voteSessionId: {
+    type: [String, Number],
+    default: null
+  }
+})
+
+const emit = defineEmits(['close'])
+
 const route = useRoute()
 const voteSession = ref(null)
 const selectedOptionIndex = ref(null)
 const isSubmitting = ref(false)
 const isLoading = ref(true)
 
-// 팝업 닫기 로직
 const closePopup = () => {
+  emit('close')
   if (window.opener && !window.opener.closed) {
-    window.close();
-  } else {
-    if (confirm("투표창을 닫으시겠습니까?")) {
-      window.close() || history.back();
-    }
+    window.close()
   }
-};
+}
 
 function formatDate(dateStr) {
   if (!dateStr) return ''
@@ -128,13 +143,12 @@ function formatDate(dateStr) {
   })
 }
 
-// 1. 투표 세션 정보 가져오기 (기존과 동일하지만 응답 구조에 맞게 처리)
 async function fetchVoteSession() {
   isLoading.value = true
+  const targetBoardId = props.boardId || route.params.boardId
   try {
-    const res = await api.get(`/boards/${route.params.boardId}/vote-session`)
-    // Optional로 감싸져서 올 경우 .data 혹은 .data.value 체크가 필요할 수 있음
-    voteSession.value = res.data; 
+    const res = await api.get(`/boards/${targetBoardId}/vote-session`)
+    voteSession.value = res.data
   } catch (err) {
     console.error('투표 정보 로드 실패', err)
   } finally {
@@ -142,32 +156,31 @@ async function fetchVoteSession() {
   }
 }
 
-// 2. 수정된 API 경로에 따른 투표 제출 함수
 async function submitVote() {
   if (selectedOptionIndex.value === null || isSubmitting.value) return
   
-  const boardId = route.params.boardId;
-  const voteSessionId = voteSession.value?.id;
+  const targetBoardId = props.boardId || route.params.boardId
+  const targetVoteSessionId = props.voteSessionId || voteSession.value?.id
 
-  if (!boardId || !voteSessionId) {
-    alert("투표 세션 정보를 찾을 수 없습니다.");
-    return;
+  if (!targetBoardId || !targetVoteSessionId) {
+    alert("투표 세션 정보를 찾을 수 없습니다.")
+    return
   }
 
   isSubmitting.value = true
   try {
-    // ✅ 수정된 경로: /api/boards/{boardId}/vote-session/{voteSessionId}/votes
-    await api.post(`/boards/${boardId}/vote-session/${voteSessionId}/votes`, {
+    await api.post(`/boards/${targetBoardId}/vote-session/${targetVoteSessionId}/votes`, {
       selectedOptionIndex: selectedOptionIndex.value
-      // voteSessionId는 이제 URL 경로에 포함되므로 body에서는 제거해도 됩니다.
     })
 
     alert('🎉 투표가 성공적으로 완료되었습니다!')
-    if (window.opener) window.opener.location.reload()
-    window.close()
+    emit('close')
+    if (window.opener) {
+      window.opener.location.reload()
+      window.close()
+    }
   } catch (err) {
-    // 에러 메시지 처리 (429 Too Many Requests 등)
-    const errorMsg = err.response?.data?.message || '이미 투표하셨거나 오류가 발생했습니다.';
+    const errorMsg = err.response?.data?.message || '이미 투표하셨거나 오류가 발생했습니다.'
     alert(errorMsg)
   } finally {
     isSubmitting.value = false
@@ -181,7 +194,6 @@ onMounted(fetchVoteSession)
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
-/* 선택 시 팡! 터지는 효과 */
 @keyframes pop {
   0% { transform: scale(0.5); opacity: 0; }
   70% { transform: scale(1.1); }
@@ -191,7 +203,6 @@ onMounted(fetchVoteSession)
   animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* 폼 입력창 자동 줌 방지 (iOS) */
 input, select, textarea {
   font-size: 16px !important;
 }

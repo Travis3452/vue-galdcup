@@ -156,6 +156,16 @@
         </router-link>
       </div>
     </div>
+
+    <Teleport to="body">
+      <VoteModal 
+        v-if="isVoteModalOpen" 
+        :board-id="boardId" 
+        :vote-session-id="voteSession?.id" 
+        @close="isVoteModalOpen = false" 
+      />
+    </Teleport>
+
   </div>
 </template>
 
@@ -164,18 +174,40 @@ import { computed, ref, watch, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useBoardStore } from '@/stores/board';
 import { Client } from '@stomp/stompjs';
+import VoteModal from '@/views/board/VoteView.vue';
 
+/**
+ * 라우트 및 스토어 인스턴스 초기화
+ */
 const route = useRoute();
 const boardStore = useBoardStore();
 
+/**
+ * UI 토글 및 모달 상태 관리
+ */
 const isExpanded = ref(true);
+const isVoteModalOpen = ref(false);
+const expandedTextIndex = ref(null);
+
+/**
+ * STOMP 웹소켓 클라이언트 참조 변수
+ */
 let client = null;
 
+/**
+ * 현재 게시판 ID 및 활성 투표 세션 정보
+ */
 const boardId = computed(() => route.params.boardId);
 const voteSession = computed(() => boardStore.activeVoteSession);
 
+/**
+ * 1:1 대결 구도 여부 판단 (투표 옵션 2개 기준)
+ */
 const isDuel = computed(() => voteSession.value?.options?.length === 2);
 
+/**
+ * 투표 세션의 현재 상태 (UPCOMING, LIVE, FINISHED)
+ */
 const voteStatus = computed(() => {
   if (!voteSession.value) return null;
   if (voteSession.value.isFinished) return 'FINISHED';
@@ -189,29 +221,43 @@ const voteStatus = computed(() => {
   return 'LIVE';
 });
 
-const expandedTextIndex = ref(null);
-const toggleTextExpand = (index) => {
-  expandedTextIndex.value = expandedTextIndex.value === index ? null : index;
-};
-
+/**
+ * 투표 타입에 따른 레이아웃 클래스
+ */
 const layoutClass = computed(() => {
   return isDuel.value 
     ? 'flex items-center justify-center gap-4 md:gap-12 flex-wrap' 
     : 'flex flex-col gap-4 max-w-2xl mx-auto';
 });
 
+/**
+ * 상태 배지 스타일 클래스
+ */
 const statusBadgeClass = computed(() => {
   if (voteStatus.value === 'UPCOMING') return 'bg-amber-50 text-amber-600 border-amber-100';
   if (voteStatus.value === 'LIVE') return 'bg-red-50 text-red-600 border-red-100';
   return 'bg-slate-100 text-slate-500 border-slate-200';
 });
 
+/**
+ * 상태 표시점 색상 클래스
+ */
 const statusDotClass = computed(() => {
   if (voteStatus.value === 'UPCOMING') return 'bg-amber-500';
   if (voteStatus.value === 'LIVE') return 'bg-red-600';
   return 'bg-slate-400';
 });
 
+/**
+ * 긴 항목 텍스트의 펼침/접기 토글
+ */
+const toggleTextExpand = (index) => {
+  expandedTextIndex.value = expandedTextIndex.value === index ? null : index;
+};
+
+/**
+ * 일시 문자열 포맷팅 (MM월 DD일 HH:mm)
+ */
 const formatDateTime = (dateStr) => {
   if (!dateStr) return '';
   const date = new Date(dateStr);
@@ -220,30 +266,37 @@ const formatDateTime = (dateStr) => {
   }).format(date);
 };
 
-// 🔥 비율 계산 함수 보완 (null 방어 및 totalVotes 필드 우선 사용)
+/**
+ * 옵션별 득표율 백분율 계산
+ */
 const calculatePercentage = (count) => {
   if (!voteSession.value?.options || count == null) return 0;
   
-  // Dto의 totalVotes가 있으면 사용하고, 없다면 옵션들의 합으로 계산
   const total = voteSession.value.totalVotes || voteSession.value.options.reduce((acc, cur) => acc + Number(cur.count || 0), 0);
   
   return total === 0 ? 0 : (Number(count) / total) * 100;
 };
 
-// 🛰️ WebSocket 실시간 통계 (Map -> 단일 숫자 totalVotes 수신으로 변경)
+/**
+ * STOMP 웹소켓 연결 및 인증 헤더 전달
+ */
 const connectWebSocket = () => {
   if (!voteSession.value || voteSession.value.isFinished || client) return;
 
   const baseURL = import.meta.env.VITE_API_BASE_URL;
   const socketURL = baseURL.replace(/^http/, 'ws') + '/ws-galdcup';
 
+  const token = boardStore.accessToken;
+
   client = new Client({
     brokerURL: socketURL,
     reconnectDelay: 5000,
+    connectHeaders: {
+      Authorization: token ? `Bearer ${token}` : ''
+    },
     onConnect: () => {
       client.subscribe(`/topic/votes/${voteSession.value.id}`, (message) => {
         if (message.body && boardStore.activeVoteSession) {
-          // 서버에서 단일 숫자로 totalVotes를 브로드캐스트하므로 바로 치환
           boardStore.activeVoteSession.totalVotes = Number(message.body);
         }
       });
@@ -252,6 +305,9 @@ const connectWebSocket = () => {
   client.activate();
 };
 
+/**
+ * STOMP 웹소켓 연결 해제
+ */
 const disconnectWebSocket = () => {
   if (client) {
     client.deactivate();
@@ -259,19 +315,17 @@ const disconnectWebSocket = () => {
   }
 };
 
+/**
+ * 투표 참여 버튼 클릭 시 모달 표시
+ */
 const onVoteClick = () => {
   if (voteStatus.value !== 'LIVE') return;
-  const width = 800;
-  const height = 900;
-  const left = window.screenX + (window.outerWidth - width) / 2;
-  const top = window.screenY + (window.outerHeight - height) / 2;
-  window.open(
-    `/boards/${boardId.value}/votes/${voteSession.value.id}`, 
-    '_blank', 
-    `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`
-  );
+  isVoteModalOpen.value = true;
 };
 
+/**
+ * 투표 진행 상태에 따른 웹소켓 자동 연결/해제 관리
+ */
 watch(voteStatus, (newVal) => {
   if (newVal === 'LIVE') {
     isExpanded.value = true;
@@ -281,6 +335,9 @@ watch(voteStatus, (newVal) => {
   }
 }, { immediate: true });
 
+/**
+ * 컴포넌트 파기 시 웹소켓 자원 정리
+ */
 onUnmounted(() => {
   disconnectWebSocket();
 });
