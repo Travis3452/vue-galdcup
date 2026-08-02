@@ -177,8 +177,15 @@ function formatDate(dateString) {
 }
 
 async function handleLogin() {
+  // 1. 쿠키에 Refresh Token이 남아있는지 확인하고 즉시 재발급(로그인) 시도
   const success = await store.reissue()
-  if (success) return
+  
+  if (success) {
+    window.location.reload() 
+    return
+  }
+  
+  // 2. 리프레시 토큰이 만료되었거나 없다면 기존처럼 구글 로그인 페이지로 이동
   store.clearLocalData()
   loginWithGoogle()
 }
