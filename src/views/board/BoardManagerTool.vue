@@ -11,42 +11,15 @@
       </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
+    <!-- 2열 그리드 구조로 변경 (투표 관리, 환경 설정 및 삭제) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
       
-      <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700 flex flex-col transition-all hover:border-slate-500">
-        <div class="mb-4">
-          <h4 class="text-slate-200 font-bold text-sm flex items-center gap-2">
-            <span class="p-1.5 bg-slate-700 rounded-lg text-xs">🤖</span> 
-            AI 생성
-          </h4>
-        </div>
-        
-        <div class="flex flex-col gap-2 mt-auto">
-          <button 
-            @click="handleGeneratePosts" 
-            :disabled="isGeneratingPosts || isGeneratingComments"
-            class="w-full py-2.5 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-500 hover:text-white border border-emerald-500/30 rounded-xl transition-all text-xs font-bold disabled:opacity-50 flex justify-center items-center gap-2"
-          >
-            <span v-if="isGeneratingPosts" class="animate-spin text-[10px]">🌀</span>
-            {{ isGeneratingPosts ? '글 생성 중...' : '게시글 10개 생성' }}
-          </button>
-          
-          <button 
-            @click="handleGenerateComments" 
-            :disabled="isGeneratingPosts || isGeneratingComments"
-            class="w-full py-2.5 bg-teal-600/20 text-teal-400 hover:bg-teal-500 hover:text-white border border-teal-500/30 rounded-xl transition-all text-xs font-bold disabled:opacity-50 flex justify-center items-center gap-2"
-          >
-            <span v-if="isGeneratingComments" class="animate-spin text-[10px]">🌀</span>
-            {{ isGeneratingComments ? '댓글 생성 중...' : '댓글 20개 생성' }}
-          </button>
-        </div>
-      </div>
-
+      <!-- 1. 투표 관리 -->
       <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700 flex flex-col transition-all hover:border-slate-500">
         <div class="mb-4">
           <h4 class="text-slate-200 font-bold text-sm flex items-center gap-2">
             <span class="p-1.5 bg-slate-700 rounded-lg text-xs">🗳️</span> 
-            투표 세션 제어
+            투표 관리
           </h4>
           <p class="text-slate-400 text-[11px] mt-2 break-keep">
             {{ isVoteActive 
@@ -73,6 +46,7 @@
         </div>
       </div>
 
+      <!-- 2. 환경 설정 및 삭제 -->
       <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700 flex flex-col transition-all hover:border-slate-500">
         <div class="mb-4">
           <h4 class="text-slate-200 font-bold text-sm flex items-center gap-2">
@@ -123,15 +97,12 @@ const userStore = useUserStore()
 const boardStore = useBoardStore()
 
 const showPolicyModal = ref(false)
-const isGeneratingPosts = ref(false)
-const isGeneratingComments = ref(false)
 
 const board = computed(() => boardStore.currentBoard)
 const boardPolicy = computed(() => boardStore.currentPolicy)
 const boardId = computed(() => boardStore.currentBoard?.id)
 const voteSession = computed(() => boardStore.activeVoteSession)
 
-// 💡 추가됨: DB 상태뿐만 아니라 현재 시간(endTime)까지 고려하여 진행 중인지 판단
 const isVoteActive = computed(() => {
   if (!voteSession.value) return false;
   if (voteSession.value.isFinished) return false;
@@ -159,33 +130,6 @@ const handleFinishVote = async () => {
     await boardStore.fetchActiveVoteSession(boardId.value);
   } catch (error) {
     alert(error.response?.data?.message || "마감 처리에 실패했습니다.");
-  }
-}
-
-async function handleGeneratePosts() {
-  if (!confirm('💡 AI가 투표 주제를 분석하여 게시글 10개를 기획하고 생성합니다.\n진행하시겠습니까?')) return
-  isGeneratingPosts.value = true
-  try {
-    const res = await api.post(`/test/dummy/board/${boardId.value}/posts`)
-    alert(res.data) 
-    location.reload()
-  } catch (err) {
-    alert(err.response?.data || '게시글 생성에 실패했습니다.')
-  } finally {
-    isGeneratingPosts.value = false
-  }
-}
-
-async function handleGenerateComments() {
-  if (!confirm('💡 최신 게시글 10개에 20개의 더미 댓글을 생성합니다.\n여론 분석 테스트를 위한 데이터를 구성합니다.')) return
-  isGeneratingComments.value = true
-  try {
-    const res = await api.post(`/test/dummy/board/${boardId.value}/comments`)
-    alert(res.data)
-  } catch (err) {
-    alert(err.response?.data || '댓글 생성에 실패했습니다.')
-  } finally {
-    isGeneratingComments.value = false
   }
 }
 
