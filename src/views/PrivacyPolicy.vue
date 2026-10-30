@@ -1,12 +1,12 @@
 <template>
-  <div class="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-3xl mx-auto bg-white shadow-sm border border-slate-200 rounded-2xl overflow-hidden">
-      <div class="bg-indigo-600 px-8 py-10 text-white">
-        <h1 class="text-3xl font-extrabold tracking-tight">개인정보처리방침</h1>
-        <p class="mt-2 text-indigo-100 opacity-90">Galdcup 서비스 이용자 여러분의 소중한 개인정보 보호를 위해 최선을 다합니다.</p>
+  <div class="page-container page-container-narrow legal-page">
+    <div class="surface overflow-hidden">
+      <div class="legal-heading">
+        <h1 class="text-2xl font-bold">개인정보처리방침</h1>
+        <p class="page-description">Galdcup 서비스 이용자 여러분의 소중한 개인정보 보호를 위해 최선을 다합니다.</p>
       </div>
 
-      <div class="p-8 space-y-10 text-slate-700 leading-relaxed">
+      <div class="legal-content reading-content">
         
         <section>
           <h2 class="text-xl font-bold text-slate-900 border-l-4 border-indigo-500 pl-3 mb-4">1. 개인정보의 처리 목적</h2>
@@ -67,7 +67,7 @@
       <div class="bg-slate-50 p-6 flex justify-center">
         <button 
           @click="$router.back()" 
-          class="px-6 py-2.5 bg-white border border-slate-300 rounded-xl font-bold text-slate-600 hover:bg-slate-100 transition shadow-sm"
+          class="px-6 py-2.5 bg-[var(--ui-surface)] border border-slate-300 rounded-xl font-bold text-slate-600 hover:bg-slate-100 transition shadow-sm"
         >
           뒤로 가기
         </button>
@@ -75,3 +75,9 @@
     </div>
   </div>
 </template>
+<style scoped>
+.legal-heading { padding:24px 20px; border-bottom:1px solid var(--ui-border); background:var(--ui-surface-subtle); color:var(--ui-text); }
+.legal-content { display:grid; gap:28px; padding:24px 20px; font-size:15px; }
+.legal-content h2 { color:var(--ui-text); }
+@media(min-width:768px) { .legal-heading { padding:28px 32px; } .legal-content { padding:32px; } }
+</style>

@@ -1,19 +1,25 @@
 import axios from "axios";
-import { useUserStore } from "@/stores/user";
+import { useUserStore } from "./stores/user.js";
+import { API_BASE_URL } from './services/authClient.js';
+import { normalizePage } from './utils/pagination.js';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const expiredNotifications = new WeakMap();
 
 const api = axios.create({
   baseURL: `${API_BASE_URL}/api`,
-  withCredentials: true // Refresh Token 쿠키 전달용으로 유지
+  withCredentials: true,
+  timeout: 30000
 });
 
 // ⭐ [핵심] 요청 인터셉터: 메모리에 있는 Access Token을 헤더에 장착하여 전송
 api.interceptors.request.use(
   (config) => {
     const store = useUserStore();
+    config._authGeneration = store.sessionGeneration;
     if (store.accessToken) {
       config.headers['Authorization'] = `Bearer ${store.accessToken}`;
+    } else {
+      delete config.headers['Authorization'];
     }
     return config;
   },
@@ -23,44 +29,41 @@ api.interceptors.request.use(
 );
 
 api.interceptors.response.use(
-  (res) => res,
+  (res) => {
+    res.data = normalizePage(res.data);
+    return res;
+  },
   async (err) => {
     const store = useUserStore();
     const originalRequest = err.config;
 
-    // [Case 1] 429 Too Many Requests
-    if (err.response?.status === 429) {
-      const limitMessage = err.response.data?.message || "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.";
-      console.warn(`[Rate Limit] ${limitMessage}`);
-      alert(limitMessage);
+    if (err.response?.status !== 401 || !originalRequest
+        || originalRequest.url?.includes('/auth/')) {
       return Promise.reject(err);
     }
 
-    // [Case 2] 401 Unauthorized (인증 만료)
-    if (err.response?.status === 401 && !originalRequest._retry) {
-      
-      if (originalRequest.url.includes('/auth/')) {
-        return Promise.reject(err);
-      }
+    const hadSession = store.isLoggedIn || Boolean(store.accessToken);
+    if (!hadSession) return Promise.reject(err);
+    if (originalRequest._authGeneration !== store.sessionGeneration) return Promise.reject(err);
 
+    if (!originalRequest._retry) {
       originalRequest._retry = true;
+      // 이미 갱신된 토큰보다 늦게 도착한 401은 새 토큰으로 한 번만 재시도한다.
+      if (store.accessToken && originalRequest.headers?.Authorization
+          && originalRequest.headers.Authorization !== `Bearer ${store.accessToken}`) {
+        return api(originalRequest);
+      }
+      if (await store.reissue()) return api(originalRequest);
+      // 통신 실패는 유효한 쿠키·프로필을 지우거나 페이지를 강제 이동시키지 않는다.
+      if (store.isLoggedIn) return Promise.reject(err);
+    } else {
+      store.clearLocalData();
+    }
 
-      try {
-        console.log("Access Token 만료 감지. 세션 연장을 시도합니다...");
-        const isSuccess = await store.reissue();
-
-        if (isSuccess) {
-          console.log("세션 연장 성공. 실패했던 요청을 재전송합니다.");
-          return api(originalRequest);
-        } else {
-          throw new Error("Refresh token expired or invalid");
-        }
-      } catch (refreshErr) {
-        console.error("세션이 완전히 만료되었습니다. 로그인이 필요합니다.");
-        store.clearLocalData(); 
-        alert("로그인 세션이 만료되었습니다. 다시 로그인해 주세요.");
-        window.location.href = "/"; 
-        return Promise.reject(refreshErr);
+    if (expiredNotifications.get(store) !== store.sessionEpoch) {
+      expiredNotifications.set(store, store.sessionEpoch);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('galdcup:session-expired'));
       }
     }
 

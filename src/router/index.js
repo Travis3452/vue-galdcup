@@ -1,8 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { writeStorage } from '@/utils/storage'
 
 import HomeView from '@/views/HomeView.vue'
-import BoardLayout from '@/views/board/BoardLayout.vue'
+const BoardLayout = () => import('@/views/board/BoardLayout.vue')
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -13,6 +14,10 @@ const router = createRouter({
     if (savedPosition) {
       return savedPosition
     } 
+    // 게시글 목록의 필터/페이지 변경은 위치를 유지하고 목록에서 스크롤을 제어한다.
+    else if (to.path === from.path && ['Board', 'Post'].includes(to.name)) {
+      return false
+    }
     // 새로운 페이지로 이동할 때는 무조건 맨 위로 이동
     else {
       return { top: 0 }
@@ -113,7 +118,8 @@ const router = createRouter({
           meta: { requiresAuth: true }
         },
       ]
-    }
+    },
+    { path: '/:pathMatch(.*)*', name: 'NotFound', component: () => import('@/views/NotFoundView.vue') }
   ]
 })
 
@@ -123,13 +129,13 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore()
   
-  if (!userStore.userId && localStorage.getItem('isLoggedIn') === 'true') {
+  if (!userStore.hasRestoredSession) {
     await userStore.restore()
   }
 
-  if (to.meta.requiresAuth && !userStore.isLoggedIn) {
-    alert('로그인이 필요한 서비스입니다.')
-    next('/')
+  if (to.meta.requiresAuth && !userStore.accessToken) {
+    writeStorage('redirectPath', to.fullPath, 'sessionStorage')
+    next({ path: '/', query: { login: 'required' } })
   } else if (to.meta.adminOnly && userStore.role !== 'ADMIN') {
     alert('관리자만 접근 가능합니다.')
     next('/')

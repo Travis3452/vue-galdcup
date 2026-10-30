@@ -1,47 +1,35 @@
 <template>
-  <div class="flex flex-col items-center justify-center min-h-screen bg-slate-50">
-    <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-indigo-600 mb-4"></div>
-    <h2 class="text-xl font-bold text-slate-700">로그인 정보를 확인 중입니다...</h2>
-    <p class="text-slate-500 mt-2">잠시만 기다려 주세요.</p>
-  </div>
+  <section class="page-container flex min-h-[60dvh] flex-col items-center justify-center gap-4 text-center">
+    <div v-if="!error" role="status"><span class="state-spinner inline-block" aria-hidden="true"></span><p class="mt-4 font-bold">로그인 정보를 확인 중입니다…</p></div>
+    <template v-else><h1 class="text-xl font-bold">로그인을 완료하지 못했습니다</h1><p role="alert" class="text-slate-600">{{ error }}</p><router-link to="/" class="ui-button">홈으로 이동</router-link></template>
+  </section>
 </template>
-
 <script setup>
-import { onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import api from '@/axios'
-
+import { readStorage, removeStorage, safeRedirectPath } from '@/utils/storage'
 const route = useRoute()
 const router = useRouter()
-const userStore = useUserStore()
-
+const user = useUserStore()
+const error = ref('')
+const controller = new AbortController()
+onUnmounted(() => controller.abort())
 onMounted(async () => {
-  const code = route.query.code
-  
-  if (code) {
-    try {
-      const res = await api.post(`/auth/callback/google?code=${code}`)
-      
-      userStore.setAuthData(res.data)
-      
-      const redirectPath = sessionStorage.getItem('redirectPath')
-      
-      if (redirectPath) {
-        sessionStorage.removeItem('redirectPath')
-        router.push(redirectPath)
-      } else {
-        router.push('/')
-      }
-
-    } catch (err) {
-      console.error("로그인 실패", err)
-      alert("로그인 중 오류가 발생했습니다.")
-      sessionStorage.removeItem('redirectPath')
-      router.push('/')
-    }
-  } else {
-    router.push('/')
+  const code = typeof route.query.code === 'string' ? route.query.code : ''
+  // 교환 후 주소·브라우저 기록에 인가 코드를 남기지 않는다.
+  window.history.replaceState(window.history.state, '', route.path)
+  if (!code || route.query.error) { error.value = '로그인이 취소되었거나 유효한 인증 정보를 받지 못했습니다.'; return }
+  try {
+    const response = await api.post('/auth/callback/google', null, { params: { code }, signal: controller.signal })
+    if (controller.signal.aborted) return
+    user.setAuthData(response.data)
+    const destination = safeRedirectPath(readStorage('redirectPath', '/', 'sessionStorage'))
+    removeStorage('redirectPath', 'sessionStorage')
+    await router.replace(destination)
+  } catch {
+    if (!controller.signal.aborted) error.value = '잠시 후 홈에서 로그인을 다시 시도해 주세요.'
   }
 })
 </script>

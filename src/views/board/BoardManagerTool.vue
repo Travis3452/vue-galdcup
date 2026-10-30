@@ -1,105 +1,31 @@
 <template>
-  <div v-if="isBoardManager" class="bg-slate-900 rounded-[2rem] p-6 md:p-8 shadow-2xl mb-8 border border-slate-700">
-    
-    <div class="flex items-center gap-4 mb-6 pb-5 border-b border-slate-800">
-      <div class="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-2xl shadow-inner border border-indigo-500/30">
-        👨‍💻
-      </div>
-      <div>
-        <h3 class="text-white font-black text-lg md:text-xl tracking-tight">매니저 대시보드</h3>
-        <p class="text-slate-400 text-xs md:text-sm mt-1">게시판 환경과 투표 세션을 관리하는 전용 공간입니다.</p>
-      </div>
+  <details v-if="isBoardManager" class="surface manager-panel">
+    <summary><span class="manager-summary-icon" aria-hidden="true">⚙</span><span><strong>매니저 도구</strong><span class="manager-description">투표와 갈드컵 설정을 관리합니다.</span></span><span class="manager-toggle" aria-hidden="true">⌄</span></summary>
+    <div class="manager-tools">
+      <section><h3>투표 관리</h3><p class="field-help">{{ isVoteActive ? '진행 중인 투표를 마감하고 결과를 공개할 수 있습니다.' : '새로운 주제로 투표를 만들어 보세요.' }}</p><button v-if="isVoteActive" type="button" class="ui-button ui-button-secondary mt-4" :disabled="pending" @click="handleFinishVote">현재 투표 마감</button><button v-else type="button" class="ui-button mt-4" :disabled="pending" @click="handleCreateVote">새 투표 만들기</button></section>
+      <section><h3>갈드컵 설정</h3><p class="field-help">정책, 매니저, 카테고리를 관리할 수 있습니다.</p><div class="flex flex-wrap gap-2 mt-4"><button type="button" class="ui-button ui-button-secondary" @click="showPolicyModal = true">설정 열기</button><button type="button" class="ui-button ui-button-quiet" :disabled="pending" @click="confirmDeleteBoard">갈드컵 삭제</button></div></section>
     </div>
-
-    <!-- 2열 그리드 구조로 변경 (투표 관리, 환경 설정 및 삭제) -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
-      
-      <!-- 1. 투표 관리 -->
-      <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700 flex flex-col transition-all hover:border-slate-500">
-        <div class="mb-4">
-          <h4 class="text-slate-200 font-bold text-sm flex items-center gap-2">
-            <span class="p-1.5 bg-slate-700 rounded-lg text-xs">🗳️</span> 
-            투표 관리
-          </h4>
-          <p class="text-slate-400 text-[11px] mt-2 break-keep">
-            {{ isVoteActive 
-               ? '현재 진행 중인 투표를 즉시 마감하고 결과를 공개합니다.' 
-               : '기존 투표가 종료되었습니다. 새로운 주제로 투표를 개설하세요.' }}
-          </p>
-        </div>
-
-        <div class="mt-auto">
-          <button 
-            v-if="isVoteActive" 
-            @click="handleFinishVote" 
-            class="w-full py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-xl transition-all text-sm font-black shadow-lg shadow-rose-900/20 flex justify-center items-center gap-2"
-          >
-            🛑 진행 중인 투표 마감
-          </button>
-          <button 
-            v-else
-            @click="handleCreateVote" 
-            class="w-full py-3 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl transition-all text-sm font-black shadow-lg shadow-indigo-900/20 flex justify-center items-center gap-2"
-          >
-            ✨ 새로운 투표 생성
-          </button>
-        </div>
-      </div>
-
-      <!-- 2. 환경 설정 및 삭제 -->
-      <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700 flex flex-col transition-all hover:border-slate-500">
-        <div class="mb-4">
-          <h4 class="text-slate-200 font-bold text-sm flex items-center gap-2">
-            <span class="p-1.5 bg-slate-700 rounded-lg text-xs">🛠️</span> 
-            환경 설정 및 삭제
-          </h4>
-          <p class="text-slate-400 text-[11px] mt-2 break-keep">권한 정책을 수정하거나 게시판 전체를 영구적으로 삭제합니다.</p>
-        </div>
-
-        <div class="flex gap-2 mt-auto">
-          <button 
-            @click="showPolicyModal = true" 
-            class="flex-1 py-2.5 bg-slate-700 hover:bg-yellow-600 text-white border border-slate-600 hover:border-yellow-500 rounded-xl transition-all text-xs font-bold"
-          >
-            정책 변경
-          </button>
-          <button 
-            @click="confirmDeleteBoard" 
-            class="flex-1 py-2.5 bg-slate-700 hover:bg-red-600 text-white border border-slate-600 hover:border-red-500 rounded-xl transition-all text-xs font-bold"
-          >
-            게시판 삭제
-          </button>
-        </div>
-      </div>
-
-    </div>
-    
-    <BoardPolicyModal
-      v-if="showPolicyModal"
-      :boardId="String(boardId)"
-      :boardPolicy="boardPolicy"
-      @close="showPolicyModal = false"
-      @updated="boardStore.fetchBoardDetails(String(boardId))"
-    />
-  </div>
+    <BoardPolicyModal v-if="showPolicyModal" @close="showPolicyModal = false" />
+  </details>
 </template>
-
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, defineAsyncComponent } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/axios' 
-import { useUserStore } from '@/stores/user'
 import { useBoardStore } from '@/stores/board'
-import BoardPolicyModal from '@/views/board/BoardPolicyView.vue'
+import { useClock } from '@/composables/useClock'
+import { notify } from '@/services/notifications'
+import { getErrorMessage } from '@/utils/request'
+const BoardPolicyModal = defineAsyncComponent(() => import('@/views/board/BoardPolicyView.vue'))
 
 const router = useRouter()
-const userStore = useUserStore()
+const pending = ref(false)
+const now = useClock()
 const boardStore = useBoardStore()
 
 const showPolicyModal = ref(false)
 
 const board = computed(() => boardStore.currentBoard)
-const boardPolicy = computed(() => boardStore.currentPolicy)
 const boardId = computed(() => boardStore.currentBoard?.id)
 const voteSession = computed(() => boardStore.activeVoteSession)
 
@@ -107,40 +33,39 @@ const isVoteActive = computed(() => {
   if (!voteSession.value) return false;
   if (voteSession.value.isFinished) return false;
   
-  const now = new Date();
-  const endTime = new Date(voteSession.value.endTime);
-  return now < endTime;
+  const endTime = new Date(voteSession.value.endTime).getTime();
+  return now.value < endTime;
 });
 
-const isBoardManager = computed(() => {
-  if (!boardPolicy.value?.boardManager || !userStore.id) return false
-  return Number(boardPolicy.value.boardManager.id) === Number(userStore.id)
-})
+const isBoardManager = computed(() => boardStore.isBoardManager)
 
 const handleCreateVote = () => {
   router.push({ name: 'CreateVoteSession', params: { boardId: boardId.value } })
 }
 
 const handleFinishVote = async () => {
-  if (!voteSession.value) return;
+  if (pending.value || !voteSession.value) return;
   if (!confirm("현재 진행 중인 투표를 즉시 마감하시겠습니까?")) return;
+  pending.value = true;
   try {
     await api.post(`/boards/${boardId.value}/vote-session/${voteSession.value.id}/finish`);
-    alert("투표가 종료되었습니다.");
+    notify("투표가 종료되었습니다.");
     await boardStore.fetchActiveVoteSession(boardId.value);
   } catch (error) {
-    alert(error.response?.data?.message || "마감 처리에 실패했습니다.");
-  }
+    notify(getErrorMessage(error, "마감 처리에 실패했습니다."), "error");
+  } finally { pending.value = false; }
 }
 
 async function deleteBoard() {
+  if (pending.value) return
+  pending.value = true
   try {
     await api.delete(`/boards/${boardId.value}`)
-    alert('게시판이 성공적으로 삭제되었습니다.')
+    notify('게시판이 삭제되었습니다.')
     router.push('/')
   } catch (err) {
-    alert(err.response?.data?.message || '삭제 실패')
-  }
+    notify(getErrorMessage(err, '게시판을 삭제하지 못했습니다.'), 'error')
+  } finally { pending.value = false }
 }
 
 function confirmDeleteBoard() {
@@ -149,3 +74,17 @@ function confirmDeleteBoard() {
   if (input === board.value?.topic) deleteBoard()
 }
 </script>
+<style scoped>
+.manager-panel { background:var(--ui-primary-soft); border-color:var(--ui-primary-border); }
+.manager-panel > summary { display:flex; align-items:center; gap:12px; padding:16px 20px; cursor:pointer; list-style:none; }
+.manager-panel > summary::-webkit-details-marker { display:none; }
+.manager-panel > summary:focus-visible { outline:3px solid var(--ui-primary); outline-offset:3px; border-radius:12px; }
+.manager-panel summary strong { font-size:14px; color:var(--ui-primary); }
+.manager-description { display:block; margin-top:3px; font-size:12px; color:var(--ui-text-muted); }
+.manager-summary-icon { display:grid; place-items:center; width:36px; height:36px; flex:0 0 auto; border-radius:10px; color:var(--ui-primary); background:var(--ui-surface); font-size:20px; }
+.manager-toggle { margin-left:auto; font-size:20px; }
+.manager-panel[open] .manager-toggle { transform:rotate(180deg); }
+.manager-tools { display:grid; gap:24px; padding:20px; border-top:1px solid var(--ui-primary-border); background:var(--ui-surface); border-radius:0 0 16px 16px; }
+.manager-tools h3 { font-size:14px; font-weight:650; }
+@media(min-width:768px) { .manager-tools { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+</style>

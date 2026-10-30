@@ -1,211 +1,125 @@
 <template>
-  <main class="min-h-[calc(100vh-64px)] md:min-h-[calc(100vh-96px)] bg-gradient-to-br from-indigo-50 via-sky-50 to-blue-100 p-4 md:p-10 font-sans">
-    <div class="max-w-7xl mx-auto space-y-10 md:space-y-16">
-      
-      <section class="relative rounded-3xl md:rounded-[2.5rem] shadow-2xl overflow-hidden bg-indigo-900 flex flex-col md:flex-row items-stretch border border-indigo-800">
-        <div class="w-full md:w-3/5 p-8 md:p-16 lg:p-20 text-center md:text-left relative z-10 flex flex-col justify-center">
-          <div class="inline-flex items-center justify-center md:justify-start gap-2 px-3 py-1.5 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl font-black text-[10px] md:text-sm uppercase tracking-widest w-max mb-4 md:mb-6 mx-auto md:mx-0">
-            <span class="relative flex h-2 w-2 md:h-3 md:w-3">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-2 w-2 md:h-3 md:w-3 bg-red-500"></span>
-            </span>
-            Live Debate
-          </div>
-          <h2 class="text-2xl md:text-5xl lg:text-6xl font-extrabold text-white mb-4 md:mb-6 leading-tight tracking-tight break-keep">
-            세상에서 제일 재밌는<br class="hidden xs:block" /> 남의 싸움 구경
-          </h2>
-          <p class="text-indigo-200 text-sm md:text-xl leading-relaxed font-medium break-keep opacity-90 px-4 md:px-0">
-            Galdcup은 세상의 모든 호불호와 논쟁거리를 투표로 결판내는 곳입니다.
-          </p>
-        </div>
-        <div class="w-full md:w-2/5 h-40 md:h-auto relative bg-indigo-800 border-t md:border-t-0 md:border-l border-indigo-700">
-          <img src="/images/debate-banner.jpg" alt="갈드컵 배너" class="w-full h-full object-cover opacity-60 md:opacity-80" />
-        </div>
+  <div class="page-container home-page">
+    <header class="home-heading">
+      <div><p class="eyebrow">비교 · 팬심 · 끝나지 않는 떡밥</p><h1>누가 더 위냐고?<br /><span>투표로 붙어보자.</span></h1><p class="home-description">게임·선수·캐릭터까지, 비교만 하면 불붙는 떡밥들.<br />투표로 한 표, 게시글과 댓글로 한마디. 갈리는 판은 여기서 열립니다.</p></div>
+      <div class="home-invitation"><span class="home-invitation-icon" aria-hidden="true"><AppIcon name="message" :size="24" /></span><p>붙여볼 주제가 있나요?<br /><strong>직접 갈드컵을 열어보세요.</strong></p><router-link to="/boards/create" class="ui-button"><AppIcon name="plus" :size="16" />갈드컵 만들기</router-link></div>
+    </header>
+    <div class="home-content">
+      <section id="popular" class="surface home-panel" aria-labelledby="popular-title">
+        <div class="section-heading"><div><p class="eyebrow">지금 불붙은 논쟁</p><h2 id="popular-title">인기 갈드컵</h2></div><span class="badge"><AppIcon name="trend" :size="15" />인기순</span></div>
+        <AsyncState :loading="popularLoading" :error="popularError" :empty="popularBoards.length === 0" empty-message="아직 인기 갈드컵이 없습니다." @retry="fetchPopularBoards">
+          <ol class="ranking-grid" :start="popularPage * popularPageSize + 1"><li v-for="(board, index) in pagedPopularBoards" :key="board.id">
+            <router-link :to="`/boards/${board.id}`" class="ranking-row" :title="board.topic"><span class="ranking-number" aria-hidden="true">{{ popularPage * popularPageSize + index + 1 }}</span><span class="ranking-topic">{{ board.topic }}</span><AppIcon name="chevron" :size="17" /></router-link>
+          </li></ol>
+        </AsyncState>
+        <AppPagination :current-page="popularPage" :total-pages="popularTotalPages" :disabled="popularLoading" label="인기 갈드컵 페이지" @change="popularPage = $event" />
       </section>
-
-      <section class="bg-white rounded-3xl md:rounded-[2rem] shadow-xl p-5 md:p-12 border border-slate-100">
-        <div class="flex items-center mb-6 md:mb-10 border-b-2 border-slate-100 pb-5">
-          <h3 class="text-xl md:text-3xl font-extrabold text-slate-800 flex items-center gap-2">
-            <span class="text-yellow-500 text-2xl md:text-3xl">⭐</span> 인기 갈드컵 TOP 100
-          </h3>
-        </div>
-
-        <div v-if="isLoading" 
-            class="grid grid-rows-5 grid-flow-col gap-3 md:gap-4 animate-pulse h-[350px] md:h-[450px]">
-          <div v-for="i in 10" :key="i" class="flex items-center p-3 md:p-4 rounded-xl md:rounded-2xl bg-slate-50/50 w-full min-w-0">
-            <div class="w-8 h-8 md:w-12 md:h-12 shrink-0 bg-slate-200 rounded-lg"></div>
-            <div class="ml-3 md:ml-5 w-full h-4 bg-slate-200 rounded-lg"></div>
-          </div>
-        </div>
-
-        <div v-else 
-            class="grid grid-rows-5 grid-flow-col gap-3 md:gap-4 h-[350px] md:h-[450px]">
-          <div
-            v-for="(board, index) in pagedPopularBoards"
-            :key="board.id"
-            @click="goToBoard(board.id)"
-            class="group flex items-center p-3 md:p-4 rounded-xl md:rounded-2xl border-2 border-slate-100 bg-slate-50 hover:bg-white hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer min-w-0 w-full"
-          >
-            <span class="w-7 h-7 md:w-12 md:h-12 shrink-0 flex items-center justify-center rounded-lg md:rounded-xl bg-white text-indigo-600 font-black text-[9px] md:text-lg group-hover:bg-indigo-600 group-hover:text-white transition-colors shadow-sm border border-slate-100">
-              {{ index + 1 + popularPage * popularPageSize }}
-            </span>
-            
-            <span class="ml-2 md:ml-5 text-slate-700 font-bold text-[9px] md:text-lg truncate group-hover:text-indigo-700 transition-colors min-w-0 flex-1">
-              {{ board.topic }}
-            </span>
-          </div>
-        </div>
-
-        <div v-if="!isLoading && popularTotalPages > 1" class="flex justify-center items-center gap-2 mt-8 md:mt-10">
-          <button :disabled="popularPage === 0" @click="prevPopularPage" class="p-2 md:px-5 md:py-2.5 rounded-lg md:rounded-xl font-bold transition shadow-sm bg-white border border-slate-200 text-slate-600 text-xs disabled:opacity-30">이전</button>
-          <span class="px-3 py-2 font-bold text-indigo-600 bg-indigo-50 rounded-lg text-xs md:text-sm">{{ popularPage + 1 }} / {{ popularTotalPages }}</span>
-          <button :disabled="popularPage >= popularTotalPages - 1" @click="nextPopularPage" class="p-2 md:px-5 md:py-2.5 rounded-lg md:rounded-xl font-bold transition shadow-sm bg-white border border-slate-200 text-slate-600 text-xs disabled:opacity-30">다음</button>
-        </div>
+      <section id="boards" class="surface home-panel" aria-labelledby="boards-title">
+        <div class="section-heading"><div><p class="eyebrow">새로 열린 판</p><h2 id="boards-title">최신 갈드컵</h2></div></div>
+        <AsyncState :loading="isLoading" :error="boardsError" :empty="boards.length === 0" empty-message="아직 갈드컵이 없습니다. 첫 갈드컵을 열어보세요." @retry="fetchBoards">
+          <div class="board-directory"><router-link v-for="board in boards" :key="board.id" :to="`/boards/${board.id}`" class="directory-row">
+            <div class="min-w-0 flex-1"><h3 :title="board.topic">{{ board.topic }}</h3><p>개설일 {{ formatDate(board.createdAt) }}</p></div><AppIcon name="chevron" class="muted" :size="15" />
+          </router-link></div>
+        </AsyncState>
+        <AppPagination :current-page="page" :total-pages="totalPages" :disabled="isLoading" label="최신 갈드컵 페이지" @change="changePage" />
       </section>
-
-      <section class="bg-white rounded-3xl md:rounded-[2rem] shadow-xl p-6 md:p-12 border border-slate-100 relative overflow-hidden">
-        <div class="absolute -bottom-20 -right-20 w-48 md:w-64 h-48 md:h-64 bg-indigo-50 rounded-full blur-3xl pointer-events-none opacity-60"></div>
-
-        <div class="relative z-10">
-          <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 md:mb-10 border-b-2 border-slate-100 pb-5 md:pb-6 gap-4 md:gap-6">
-            <h3 class="text-xl md:text-3xl font-extrabold text-slate-800 flex items-center gap-2">
-              <span class="text-indigo-600 text-2xl md:text-3xl">🆕</span> 최신 갈드컵
-            </h3>
-            <router-link to="/boards/create" class="w-full sm:w-auto text-center px-6 py-3 md:px-8 md:py-3 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-100 text-sm md:text-base">+ 갈드컵 열기</router-link>
-          </div>
-
-          <div v-if="isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 animate-pulse">
-            <div v-for="i in 6" :key="i" class="bg-slate-50 border-2 border-slate-100 rounded-2xl md:rounded-3xl p-6 md:p-8 h-36 md:h-40 flex flex-col justify-between">
-              <div class="w-full h-6 md:h-8 bg-slate-200 rounded-lg md:rounded-xl"></div>
-              <div class="flex justify-between items-center">
-                <div class="w-20 md:w-24 h-4 bg-slate-200 rounded-lg"></div>
-                <div class="w-10 md:w-12 h-4 bg-slate-200 rounded-lg"></div>
-              </div>
-            </div>
-          </div>
-
-          <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-            <div
-              v-for="board in boards"
-              :key="board.id"
-              @click="goToBoard(board.id)"
-              class="group relative bg-white border-2 border-slate-100 rounded-2xl md:rounded-3xl p-6 md:p-8 hover:border-indigo-300 hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer overflow-hidden flex flex-col justify-between min-h-[140px] md:min-h-[160px]"
-            >
-              <div class="absolute -right-8 -top-8 w-24 h-24 md:w-32 md:h-32 bg-indigo-50/50 rounded-full blur-2xl group-hover:bg-indigo-100 transition-colors"></div>
-              <h4 class="text-lg md:text-xl font-bold text-slate-800 mb-4 md:mb-6 break-keep group-hover:text-indigo-600 transition-colors relative z-10 leading-snug">
-                {{ board.topic }}
-              </h4>
-              <div class="flex items-center justify-between text-[11px] md:text-sm font-bold text-slate-400 relative z-10">
-                <span>📅 {{ formatDate(board.createdAt) }}</span>
-                <span class="text-indigo-500 group-hover:translate-x-1 transition-transform">입장 ➔</span>
-              </div>
-            </div>
-          </div>
-
-          <div v-if="!isLoading && totalPages > 1" class="flex justify-center items-center gap-2 md:gap-3 mt-10 md:mt-12">
-            <button :disabled="page === 0" @click="prevPage" class="px-4 py-2 md:px-5 md:py-2.5 rounded-lg md:rounded-xl font-bold transition shadow-sm bg-white border border-slate-200 text-slate-600 text-xs md:text-sm disabled:opacity-40">이전</button>
-            <span class="px-3 py-2 md:px-4 md:py-2.5 font-bold text-indigo-600 bg-indigo-50 rounded-lg md:rounded-xl text-xs md:text-sm">{{ page + 1 }} / {{ totalPages }}</span>
-            <button :disabled="page >= totalPages - 1" @click="nextPage" class="px-4 py-2 md:px-5 md:py-2.5 rounded-lg md:rounded-xl font-bold transition shadow-sm bg-white border border-slate-200 text-slate-600 text-xs md:text-sm disabled:opacity-40">다음</button>
-          </div>
-        </div>
-      </section>
-
     </div>
-  </main>
+  </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import api from '@/axios'
+import AppIcon from '@/components/ui/AppIcon.vue'
+import { clampPage, toApiPage } from '@/utils/pagination'
+import { useResource } from '@/composables/useResource'
+import AsyncState from '@/components/ui/AsyncState.vue'
+import AppPagination from '@/components/ui/AppPagination.vue'
 
 const boards = ref([])
 const popularBoards = ref([])
 const page = ref(0)
-const size = 12
-const totalPages = ref(1)
-const isLoading = ref(true)
-const router = useRouter()
-
+const totalPages = ref(0)
+const latestPageSize = 5
 const popularPage = ref(0)
 const popularPageSize = 10
-
-const popularTotalPages = computed(() => 
-  Math.max(Math.ceil(popularBoards.value.length / popularPageSize), 1)
-)
-
-const pagedPopularBoards = computed(() => {
-  const start = popularPage.value * popularPageSize
-  const end = start + popularPageSize
-  return popularBoards.value.slice(start, end)
-})
+const { loading: isLoading, error: boardsError, load: loadBoards } = useResource('최신 갈드컵을 불러오지 못했습니다.')
+const { loading: popularLoading, error: popularError, load: loadPopular } = useResource('인기 갈드컵을 불러오지 못했습니다.')
+const popularTotalPages = computed(() => Math.ceil(popularBoards.value.length / popularPageSize))
+const pagedPopularBoards = computed(() => popularBoards.value.slice(popularPage.value * popularPageSize, (popularPage.value + 1) * popularPageSize))
 
 async function fetchBoards() {
-  try {
-    const res = await api.get(`/boards`, { params: { page: page.value, size } })
-    boards.value = res.data.content
-    totalPages.value = Math.max(res.data.totalPages, 1)
-  } catch (err) {
-    console.error('최신 게시판 API 호출 실패:', err)
-  }
+  const requestedPage = toApiPage(page.value)
+  let correctedPage = null
+  const loaded = await loadBoards(signal => api.get('/boards', { signal, params: { page: requestedPage, size: latestPageSize } }), res => {
+    totalPages.value = res.data.totalPages
+    const validPage = clampPage(requestedPage, totalPages.value)
+    if (validPage !== requestedPage) {
+      boards.value = []
+      page.value = validPage
+      correctedPage = validPage
+      return
+    }
+    boards.value = res.data.content || []
+  })
+  return loaded && correctedPage !== null ? fetchBoards() : loaded
 }
-
-async function fetchPopularBoards() {
-  try {
-    const res = await api.get(`/boards/popular`)
-    popularBoards.value = res.data
-  } catch (err) {
-    console.error('인기 게시판 API 호출 실패:', err)
-  }
+function fetchPopularBoards() {
+  return loadPopular(signal => api.get('/boards/popular', { signal }), res => {
+    popularBoards.value = Array.isArray(res.data) ? res.data : []
+    popularPage.value = clampPage(popularPage.value, popularTotalPages.value)
+  })
 }
-
-function formatDate(dateString) {
-  if (!dateString) return ''
-  const date = new Date(dateString)
-  const year = String(date.getFullYear()).slice(2)
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}.${month}.${day}`
+function changePage(next) {
+  if (next < 0 || next >= totalPages.value || isLoading.value) return
+  page.value = next
+  fetchBoards()
 }
-
-function goToBoard(boardId) {
-  router.push(`/boards/${boardId}`)
+function formatDate(value) {
+  const date = new Date(value)
+  return value && Number.isFinite(date.getTime()) ? date.toLocaleDateString('ko-KR') : ''
 }
-
-async function handlePageChange(fetchFn, pageRef, direction) {
-  if (direction === 'next') pageRef.value++
-  else pageRef.value--
-  
-  isLoading.value = true
-  await fetchFn()
-  setTimeout(() => {
-    isLoading.value = false
-  }, 300)
-}
-
-const nextPage = () => handlePageChange(fetchBoards, page, 'next')
-const prevPage = () => handlePageChange(fetchBoards, page, 'prev')
-
-function nextPopularPage() {
-  if (popularPage.value < popularTotalPages.value - 1) {
-    popularPage.value++
-  }
-}
-
-function prevPopularPage() {
-  if (popularPage.value > 0) {
-    popularPage.value--
-  }
-}
-
-onMounted(async () => {
-  isLoading.value = true
-  try {
-    await Promise.all([fetchBoards(), fetchPopularBoards()])
-  } finally {
-    setTimeout(() => {
-      isLoading.value = false
-    }, 400)
-  }
-})
+onMounted(() => { fetchBoards(); fetchPopularBoards() })
 </script>
+
+<style scoped>
+.home-page { padding-top:0; }
+.home-heading { display:grid; gap:28px; padding:36px 0; margin-bottom:28px; border-bottom:1px solid var(--ui-border); }
+.home-heading h1 { font-size:clamp(36px,5vw,62px); line-height:1.16; font-weight:800; letter-spacing:-.055em; }
+.home-heading h1 span { color:var(--ui-primary); }
+.home-description { margin-top:18px; color:var(--ui-text-muted); font-size:15px; line-height:1.85; }
+.home-invitation { display:grid; grid-template-columns:40px minmax(0,1fr); align-items:center; gap:12px; min-width:0; }
+.home-invitation-icon { display:grid; place-items:center; width:40px; height:40px; border-radius:12px; background:var(--ui-accent-soft); color:var(--ui-accent); }
+.home-invitation p { font-size:14px; line-height:1.8; color:var(--ui-text-muted); word-break:keep-all; }
+.home-invitation strong { font-weight:650; color:var(--ui-text); }
+.home-invitation .ui-button { grid-column:1/-1; justify-self:start; }
+.home-content { display:grid; grid-template-columns:minmax(0,1fr); gap:28px; align-items:start; }
+.home-panel { padding:20px 16px; }
+.home-panel .section-heading { margin-bottom:8px; padding-bottom:18px; border-bottom:1px solid var(--ui-border); align-items:center; }
+.home-panel .eyebrow { margin-bottom:5px; font-size:11px; }
+.home-panel h2 { font-size:22px; font-weight:750; letter-spacing:-.035em; }
+.home-panel .section-heading > svg { color:var(--ui-accent); }
+#popular { border-top:3px solid var(--ui-primary); }
+#popular h2 { font-size:24px; }
+#boards { background:var(--ui-surface-subtle); box-shadow:none; }
+#boards h2 { font-size:18px; }
+.ranking-grid,.board-directory { display:grid; grid-template-columns:minmax(0,1fr); }
+.ranking-grid > li { min-width:0; }
+.ranking-row { display:flex; align-items:center; gap:14px; min-height:56px; padding:14px 0; border-bottom:1px solid var(--ui-divider); }
+.ranking-row:hover { color:var(--ui-primary); }
+.ranking-number { flex:0 0 auto; width:24px; color:var(--ui-text-muted); font-size:14px; font-weight:500; font-variant-numeric:tabular-nums; }
+.ranking-topic { flex:1; min-width:0; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; font-size:17px; font-weight:650; line-height:1.6; }
+.ranking-row > svg { color:var(--ui-text-muted); }
+.directory-row { display:flex; align-items:center; gap:12px; min-height:74px; padding:14px 0; border-bottom:1px solid var(--ui-divider); }
+.directory-row:hover h3 { color:var(--ui-primary); }
+.directory-row h3 { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; font-size:14px; font-weight:600; line-height:1.65; }
+.directory-row p { margin-top:5px; font-size:12px; color:var(--ui-text-muted); }
+@media(min-width:768px) {
+  .home-heading { grid-template-columns:minmax(0,1fr) 300px; align-items:center; gap:32px; padding-block:48px; margin-bottom:36px; }
+  .home-invitation { border-left:1px solid var(--ui-border); padding-left:28px; }
+  .home-panel { padding:26px; }
+  .ranking-grid { grid-template-columns:repeat(2,minmax(0,1fr)); grid-template-rows:repeat(5,auto); grid-auto-flow:column; column-gap:28px; }
+  .board-directory { grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 20px; }
+}
+@media(min-width:1024px) { .board-directory { grid-template-columns:repeat(5,minmax(0,1fr)); } }
+</style>

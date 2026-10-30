@@ -1,16 +1,10 @@
 <template>
-  <div class="flex flex-col gap-8 md:gap-12 px-4 md:px-8 py-6 md:py-8 w-full">
-    
-    <BoardManagerTool />
-
-    <VoteSession />
-
-    <div class="w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent my-2 md:my-4"></div>
-
-    <PostList :boardId="String(boardId)" />
+  <div class="board-content">
+    <BoardManagerTool class="board-management" />
+    <div class="board-vote"><VoteSession /></div>
+    <section class="surface panel-padding board-posts" aria-label="게시글 목록"><PostList :boardId="String(boardId)" /></section>
   </div>
 </template>
-
 <script setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
@@ -21,3 +15,8 @@ import PostList from '@/views/board/PostListView.vue'
 const route = useRoute()
 const boardId = computed(() => route.params.boardId)
 </script>
+<style scoped>
+.board-content { display:grid; grid-template-columns:minmax(0,1fr); gap:20px; align-items:start; }
+.board-management, .board-vote, .board-posts { min-width:0; }
+@media(min-width:768px) { .board-content { gap:24px; } }
+</style>

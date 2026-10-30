@@ -1,62 +1,63 @@
 <template>
-  <div class="min-h-screen py-0 md:py-10 flex justify-center bg-slate-100 font-sans">
-    <div 
-      class="w-full md:w-[95%] max-w-7xl bg-white border-0 md:border border-slate-200 shadow-none md:shadow-xl flex flex-col overflow-hidden rounded-none md:rounded-[2.5rem]"
+  <div class="page-container board-page">
+    <div
+      class="min-w-0"
     >
-      <BoardInfo 
-        v-if="!$route.meta.noLayout" 
-        class="!mb-0 !rounded-none !shadow-none !border-0" 
+      <AsyncState v-if="boardStore.error" :error="boardStore.error" @retry="loadBoardData(boardId)" />
+      <BoardInfo
+        v-if="!$route.meta.noLayout"
+        class="mb-4"
       />
 
-      <div v-if="!$route.meta.noLayout" class="bg-slate-50 border-t border-b border-slate-200 transition-all duration-300">
-        
-        <div class="px-4 md:px-6 py-2 flex items-center justify-between">
+      <div v-if="!$route.meta.noLayout" class="recent-visits" :class="{ 'recent-visits-compact': $route.name !== 'Board', 'recent-open': isRecentExpanded }">
+
+        <div class="recent-visits-header">
           <div class="flex items-center gap-2">
-            <span class="text-slate-400 font-black text-[10px] md:text-xs uppercase tracking-tighter shrink-0">최근 방문</span>
-            <button 
+            <span class="recent-label">최근 방문</span>
+            <button
               v-if="recentStore.recentBoards.length > 0"
-              @click="isRecentExpanded = !isRecentExpanded"
-              class="flex items-center gap-1 text-indigo-500 font-bold text-[10px] md:text-xs hover:text-indigo-700 transition"
+              @click="isRecentExpanded = !isRecentExpanded" :aria-expanded="isRecentExpanded" aria-controls="recent-board-list"
+              class="recent-toggle"
             >
               {{ isRecentExpanded ? '접기 ▲' : '펼쳐보기 ▼' }}
             </button>
           </div>
 
-          <button 
+          <button
             v-if="recentStore.recentBoards.length > 0"
             @click="recentStore.clearHistory"
-            class="text-slate-400 hover:text-red-500 font-bold text-[10px] md:text-xs underline underline-offset-2 transition"
+            class="recent-clear"
           >
             전체 삭제
           </button>
         </div>
 
-        <div class="px-4 md:px-6 pb-3">
-          <div v-if="recentStore.recentBoards.length === 0" class="text-slate-400 italic text-xs py-1">
+        <div id="recent-board-list" class="recent-board-list">
+          <div v-if="recentStore.recentBoards.length === 0" class="recent-empty">
             방문 기록이 없습니다.
           </div>
 
-          <div 
+          <div
             v-else
             :class="[
-              'flex transition-all duration-300 gap-2',
-              isRecentExpanded ? 'flex-wrap' : 'overflow-x-auto flex-nowrap scrollbar-hide py-1'
+              'flex transition-all duration-300 gap-1.5',
+              isRecentExpanded ? 'flex-wrap' : 'overflow-x-auto flex-nowrap scrollbar-hide'
             ]"
           >
-            <div 
-              v-for="board in recentStore.recentBoards" 
+            <div
+              v-for="board in recentStore.recentBoards"
               :key="board.id"
-              class="flex items-center bg-white border border-slate-200 rounded-full px-3 py-1.5 gap-2 shrink-0 hover:border-indigo-300 transition shadow-sm"
+              class="recent-board-item"
             >
-              <router-link 
-                :to="`/boards/${board.id}`" 
-                class="text-slate-700 font-bold text-xs md:text-sm hover:text-indigo-600 truncate max-w-[120px] md:max-w-none"
+              <router-link
+                :to="`/boards/${board.id}`"
+                class="recent-board-link"
               >
                 {{ board.topic }}
               </router-link>
-              <button 
-                @click.prevent="recentStore.removeBoard(board.id)"
-                class="text-slate-300 hover:text-red-500 transition-colors font-black text-sm leading-none"
+              <button
+                :aria-label="`${board.topic} 방문 기록 삭제`" @click.prevent="recentStore.removeBoard(board.id)"
+                class="recent-remove"
               >
                 ×
               </button>
@@ -65,19 +66,20 @@
         </div>
       </div>
 
-      <div v-if="!$route.meta.noLayout" class="w-full border-t-4 border-slate-100 relative z-20"></div>
 
-      <router-view :key="$route.fullPath" class="!rounded-none !shadow-none !border-0 flex-1" />
+
+      <router-view :key="$route.path" v-if="!boardStore.error" class="min-w-0" />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, watch, onMounted, computed } from 'vue'
+import { ref, watch, onUnmounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import BoardInfo from '@/views/board/BoardInfoView.vue'
 import { useRecentStore } from '@/stores/recent'
 import { useBoardStore } from '@/stores/board'
+import AsyncState from '@/components/ui/AsyncState.vue'
 
 const route = useRoute()
 const recentStore = useRecentStore()
@@ -98,9 +100,7 @@ const loadBoardData = async (id) => {
       boardStore.fetchBoardDetails(id),
       boardStore.fetchActiveVoteSession(id)
     ])
-  } catch (err) {
-    console.error('데이터 갱신 실패:', err)
-  }
+  } catch { /* 오류는 store와 공통 상태 UI에서 표시한다. */ }
 }
 
 // URL의 boardId가 바뀔 때마다 데이터 로드 및 확장창 닫기
@@ -121,11 +121,9 @@ watch(() => boardStore.currentBoard, (newBoard) => {
       topic: newBoard.topic
     })
   }
-}, { immediate: true, deep: true })
+}, { immediate: true })
 
-onMounted(() => {
-  // 필요 시 초기화 로직
-})
+onUnmounted(() => boardStore.clearBoardDetails())
 </script>
 
 <style scoped>
@@ -147,4 +145,21 @@ onMounted(() => {
   from { opacity: 0; transform: translateY(-5px); }
   to { opacity: 1; transform: translateY(0); }
 }
+.recent-visits { margin-bottom:24px; border-bottom:1px solid var(--ui-border); background:transparent; font-size:12px; }
+.recent-visits-header { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:5px 10px; }
+.recent-label { flex:0 0 auto; color:var(--ui-text-muted); font-size:11px; }
+.recent-toggle { display:flex; align-items:center; gap:3px; min-height:32px; color:var(--ui-primary); font-size:11px; font-weight:650; }
+.recent-toggle:hover { color:var(--ui-primary); }
+.recent-clear { min-height:32px; padding-inline:4px; color:var(--ui-text-muted); font-size:11px; font-weight:650; text-decoration:underline; text-underline-offset:2px; }
+.recent-clear:hover { color:var(--ui-danger); }
+.recent-board-list { padding:0 8px 8px; }
+.recent-empty { padding-block:2px; color:var(--ui-text-muted); font-size:11px; font-style:italic; }
+.recent-board-item { display:flex; flex:0 0 auto; align-items:center; gap:4px; padding:2px 5px 2px 9px; border:1px solid var(--ui-border); border-radius:6px; background:var(--ui-surface); }
+.recent-board-item:hover { border-color:var(--ui-primary-border); }
+.recent-board-link { display:block; min-height:28px; max-width:112px; overflow:hidden; color:var(--ui-secondary); font-size:11px; line-height:28px; font-weight:650; text-overflow:ellipsis; white-space:nowrap; }
+.recent-board-link:hover { color:var(--ui-primary); }
+.recent-remove { display:grid; place-items:center; min-width:28px; min-height:28px; color:var(--ui-text-muted); border-radius:50%; font-size:14px; }
+.recent-remove:hover { color:var(--ui-danger); background:var(--ui-danger-soft); }
+.recent-visits-compact { margin-bottom:16px; }
+.recent-visits-compact:not(.recent-open) #recent-board-list { display:none; }
 </style>

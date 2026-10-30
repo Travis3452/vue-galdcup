@@ -1,209 +1,119 @@
 <template>
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-black/60 backdrop-blur-sm overflow-y-auto font-sans" @click.self="closePopup">
-    
-    <div class="w-full max-w-2xl bg-white rounded-3xl md:rounded-[2.5rem] shadow-2xl p-5 md:p-10 border border-indigo-50 relative flex flex-col max-h-[90dvh] overflow-y-auto scrollbar-hide">
-      
-      <button @click="closePopup" class="absolute top-4 right-4 md:top-6 md:right-6 text-slate-400 hover:text-slate-600 p-2 rounded-full transition-colors z-20">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-
-      <div class="absolute -top-16 -right-16 md:-top-24 md:-right-24 w-48 h-48 md:w-64 md:h-64 bg-indigo-50 rounded-full blur-3xl pointer-events-none opacity-60"></div>
-      
-      <div class="relative z-10 space-y-6 md:space-y-8">
-        
-        <div v-if="isLoading" class="animate-pulse space-y-6 md:space-y-8">
-          <div class="text-center space-y-3">
-            <div class="mx-auto w-12 h-12 bg-slate-200 rounded-2xl"></div>
-            <div class="mx-auto w-40 h-7 bg-slate-200 rounded-xl"></div>
-            <div class="mx-auto w-full max-w-[200px] h-4 bg-slate-100 rounded-full"></div>
+  <Teleport to="body">
+    <div class="dialog-overlay" @click.self="closePopup">
+      <section ref="dialog" role="dialog" aria-modal="true" :aria-labelledby="titleId" tabindex="-1"
+        class="dialog-panel vote-dialog">
+        <header class="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <p class="mb-2 text-sm font-bold text-indigo-600">갈드컵 투표</p>
+            <h1 :id="titleId" class="text-xl sm:text-2xl font-bold text-slate-800">{{ voteSession?.topic || '당신의 선택은?' }}</h1>
+            <p v-if="voteSession" class="mt-3 text-sm text-slate-600">{{ formatDate(voteSession.startTime) }} ~ {{ formatDate(voteSession.endTime) }}</p>
           </div>
-
-          <div class="grid grid-cols-2 gap-3 md:gap-6">
-            <div v-for="i in 2" :key="i" class="flex flex-col items-center">
-              <div class="w-full aspect-square bg-slate-200 rounded-2xl md:rounded-[2rem]"></div>
-              <div class="w-2/3 h-4 bg-slate-200 rounded-lg mt-3"></div>
-            </div>
-          </div>
-
-          <div class="space-y-3 pt-2">
-            <div class="w-full h-14 bg-slate-200 rounded-xl"></div>
-          </div>
-        </div>
-
-        <template v-else>
-          <div class="text-center space-y-2 md:space-y-3">
-            <div class="inline-flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-indigo-600 text-white text-xl md:text-2xl shadow-lg mb-1">
-              🗳️
-            </div>
-            <h1 class="text-xl md:text-3xl font-black text-slate-800 tracking-tight">당신의 선택은?</h1>
-            
-            <div v-if="voteSession" class="px-3 py-1.5 bg-slate-50 rounded-full inline-flex items-center justify-center">
-              <p class="text-[10px] md:text-xs font-bold text-slate-400 leading-tight">
-                📅 {{ formatDate(voteSession.startTime) }} ~ {{ formatDate(voteSession.endTime) }}
-              </p>
-            </div>
-          </div>
-
-          <div v-if="voteSession" class="grid grid-cols-2 gap-3 md:gap-6">
-            <div
-              v-for="(opt, idx) in voteSession.options"
-              :key="idx"
-              @click="selectedOptionIndex = idx"
-              class="group relative flex flex-col items-center cursor-pointer"
-            >
-              <div 
-                class="relative w-full aspect-square rounded-2xl md:rounded-[2rem] overflow-hidden border-[3px] md:border-4 transition-all duration-300 shadow-sm md:shadow-md"
-                :class="selectedOptionIndex === idx ? 'border-indigo-600 ring-4 ring-indigo-50 scale-[1.02] md:scale-105' : 'border-white hover:border-indigo-200'"
-              >
-                <img
-                  :src="opt.imageUrl || 'https://via.placeholder.com/300'"
-                  class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                />
-                
-                <div v-if="selectedOptionIndex === idx" class="absolute inset-0 bg-indigo-600/20 flex items-center justify-center backdrop-blur-[1px]">
-                  <div class="bg-indigo-600 text-white w-7 h-7 md:w-9 md:h-9 rounded-full flex items-center justify-center shadow-lg animate-pop">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 md:h-6 md:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                </div>
+          <button type="button" aria-label="투표창 닫기" :disabled="isSubmitting" class="icon-button text-xl" @click="closePopup">×</button>
+        </header>
+        <AsyncState :loading="isLoading" :error="loadError" :empty="!voteSession" empty-message="투표 정보를 찾을 수 없습니다." @retry="fetchVoteSession">
+          <form @submit.prevent="submitVote">
+            <fieldset :disabled="isSubmitting || !canVote">
+              <legend class="mb-4 text-sm font-semibold text-slate-600">하나의 항목을 선택해 주세요.</legend>
+              <div class="grid grid-cols-2 gap-4 sm:gap-6">
+                <label v-for="(option, index) in voteSession?.options" :key="option.id ?? index"
+                  class="vote-choice"
+                  :class="selectedOptionIndex === index ? 'vote-choice-selected' : ''">
+                  <input v-model="selectedOptionIndex" type="radio" :name="titleId" :value="index" required class="absolute left-4 top-4 h-5 w-5 accent-indigo-600" />
+                  <img :src="option.imageUrl || '/images/option-placeholder.svg'" :alt="option.label" loading="lazy" width="300" height="300"
+                    class="aspect-square w-full rounded-lg object-cover" />
+                  <span class="mt-3 block break-words px-1 pb-2 text-center text-sm font-semibold">{{ option.label }}</span>
+                </label>
               </div>
-
-              <div class="mt-2 md:mt-3 w-full text-center px-1">
-                <span class="text-sm md:text-lg font-black text-slate-700 block truncate" :class="{'text-indigo-600': selectedOptionIndex === idx}">
-                  {{ opt.label }}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div class="pt-2 flex flex-col gap-2">
-            <button
-              @click="submitVote"
-              :disabled="selectedOptionIndex === null || isSubmitting"
-              class="w-full py-3.5 md:py-4 bg-indigo-600 text-white rounded-xl md:rounded-2xl font-black text-base md:text-lg shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition transform active:scale-95 disabled:opacity-50"
-            >
-              {{ isSubmitting ? '처리 중...' : '투표 제출하기' }}
+            </fieldset>
+            <p v-if="!canVote" role="status" class="mt-5 text-sm font-semibold text-slate-600">{{ statusMessage }}</p>
+            <p v-if="submitError" role="alert" class="mt-5 rounded-xl bg-rose-50 p-4 text-sm text-rose-700">{{ submitError }}</p>
+            <button type="submit" :disabled="!canVote || selectedOptionIndex === null || isSubmitting" class="ui-button mt-6 w-full disabled:opacity-50">
+              {{ isSubmitting ? '제출 중…' : '투표 제출하기' }}
             </button>
-            <button 
-              @click="closePopup" 
-              class="w-full py-2 text-slate-400 font-bold hover:text-slate-600 transition text-xs md:text-sm"
-            >
-              다음에 할게요 (닫기)
-            </button>
-          </div>
-        </template>
-        
-      </div>
+          </form>
+        </AsyncState>
+        <button type="button" :disabled="isSubmitting" class="mt-4 min-h-11 w-full text-sm font-semibold text-slate-600" @click="closePopup">닫기</button>
+      </section>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, computed, watch, useId } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import api from '@/axios'
+import { useUserStore } from '@/stores/user'
+import { useResource } from '@/composables/useResource'
+import { useDialog } from '@/composables/useDialog'
+import { useClock } from '@/composables/useClock'
+import { voteStatus, matchingVoteSession } from '@/utils/vote'
+import { getErrorMessage } from '@/utils/request'
+import { notify } from '@/services/notifications'
+import AsyncState from '@/components/ui/AsyncState.vue'
 
-const props = defineProps({
-  boardId: {
-    type: [String, Number],
-    default: null
-  },
-  voteSessionId: {
-    type: [String, Number],
-    default: null
-  }
-})
-
-const emit = defineEmits(['close'])
-
+const props = defineProps({ boardId: { type: [String, Number], default: null }, voteSessionId: { type: [String, Number], default: null } })
+const emit = defineEmits(['close', 'voted'])
 const route = useRoute()
+const router = useRouter()
+const user = useUserStore()
+const dialog = ref(null)
+const titleId = useId()
 const voteSession = ref(null)
 const selectedOptionIndex = ref(null)
 const isSubmitting = ref(false)
-const isLoading = ref(true)
+const submitError = ref('')
+const { loading: isLoading, error: loadError, load } = useResource('투표 정보를 불러오지 못했습니다.')
+const targetBoardId = computed(() => props.boardId || route.params.boardId)
+const targetSessionId = computed(() => props.voteSessionId || route.params.voteSessionId)
+const now = useClock()
+const status = computed(() => voteStatus(voteSession.value, now.value))
+const canVote = computed(() => status.value === 'LIVE' && Boolean(user.accessToken)
+  && matchingVoteSession(voteSession.value, targetBoardId.value, targetSessionId.value))
+const statusMessage = computed(() => {
+  if (!matchingVoteSession(voteSession.value, targetBoardId.value, targetSessionId.value)) return '투표가 변경되었습니다. 창을 닫고 현재 투표를 다시 열어 주세요.'
+  if (!user.accessToken) return '로그인 후 투표할 수 있습니다.'
+  if (status.value === 'UPCOMING') return '아직 투표 시작 전입니다.'
+  return '투표가 종료되었거나 현재 참여할 수 없습니다.'
+})
+useDialog(dialog, () => true, closePopup)
 
-const closePopup = () => {
+function closePopup() {
+  if (isSubmitting.value) return
   emit('close')
-  if (window.opener && !window.opener.closed) {
-    window.close()
-  }
+  if (window.opener && !window.opener.closed) { window.close(); return }
+  if (route.name === 'Vote') router.replace(`/boards/${targetBoardId.value}`)
 }
-
-function formatDate(dateStr) {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
-  return date.toLocaleString('ko-KR', { 
-    month: 'short', 
-    day: 'numeric', 
-    hour: '2-digit', 
-    minute: '2-digit' 
-  })
+function formatDate(value) {
+  const date = new Date(value)
+  return Number.isFinite(date.getTime()) ? date.toLocaleString('ko-KR') : ''
 }
-
-async function fetchVoteSession() {
-  isLoading.value = true
-  const targetBoardId = props.boardId || route.params.boardId
-  try {
-    const res = await api.get(`/boards/${targetBoardId}/vote-session`)
-    voteSession.value = res.data
-  } catch (err) {
-    console.error('투표 정보 로드 실패', err)
-  } finally {
-    setTimeout(() => { isLoading.value = false }, 300)
-  }
+function fetchVoteSession() {
+  selectedOptionIndex.value = null
+  submitError.value = ''
+  return load(signal => api.get(`/boards/${targetBoardId.value}/vote-session`, { signal }), res => { voteSession.value = res.data || null })
 }
-
 async function submitVote() {
-  if (selectedOptionIndex.value === null || isSubmitting.value) return
-  
-  const targetBoardId = props.boardId || route.params.boardId
-  const targetVoteSessionId = props.voteSessionId || voteSession.value?.id
-
-  if (!targetBoardId || !targetVoteSessionId) {
-    alert("투표 세션 정보를 찾을 수 없습니다.")
-    return
-  }
-
+  if (isSubmitting.value || selectedOptionIndex.value === null || !canVote.value) return
+  const session = voteSession.value
+  if (!session.options?.[selectedOptionIndex.value]) return
   isSubmitting.value = true
+  submitError.value = ''
   try {
-    await api.post(`/boards/${targetBoardId}/vote-session/${targetVoteSessionId}/votes`, {
-      selectedOptionIndex: selectedOptionIndex.value
-    })
-
-    alert('🎉 투표가 성공적으로 완료되었습니다!')
-    emit('close')
-    if (window.opener) {
-      window.opener.location.reload()
-      window.close()
-    }
-  } catch (err) {
-    const errorMsg = err.response?.data?.message || '이미 투표하셨거나 오류가 발생했습니다.'
-    alert(errorMsg)
-  } finally {
+    await api.post(`/boards/${targetBoardId.value}/vote-session/${session.id}/votes`, { selectedOptionIndex: selectedOptionIndex.value })
+    notify('투표가 완료되었습니다.')
+    emit('voted', session.id)
     isSubmitting.value = false
-  }
+    closePopup()
+  } catch (error) { submitError.value = getErrorMessage(error, '투표를 제출하지 못했습니다. 이미 참여했는지 확인해 주세요.') }
+  finally { isSubmitting.value = false }
 }
-
-onMounted(fetchVoteSession)
+watch([targetBoardId, targetSessionId], () => { voteSession.value = null; fetchVoteSession() }, { immediate: true })
 </script>
-
 <style scoped>
-.scrollbar-hide::-webkit-scrollbar { display: none; }
-.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-
-@keyframes pop {
-  0% { transform: scale(0.5); opacity: 0; }
-  70% { transform: scale(1.1); }
-  100% { transform: scale(1); opacity: 1; }
-}
-.animate-pop {
-  animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-input, select, textarea {
-  font-size: 16px !important;
-}
+.vote-dialog { max-width:600px; }
+.vote-choice { position:relative; cursor:pointer; border:2px solid var(--ui-control-border); border-radius:12px; padding:8px; background:var(--ui-surface); min-width:0; }
+.vote-choice-selected { border-color:var(--ui-primary); background:var(--ui-primary-soft); }
+.vote-choice:focus-within { outline:3px solid var(--ui-primary); outline-offset:3px; }
+.vote-choice input { width:22px; height:22px; }
 </style>

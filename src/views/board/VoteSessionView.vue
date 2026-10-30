@@ -1,186 +1,57 @@
 <template>
-  <div class="w-full space-y-4 md:space-y-6 mb-8 md:mb-12 font-sans">
-    
-    <div v-if="voteSession" 
-         class="bg-white rounded-2xl md:rounded-[2.5rem] shadow-xl p-5 md:p-12 border border-indigo-50 relative overflow-hidden transition-all duration-700"
-         :class="{'bg-gradient-to-r from-red-50/30 to-blue-50/30': isDuel}">
-      
-      <div v-if="isDuel" class="absolute inset-0 flex pointer-events-none opacity-50 md:opacity-100">
-        <div class="flex-1 bg-red-500/5 blur-[60px] md:blur-[120px] -translate-x-1/2"></div>
-        <div class="flex-1 bg-blue-500/5 blur-[60px] md:blur-[120px] translate-x-1/2"></div>
-      </div>
-
-      <div class="relative z-10 space-y-6 md:space-y-8">
-        <div class="flex items-center justify-between">
-          <div :class="statusBadgeClass" class="inline-flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-xl md:rounded-2xl font-black text-[10px] md:text-sm uppercase tracking-widest shadow-sm border">
-            <span class="relative flex h-2 w-2 md:h-3 md:w-3">
-              <span v-if="voteStatus === 'LIVE'" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-2 w-2 md:h-3 md:w-3" :class="statusDotClass"></span>
-            </span>
-            {{ voteStatus }}
-          </div>
-
-          <button @click="isExpanded = !isExpanded" class="p-1 md:p-2 text-slate-400 hover:text-indigo-600 rounded-full transition-transform" :class="{'rotate-180': !isExpanded}">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 md:h-8 md:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7" />
-            </svg>
-          </button>
+  <section class="surface panel-padding vote-panel" aria-label="갈드컵 투표">
+    <div class="section-heading"><h2>갈드컵 투표</h2><span v-if="voteSession" class="badge" :class="voteStatus === 'LIVE' ? 'badge-danger' : 'badge-neutral'">{{ voteStatus === 'LIVE' ? '진행 중' : voteStatus === 'UPCOMING' ? '시작 예정' : voteStatus === 'FINISHED' ? '종료' : '확인 필요' }}</span></div>
+    <p v-if="boardStore.voteError" role="alert" class="field-error">{{ boardStore.voteError }} <button type="button" class="underline" @click="boardStore.fetchActiveVoteSession(boardId)">다시 시도</button></p>
+    <p v-if="liveError" role="status" class="field-help mb-4">{{ liveError }}</p>
+    <template v-if="voteSession">
+      <div class="vote-content" :class="{ 'vote-content-collapsed': !isExpanded }">
+        <div class="vote-intro">
+          <h3 class="vote-topic">{{ voteSession.topic }}</h3><p v-if="voteSession.description" class="vote-description">{{ voteSession.description }}</p>
+          <div class="vote-facts"><span>{{ (voteSession.totalVotes || 0).toLocaleString() }}명 참여</span><button type="button" :aria-expanded="isExpanded" @click="isExpanded = !isExpanded">{{ isExpanded ? '상세 접기' : '상세 보기' }}<span aria-hidden="true">{{ isExpanded ? ' −' : ' ＋' }}</span></button></div>
+          <dl v-show="isExpanded" class="vote-dates"><div><dt>시작</dt><dd>{{ formatDateTime(voteSession.startTime) }}</dd></div><div><dt>종료</dt><dd>{{ formatDateTime(voteSession.endTime) }}</dd></div></dl>
         </div>
-
-        <div class="flex flex-col items-center space-y-3 md:space-y-5 text-center cursor-pointer group px-4 py-2" @click="isExpanded = !isExpanded">
-          
-          <h2 class="text-2xl md:text-4xl lg:text-5xl font-black tracking-tight leading-tight break-keep px-2 transition-all duration-300 group-hover:scale-[1.02]"
-              :class="isDuel ? 'bg-gradient-to-r from-slate-800 via-indigo-900 to-slate-800 bg-clip-text text-transparent' : 'text-slate-800 group-hover:text-indigo-600'">
-            {{ voteSession.topic }}
-          </h2>
-          
-          <div v-if="voteSession.description" class="max-w-2xl mt-1">
-            <p class="text-sm md:text-base text-slate-600 font-medium px-5 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl shadow-sm inline-block">
-              <span class="text-indigo-400 mr-1">💡</span> {{ voteSession.description }}
-            </p>
-          </div>
-
-          <div class="flex flex-col items-center gap-2 pt-3 md:pt-4">
-            <div v-if="voteStatus !== 'UPCOMING'" class="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 border border-indigo-100 rounded-full mb-1">
-              <span class="text-lg">🔥</span>
-              <span class="text-xs md:text-sm font-black text-indigo-700">총 참여자 {{ (voteSession.totalVotes || 0).toLocaleString() }}명</span>
-            </div>
-
-            <div class="flex items-center gap-2">
-              <p class="text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-widest bg-white px-2 py-0.5 rounded-full shadow-sm border border-slate-100">
-                진행 기간
-              </p>
-              <p class="text-xs md:text-sm text-slate-500 font-bold bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
-                {{ formatDateTime(voteSession.startTime) }} ~ {{ formatDateTime(voteSession.endTime) }}
-              </p>
+        <div v-show="isExpanded" class="vote-choices">
+          <div :class="isDuel ? 'vote-options-duel' : 'vote-options-list'">
+            <div v-for="(option, index) in voteSession.options" :key="option.id ?? index" class="vote-option">
+              <img :src="option.imageUrl || '/images/option-placeholder.svg'" :alt="option.label" loading="lazy" width="240" height="240" />
+              <div class="min-w-0"><p class="option-label" :class="{ 'option-label-clamp': expandedTextIndex !== index }">{{ option.label }}</p>
+                <button v-if="option.label?.length > 30" type="button" class="option-expand" :aria-expanded="expandedTextIndex === index" @click="toggleTextExpand(index)">{{ expandedTextIndex === index ? '접기' : '더보기' }}</button>
+                <p v-if="voteStatus === 'FINISHED'" class="option-result">{{ (option.count || 0).toLocaleString() }}표 · {{ calculatePercentage(option.count).toFixed(0) }}%</p>
+              </div>
             </div>
           </div>
-        </div>
-
-        <div v-show="isExpanded" class="transition-all duration-500">
-          <div :class="layoutClass" class="py-4 md:py-8">
-            <template v-for="(opt, idx) in voteSession.options" :key="idx">
-              
-              <div v-if="isDuel" class="flex flex-col items-center group w-[45%] md:w-full md:max-w-[280px]">
-                <div class="relative w-full aspect-square rounded-2xl md:rounded-[2.5rem] overflow-hidden border-2 md:border-4 border-white shadow-lg md:shadow-2xl mb-3 md:mb-6 ring-1 ring-slate-100 bg-slate-50 flex items-center justify-center">
-                  <img v-if="opt.imageUrl" :src="opt.imageUrl" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" />
-                  <div v-else class="text-slate-300">
-                    <svg class="w-16 h-16 md:w-24 md:h-24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                  </div>
-                  
-                  <div v-if="voteStatus === 'FINISHED'" class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-12 pb-3 px-3 md:p-6 flex flex-col items-center">
-                      <span class="text-white font-black text-lg md:text-3xl drop-shadow-md">{{ calculatePercentage(opt.count).toFixed(0) }}%</span>
-                  </div>
-
-                  <div v-else-if="voteStatus === 'LIVE'" class="absolute top-2 right-2 md:top-4 md:right-4 bg-black/40 backdrop-blur text-white text-[10px] md:text-xs font-bold px-2 py-1 rounded-lg">
-                    블라인드
-                  </div>
-                </div>
-                
-                <div class="w-full px-2 text-center" :title="opt.label">
-                  <span class="text-sm md:text-xl font-black text-slate-800 break-keep leading-snug" 
-                        :class="expandedTextIndex === idx ? '' : 'line-clamp-3'"
-                        @click="toggleTextExpand(idx)">
-                    {{ opt.label }}
-                  </span>
-                  <div v-if="opt.label.length > 30" @click="toggleTextExpand(idx)" class="text-[10px] md:text-xs text-slate-400 mt-1 cursor-pointer hover:text-indigo-500">
-                    {{ expandedTextIndex === idx ? '접기 ▲' : '더보기 ▼' }}
-                  </div>
-                </div>
-
-                <span v-if="voteStatus === 'FINISHED'" class="mt-2 text-[11px] md:text-base text-indigo-600 font-black bg-indigo-50 px-3 py-1 rounded-full">{{ (opt.count || 0).toLocaleString() }}표</span>
-              </div>
-
-              <div v-else class="w-full max-w-2xl mx-auto flex items-stretch gap-3 md:gap-5 p-3 md:p-5 bg-white border border-slate-100 rounded-xl md:rounded-[1.5rem] shadow-sm hover:shadow-md transition group">
-                <div class="w-6 md:w-10 flex flex-col items-center justify-center font-black text-slate-300 text-xs md:text-base shrink-0">#{{ idx + 1 }}</div>
-                
-                <div class="w-12 h-12 md:w-20 md:h-20 shrink-0 rounded-lg md:rounded-2xl overflow-hidden bg-slate-100 flex items-center justify-center border border-slate-100 relative">
-                  <img v-if="opt.imageUrl" :src="opt.imageUrl" class="w-full h-full object-cover" />
-                  <svg v-else class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                </div>
-
-                <div class="flex-1 min-w-0 flex flex-col justify-center py-1">
-                  <div class="flex justify-between items-start mb-2 md:mb-3 gap-2">
-                    <div class="flex-1 min-w-0 cursor-pointer" @click="toggleTextExpand(idx)" :title="opt.label">
-                      <span class="font-bold text-slate-700 text-sm md:text-base break-keep leading-tight block"
-                            :class="expandedTextIndex === idx ? '' : 'line-clamp-2 md:line-clamp-1'">
-                        {{ opt.label }}
-                      </span>
-                    </div>
-                    <span v-if="voteStatus === 'FINISHED'" class="text-[10px] md:text-sm font-black text-indigo-600 shrink-0 bg-indigo-50 px-2.5 py-1 rounded-lg">
-                      {{ (opt.count || 0).toLocaleString() }}표
-                    </span>
-                  </div>
-                  
-                  <div v-if="voteStatus === 'FINISHED'" class="w-full h-2 md:h-3 bg-slate-100 rounded-full overflow-hidden mt-auto">
-                    <div class="h-full bg-gradient-to-r from-indigo-400 to-indigo-600 rounded-full transition-all duration-1000 relative" :style="{ width: calculatePercentage(opt.count) + '%' }">
-                      <div class="absolute inset-0 bg-white/20" style="background-image: linear-gradient(45deg,rgba(255,255,255,.15) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.15) 50%,rgba(255,255,255,.15) 75%,transparent 75%,transparent); background-size: 1rem 1rem;"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div v-if="isDuel && idx === 0" class="text-3xl md:text-7xl font-black italic text-slate-200 animate-pulse select-none px-2 tracking-tighter self-center">VS</div>
-            </template>
-          </div>
-
-          <div class="flex flex-col items-center gap-4 md:gap-6 pt-6 md:pt-10 border-t border-slate-100 mt-4">
-            <button @click="onVoteClick" :disabled="voteStatus !== 'LIVE'" 
-                    class="w-full md:w-auto md:px-24 py-4 md:py-5 rounded-2xl md:rounded-[2rem] font-black text-lg md:text-2xl shadow-xl transform hover:-translate-y-1 active:scale-95 transition-all disabled:opacity-30 disabled:hover:translate-y-0"
-                    :class="voteStatus === 'LIVE' ? 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-indigo-200' : 'bg-slate-200 text-slate-400'">
-              {{ voteStatus === 'UPCOMING' ? '투표 시작 전입니다' : (voteStatus === 'FINISHED' ? '종료된 투표입니다' : '투표 참여하기 🚀') }}
-            </button>
-            
-            <router-link 
-              v-if="voteSession"
-              :to="{ name: 'OpinionAnalysis', params: { boardId, voteSessionId: voteSession.id }}" 
-              class="text-xs md:text-sm text-indigo-600 hover:text-indigo-700 font-black flex items-center gap-2 transition group bg-indigo-50 hover:bg-indigo-100 px-6 py-2.5 rounded-full border border-indigo-100"
-            >
-              <span class="animate-pulse">🤖</span> AI가 분석한 현재 민심 보기
-            </router-link>
-
-            <router-link :to="{ name: 'VoteHistory', params: { boardId }}" class="text-xs md:text-sm text-slate-400 hover:text-indigo-600 font-bold flex items-center gap-2 transition group">
-              <span class="group-hover:-translate-x-1 transition-transform">📜</span> 지난 투표 결과 보기
-            </router-link>
-          </div>
+          <p v-if="voteStatus === 'LIVE'" class="vote-blind-note">공정한 투표를 위해 종료 후 결과가 공개됩니다.</p>
         </div>
       </div>
-    </div>
-
-    <div v-else class="bg-white/50 backdrop-blur border-2 border-dashed border-slate-200 rounded-2xl md:rounded-[2.5rem] py-16 md:py-24 text-center space-y-6 px-4">
-      <div class="text-4xl md:text-6xl mb-4 opacity-50">🗳️</div>
-      <p class="text-lg md:text-2xl text-slate-400 font-black tracking-tight">현재 진행 중인 갈드컵이 없습니다.</p>
-      <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-6">
-        <router-link :to="{ name: 'VoteHistory', params: { boardId: boardId }}" class="w-full sm:w-auto px-8 py-3.5 bg-white text-slate-600 hover:text-indigo-600 rounded-xl font-black text-sm md:text-base shadow-sm border border-slate-200 hover:border-indigo-200 transition-colors">
-          📜 지난 투표 보기
-        </router-link>
+      <div class="vote-footer">
+        <button type="button" class="ui-button vote-submit" :disabled="voteStatus !== 'LIVE'" @click="onVoteClick">{{ voteStatus === 'UPCOMING' ? '시작 전입니다' : voteStatus === 'FINISHED' ? '종료된 투표입니다' : voteStatus === 'LIVE' ? '투표 참여하기' : '참여할 수 없습니다' }}</button>
+        <nav class="vote-links" aria-label="투표 더 보기"><router-link :to="{ name:'OpinionAnalysis', params:{ boardId, voteSessionId:voteSession.id } }">AI 여론 분석<span aria-hidden="true">›</span></router-link><router-link :to="{ name:'VoteHistory', params:{ boardId } }">지난 투표 결과<span aria-hidden="true">›</span></router-link></nav>
       </div>
-    </div>
-
-    <Teleport to="body">
-      <VoteModal 
-        v-if="isVoteModalOpen" 
-        :board-id="boardId" 
-        :vote-session-id="voteSession?.id" 
-        @close="isVoteModalOpen = false" 
-      />
-    </Teleport>
-
-  </div>
+    </template>
+    <div v-else class="vote-empty"><p class="font-semibold">아직 진행 중인 투표가 없습니다</p><p class="field-help">게시글에서 의견을 나누거나<br />지난 투표 결과를 확인해 보세요.</p><router-link :to="{ name:'VoteHistory', params:{ boardId } }" class="ui-button ui-button-secondary mt-5">지난 투표 보기</router-link></div>
+    <Teleport to="body"><VoteModal v-if="isVoteModalOpen" :board-id="boardId" :vote-session-id="voteSession?.id" @close="isVoteModalOpen = false" @voted="boardStore.fetchActiveVoteSession(boardId)" /></Teleport>
+  </section>
 </template>
-
 <script setup>
-import { computed, ref, watch, onUnmounted } from 'vue';
+import { computed, ref, watch, onUnmounted, defineAsyncComponent } from 'vue';
 import { useRoute } from 'vue-router';
 import { useBoardStore } from '@/stores/board';
-import { Client } from '@stomp/stompjs';
-import VoteModal from '@/views/board/VoteView.vue';
+import { useUserStore } from '@/stores/user';
+import { useClock } from '@/composables/useClock';
+import { voteStatus as getVoteStatus } from '@/utils/vote';
+import { tokenExpiresSoon } from '@/utils/tokenExpiry';
+const VoteModal = defineAsyncComponent(() => import('@/views/board/VoteView.vue'));
 
 /**
  * 라우트 및 스토어 인스턴스 초기화
  */
 const route = useRoute();
 const boardStore = useBoardStore();
+const userStore = useUserStore();
+const now = useClock();
+const liveError = ref('');
+let connectionVersion = 0;
+let disposed = false;
 
 /**
  * UI 토글 및 모달 상태 관리
@@ -208,45 +79,7 @@ const isDuel = computed(() => voteSession.value?.options?.length === 2);
 /**
  * 투표 세션의 현재 상태 (UPCOMING, LIVE, FINISHED)
  */
-const voteStatus = computed(() => {
-  if (!voteSession.value) return null;
-  if (voteSession.value.isFinished) return 'FINISHED';
-  
-  const now = new Date();
-  const start = new Date(voteSession.value.startTime);
-  const end = new Date(voteSession.value.endTime);
-  
-  if (now < start) return 'UPCOMING';
-  if (now > end) return 'FINISHED';
-  return 'LIVE';
-});
-
-/**
- * 투표 타입에 따른 레이아웃 클래스
- */
-const layoutClass = computed(() => {
-  return isDuel.value 
-    ? 'flex items-center justify-center gap-4 md:gap-12 flex-wrap' 
-    : 'flex flex-col gap-4 max-w-2xl mx-auto';
-});
-
-/**
- * 상태 배지 스타일 클래스
- */
-const statusBadgeClass = computed(() => {
-  if (voteStatus.value === 'UPCOMING') return 'bg-amber-50 text-amber-600 border-amber-100';
-  if (voteStatus.value === 'LIVE') return 'bg-red-50 text-red-600 border-red-100';
-  return 'bg-slate-100 text-slate-500 border-slate-200';
-});
-
-/**
- * 상태 표시점 색상 클래스
- */
-const statusDotClass = computed(() => {
-  if (voteStatus.value === 'UPCOMING') return 'bg-amber-500';
-  if (voteStatus.value === 'LIVE') return 'bg-red-600';
-  return 'bg-slate-400';
-});
+const voteStatus = computed(() => getVoteStatus(voteSession.value, now.value));
 
 /**
  * 긴 항목 텍스트의 펼침/접기 토글
@@ -259,7 +92,7 @@ const toggleTextExpand = (index) => {
  * 일시 문자열 포맷팅 (MM월 DD일 HH:mm)
  */
 const formatDateTime = (dateStr) => {
-  if (!dateStr) return '';
+  if (!dateStr || !Number.isFinite(new Date(dateStr).getTime())) return '';
   const date = new Date(dateStr);
   return new Intl.DateTimeFormat('ko-KR', {
     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false
@@ -274,44 +107,53 @@ const calculatePercentage = (count) => {
   
   const total = voteSession.value.totalVotes || voteSession.value.options.reduce((acc, cur) => acc + Number(cur.count || 0), 0);
   
-  return total === 0 ? 0 : (Number(count) / total) * 100;
+  return total <= 0 ? 0 : Math.min(100, Math.max(0, (Number(count) / total) * 100)) || 0;
 };
 
 /**
  * STOMP 웹소켓 연결 및 인증 헤더 전달
  */
-const connectWebSocket = () => {
-  if (!voteSession.value || voteSession.value.isFinished || client) return;
-
-  const baseURL = import.meta.env.VITE_API_BASE_URL;
-  const socketURL = baseURL.replace(/^http/, 'ws') + '/ws-galdcup';
-
-  const token = boardStore.accessToken;
-
-  client = new Client({
-    brokerURL: socketURL,
-    reconnectDelay: 5000,
-    connectHeaders: {
-      Authorization: token ? `Bearer ${token}` : ''
-    },
-    onConnect: () => {
-      client.subscribe(`/topic/votes/${voteSession.value.id}`, (message) => {
-        if (message.body && boardStore.activeVoteSession) {
-          boardStore.activeVoteSession.totalVotes = Number(message.body);
-        }
-      });
-    }
-  });
-  client.activate();
-};
-
-/**
- * STOMP 웹소켓 연결 해제
- */
 const disconnectWebSocket = () => {
-  if (client) {
-    client.deactivate();
-    client = null;
+  connectionVersion++;
+  const previous = client;
+  client = null;
+  previous?.deactivate({ force: true }).catch(() => {});
+};
+const connectWebSocket = async () => {
+  const version = connectionVersion;
+  const sessionId = voteSession.value?.id;
+  if (!sessionId || voteStatus.value !== 'LIVE' || client || disposed) return;
+  try {
+    const base = new URL(import.meta.env.VITE_API_BASE_URL || window.location.origin, window.location.origin);
+    base.protocol = base.protocol === 'https:' ? 'wss:' : 'ws:';
+    base.pathname = (base.pathname.endsWith('/') ? base.pathname.slice(0, -1) : base.pathname) + '/ws-galdcup';
+    base.search = ''; base.hash = '';
+    const { Client } = await import('@stomp/stompjs');
+    if (disposed || version !== connectionVersion) return;
+    const socket = new Client({
+      brokerURL: base.toString(), reconnectDelay: 5000, connectionTimeout: 10000,
+      heartbeatIncoming: 10000, heartbeatOutgoing: 10000,
+      beforeConnect: async () => {
+        if (tokenExpiresSoon(userStore.accessToken)) await userStore.reissue();
+        if (disposed || version !== connectionVersion) { await socket.deactivate({ force: true }); return; }
+        socket.connectHeaders = userStore.accessToken ? { Authorization: `Bearer ${userStore.accessToken}` } : {};
+      },
+      onConnect: () => {
+        if (version !== connectionVersion || String(boardStore.activeVoteSession?.id) !== String(sessionId)) return;
+        liveError.value = '';
+        socket.subscribe(`/topic/votes/${sessionId}`, message => {
+          if (version !== connectionVersion || String(boardStore.activeVoteSession?.id) !== String(sessionId)) return;
+          const count = Number(message.body);
+          if (Number.isSafeInteger(count) && count >= 0) boardStore.activeVoteSession.totalVotes = count;
+        });
+      },
+      onWebSocketClose: () => { if (!disposed && version === connectionVersion) liveError.value = '실시간 연결이 끊겼습니다. 자동으로 다시 연결합니다.'; },
+      onStompError: () => { if (!disposed && version === connectionVersion) liveError.value = '실시간 집계에 연결하지 못했습니다. 새로고침해 다시 시도해 주세요.'; },
+    });
+    client = socket;
+    socket.activate();
+  } catch {
+    if (!disposed && version === connectionVersion) liveError.value = '실시간 연결을 준비하지 못했습니다. 새로고침해 다시 시도해 주세요.';
   }
 };
 
@@ -326,25 +168,47 @@ const onVoteClick = () => {
 /**
  * 투표 진행 상태에 따른 웹소켓 자동 연결/해제 관리
  */
-watch(voteStatus, (newVal) => {
-  if (newVal === 'LIVE') {
-    isExpanded.value = true;
-    connectWebSocket();
-  } else {
-    disconnectWebSocket();
-  }
-}, { immediate: true });
-
-/**
- * 컴포넌트 파기 시 웹소켓 자원 정리
- */
-onUnmounted(() => {
+watch([() => voteSession.value?.id, voteStatus, () => userStore.accessToken], (current, previous) => {
   disconnectWebSocket();
-});
+  if (current[0] !== previous?.[0]) { isVoteModalOpen.value = false; expandedTextIndex.value = null; }
+  if (current[1] === 'LIVE') connectWebSocket();
+  else if (previous?.[1] === 'LIVE' && current[1] === 'FINISHED') boardStore.fetchActiveVoteSession(boardId.value);
+}, { immediate: true });
+onUnmounted(() => { disposed = true; disconnectWebSocket(); });
 </script>
-
 <style scoped>
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
+.vote-panel { border-top:3px solid var(--ui-primary); }
+.vote-content { display:grid; gap:20px; }
+.vote-intro, .vote-choices { min-width:0; }
+.vote-topic { font-size:20px; line-height:1.5; font-weight:750; letter-spacing:-.025em; }
+.vote-description { margin-top:10px; color:var(--ui-text-muted); font-size:14px; line-height:1.7; white-space:pre-line; }
+.vote-facts { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; margin-block:12px; font-size:12px; color:var(--ui-text-muted); }
+.vote-facts button { min-height:44px; color:var(--ui-primary); padding-inline:6px; }
+.vote-options-duel { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.vote-option { min-width:0; padding:12px; border:1px solid var(--ui-border); border-radius:10px; background:var(--ui-surface-subtle); }
+.vote-option img { display:block; width:100%; aspect-ratio:4/3; height:auto; max-height:160px; border-radius:6px; object-fit:cover; background:var(--ui-surface); }
+.option-label { margin-top:10px; font-size:14px; line-height:1.65; font-weight:650; overflow-wrap:anywhere; }
+.option-label-clamp { display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+.option-expand { min-height:44px; font-size:12px; color:var(--ui-primary); }
+.option-result { margin-top:6px; color:var(--ui-primary); font-size:13px; font-weight:650; }
+.vote-options-list { display:grid; gap:12px; }
+.vote-options-list .vote-option { display:grid; grid-template-columns:56px minmax(0,1fr); gap:12px; align-items:center; }
+.vote-options-list .option-label { margin-top:0; }
+.vote-blind-note { margin-top:16px; color:var(--ui-text-muted); font-size:12px; }
+.vote-dates { display:grid; gap:8px; padding-top:16px; border-top:1px solid var(--ui-border); font-size:13px; }
+.vote-dates > div { display:flex; flex-wrap:wrap; gap:12px; }
+.vote-dates dt { color:var(--ui-text-muted); }
+.vote-footer { display:flex; flex-wrap:wrap; align-items:center; gap:12px 24px; margin-top:24px; padding-top:20px; border-top:1px solid var(--ui-border); }
+.vote-submit { width:100%; }
+.vote-links { display:flex; flex:1; flex-wrap:wrap; gap:8px 24px; }
+.vote-links a { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:44px; padding-block:10px; color:var(--ui-secondary); font-size:13px; }
+.vote-links a:hover { color:var(--ui-primary); }
+.vote-empty { padding-block:16px; text-align:center; font-size:14px; }
+@media(min-width:640px) { .vote-submit { width:auto; min-width:200px; } .vote-links { justify-content:flex-end; } .vote-links a { gap:16px; } }
+@media(min-width:768px) {
+  .vote-content { grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr); gap:32px; }
+  .vote-content-collapsed { grid-template-columns:minmax(0,1fr); }
+  .vote-topic { font-size:24px; }
+  .vote-options-list { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
 </style>

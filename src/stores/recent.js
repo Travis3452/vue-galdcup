@@ -1,13 +1,15 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { readStoredArray, writeStorage, removeStorage } from '../utils/storage.js'
 
 export const useRecentStore = defineStore('recent', () => {
   // 초기값 로드
-  const recentBoards = ref(JSON.parse(localStorage.getItem('recent_boards') || '[]'))
+  const recentBoards = ref(readStoredArray('recent_boards')
+    .filter(board => board && /^\d+$/.test(String(board.id)) && typeof board.topic === 'string')
+    .slice(0, 10))
 
   const addBoard = (board) => {
     if (!board || !board.id || !board.topic) {
-      console.warn('저장할 게시판 정보가 부족합니다:', board);
       return;
     }
 
@@ -24,18 +26,17 @@ export const useRecentStore = defineStore('recent', () => {
     recentBoards.value = [newEntry, ...filtered].slice(0, 10)
 
     // 로컬 스토리지 저장
-    localStorage.setItem('recent_boards', JSON.stringify(recentBoards.value))
-    console.log('최근 방문 목록 업데이트 완료:', recentBoards.value)
+    writeStorage('recent_boards', JSON.stringify(recentBoards.value))
   }
 
   const removeBoard = (id) => {
     recentBoards.value = recentBoards.value.filter(item => String(item.id) !== String(id))
-    localStorage.setItem('recent_boards', JSON.stringify(recentBoards.value))
+    writeStorage('recent_boards', JSON.stringify(recentBoards.value))
   }
 
   const clearHistory = () => {
     recentBoards.value = []
-    localStorage.removeItem('recent_boards')
+    removeStorage('recent_boards')
   }
 
   return { recentBoards, addBoard, removeBoard, clearHistory }

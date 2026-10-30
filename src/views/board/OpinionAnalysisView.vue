@@ -1,196 +1,50 @@
 <template>
-  <div class="max-w-7xl mx-auto p-4 md:p-10 space-y-12 font-sans text-slate-900">
-    
-    <div class="flex flex-col items-center justify-center text-center gap-6 pt-4 mb-10">
-      <div class="space-y-5 flex flex-col items-center">
-        <div class="inline-flex relative mb-1">
-          <div class="absolute inset-0 bg-indigo-500 blur-3xl opacity-20 animate-pulse"></div>
-          <div class="relative p-5 bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl shadow-2xl border border-white/10">
-            <span class="text-4xl">🧬</span>
-          </div>
-        </div>
-        
-        <h2 class="text-4xl md:text-6xl font-black tracking-tighter bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-950 bg-clip-text text-transparent uppercase">
-          Opinion Analysis
-        </h2>
-        
-        <p class="text-slate-600 font-bold bg-white border border-slate-200 px-6 py-2.5 rounded-2xl shadow-sm text-sm md:text-base flex items-center gap-2.5">
-          <span class="flex h-2.5 w-2.5 rounded-full bg-emerald-500 animate-ping"></span>
-          실시간 커뮤니티 댓글 기반 AI 심층 여론 분석
-        </p>
+  <section>
+    <div class="page-heading"><div><p class="eyebrow">댓글 속 다양한 생각을 한눈에</p><h1>AI 여론 분석</h1><p class="page-description">댓글의 맥락을 바탕으로 정리한 참고용 분석입니다.<br />실제 투표 결과와 다를 수 있습니다.</p></div><button v-if="analysisData" type="button" class="ui-button ui-button-secondary" :disabled="boardStore.isAnalysisLoading" @click="handleStartAnalysis">{{ boardStore.isAnalysisLoading ? '분석 중…' : '최신 내용으로 분석' }}</button></div>
+    <AsyncState :loading="boardStore.isAnalysisLoading" :error="boardStore.analysisError" @retry="boardStore.fetchOpinionAnalysis(boardId, voteSessionId)">
+      <div v-if="analysisData" class="analysis-layout">
+        <section class="surface panel-padding"><div class="section-heading"><h2>선택지별 예상 지지율</h2><span class="badge badge-neutral">AI 예측</span></div>
+          <p v-if="chartError" role="status" class="field-help mb-4">{{ chartError }}</p>
+          <div v-if="sortedResults.length" class="analysis-chart"><canvas ref="chartCanvas" role="img" aria-label="선택지별 예상 지지율 막대그래프. 수치는 다음 결과 목록에서도 확인할 수 있습니다."></canvas></div>
+          <p v-else class="field-help">선택지별 수치가 없습니다. 분석 요약을 확인해 주세요.</p>
+          <ol class="analysis-results"><li v-for="(result, index) in sortedResults" :key="index"><span class="analysis-dot" :style="{ backgroundColor:`var(--ui-chart-${index % 10 + 1})` }" aria-hidden="true"></span><span class="min-w-0 flex-1">{{ result.label }}</span><strong>{{ result.supportRate.toFixed(1) }}%</strong></li></ol>
+        </section>
+        <section class="surface panel-padding"><div class="section-heading"><h2>분석 요약</h2></div><p v-if="analysisData.summary" class="analysis-summary">{{ analysisData.summary }}</p><p v-else class="field-help">요약 내용이 없습니다.</p>
+          <div v-if="insightData" class="analysis-insight"><span class="field-label">함께 살펴볼 점</span><p><strong>{{ insightData.topCandidate }}</strong>의 예상 지지율은 2위보다 {{ insightData.gap }}%p 높습니다. {{ insightData.isCloseMatch ? '선택지 간 차이가 작아 의견이 나뉘고 있습니다.' : '댓글에서 상대적으로 높은 지지를 보이고 있습니다.' }}</p></div>
+          <p class="analysis-notice">AI는 맥락이나 풍자 표현을 다르게 해석할 수 있습니다. 원문 댓글과 함께 참고해 주세요.</p>
+        </section>
       </div>
-
-      <button v-if="analysisData" 
-              @click="handleStartAnalysis" 
-              :disabled="boardStore.isAnalysisLoading"
-              class="group mt-2 px-6 py-3 bg-white border-2 border-indigo-100 text-indigo-600 font-black rounded-2xl hover:bg-indigo-50 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2.5 shadow-sm">
-        <span class="inline-block group-hover:rotate-180 transition-transform duration-500">🔄</span>
-        최신 데이터로 분석 갱신
-      </button>
-    </div>
-
-    <div v-if="boardStore.isAnalysisLoading" class="py-12">
-      <div class="text-center space-y-6 mb-12">
-        <div class="relative inline-flex items-center justify-center">
-          <div class="w-24 h-24 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
-          <span class="absolute text-3xl animate-pulse">🧠</span>
-        </div>
-        <div>
-          <p class="text-2xl font-black text-slate-800 tracking-tight">AI 분석관이 민심을 읽고 있습니다...</p>
-          <p class="text-slate-500 mt-2 font-medium">댓글의 문맥과 감성을 수치화하고 있습니다. (약 5~10초 소요)</p>
-        </div>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-10 animate-pulse opacity-50">
-        <div class="aspect-square bg-slate-200 rounded-[3rem]"></div>
-        <div class="space-y-6"><div v-for="i in 3" :key="i" class="h-28 bg-slate-200 rounded-3xl"></div></div>
-      </div>
-    </div>
-
-    <div v-else-if="analysisData" class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-start">
-      
-      <div class="lg:col-span-5 lg:sticky lg:top-10">
-        <div class="bg-white p-8 md:p-12 rounded-[3rem] shadow-2xl shadow-slate-100 border border-slate-100 relative group overflow-hidden">
-          <div class="relative z-10">
-            <div class="mb-10 flex justify-between items-end">
-              <div>
-                <span class="text-[11px] font-black text-indigo-500 uppercase tracking-[0.3em] mb-1.5 block">AI Prediction Metrics</span>
-                <h3 class="text-3xl font-black text-slate-900 tracking-tight">여론 점유율 예측</h3>
-              </div>
-              <div class="px-3 py-1 bg-red-50 text-red-600 rounded-full border border-red-100 flex items-center gap-1.5 mb-1">
-                <span class="flex h-2 w-2 rounded-full bg-red-500 animate-ping"></span>
-                <span class="text-[10px] font-black tracking-widest">LIVE</span>
-              </div>
-            </div>
-            
-            <div class="relative w-full h-[300px] md:h-[350px]">
-              <canvas ref="chartCanvas" class="relative z-10 w-full h-full"></canvas>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="lg:col-span-7 space-y-6">
-        <div class="grid grid-cols-1 gap-5">
-          <div v-for="(result, idx) in sortedResults" :key="idx" 
-               class="group relative p-1 rounded-[2.5rem] transition-all duration-500 hover:shadow-2xl hover:shadow-indigo-50"
-               :class="idx === 0 ? 'bg-gradient-to-br from-indigo-500 to-blue-600' : 'bg-slate-200'">
-            
-            <div class="bg-white p-6 md:p-9 rounded-[2.3rem] flex flex-col gap-6">
-              <div class="flex justify-between items-center gap-4">
-                <div class="flex items-center gap-4 md:gap-5 flex-1 min-w-0">
-                  <div class="w-12 h-12 md:w-14 md:h-14 rounded-2xl md:rounded-3xl flex items-center justify-center font-black text-lg md:text-xl shadow-inner border shrink-0"
-                       :style="{ backgroundColor: getCandidateTheme(idx).bg, color: getCandidateTheme(idx).main, borderColor: getCandidateTheme(idx).border }">
-                    {{ idx + 1 }}
-                  </div>
-                  <div class="flex-1 min-w-0 py-1">
-                    <h4 class="font-black text-slate-900 text-xl md:text-2xl lg:text-3xl tracking-tight leading-snug break-keep">
-                      {{ result.label }}
-                    </h4>
-                  </div>
-                </div>
-                <div class="text-right shrink-0 pl-4">
-                  <span class="font-black text-4xl md:text-6xl tracking-tighter" :style="{ color: getCandidateTheme(idx).main }">
-                    {{ result.supportRate.toFixed(1) }}<span class="text-lg md:text-2xl ml-0.5">%</span>
-                  </span>
-                </div>
-              </div>
-
-              <div class="relative w-full h-4 md:h-5 bg-slate-100 rounded-full overflow-hidden shadow-inner p-0.5 border border-slate-200/50">
-                <div class="h-full rounded-full transition-all duration-[1500ms] ease-out relative"
-                     :style="{ width: result.supportRate + '%', backgroundColor: getCandidateTheme(idx).main }">
-                  <div class="absolute inset-0 opacity-30 bg-[linear-gradient(90deg,transparent_25%,rgba(255,255,255,0.6)_50%,transparent_75%)] bg-[length:200%_100%] animate-[shimmer_2s_infinite]"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="bg-slate-950 rounded-[2.5rem] p-8 md:p-12 text-white shadow-2xl relative overflow-hidden group border border-slate-800">
-          <div class="absolute -right-10 -bottom-10 text-9xl opacity-10 group-hover:rotate-12 transition-transform duration-1000">📊</div>
-          
-          <div class="flex items-center gap-3 mb-8 border-b border-slate-800 pb-5">
-            <div class="flex gap-2">
-              <div class="w-3 h-3 rounded-full bg-red-500"></div>
-              <div class="w-3 h-3 rounded-full bg-amber-500"></div>
-              <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
-            </div>
-            <span class="text-xs font-mono text-slate-500 uppercase tracking-widest ml-2">AI Commentary Engine v3.0</span>
-          </div>
-          
-          <div class="space-y-6 font-medium leading-relaxed relative z-10">
-            <p class="text-2xl text-white font-black flex items-center gap-3 tracking-tight">
-              <span class="text-indigo-400 text-3xl animate-pulse">●</span> AI 분석관 리포트
-            </p>
-            
-            <div v-if="analysisData.summary" class="bg-slate-900/50 p-6 rounded-3xl border border-slate-800/50">
-              <p class="text-base md:text-xl text-slate-200 leading-relaxed break-keep italic">
-                "{{ analysisData.summary }}"
-              </p>
-            </div>
-
-            <div class="pt-2">
-              <p v-if="insightData" class="text-slate-400 text-sm md:text-base break-keep">
-                현재 지지율 1위인 <span class="text-white font-bold">{{ insightData.topCandidate }}</span> 후보는 
-                2위 대비 <span class="text-indigo-400 font-bold">{{ insightData.ratio }}</span> 높은 선호도를 보이고 있으며, 
-                <span v-if="insightData.isCloseMatch" class="text-amber-400 font-bold">근소한 차이로 선두를 지키고 있습니다.</span>
-                <span v-else class="text-emerald-400 font-bold">확고한 우위를 점하며 민심을 주도하고 있습니다.</span>
-              </p>
-            </div>
-
-            <span class="text-xs text-slate-600 block pt-4 border-t border-slate-800/50">
-              ※ 본 분석은 실시간 댓글 50개의 문맥적 감성, 지지 키워드 빈도, 비꼬는 말투 등을 종합 분석한 결과입니다.
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div v-else class="py-24 md:py-32 text-center bg-white rounded-[3.5rem] border-4 border-dashed border-slate-100 space-y-8 shadow-sm">
-      <div class="text-7xl grayscale opacity-30">🤔</div>
-      <div class="space-y-3 px-6">
-        <h3 class="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">아직 생성된 AI 리포트가 없습니다</h3>
-        <p class="text-slate-500 font-medium">갈드컵 참전 유저들의 날카로운 댓글들을 AI가 정밀 분석해 드립니다.</p>
-      </div>
-      <button @click="handleStartAnalysis" 
-              class="px-12 py-5 bg-indigo-600 text-white font-black rounded-[2rem] shadow-2xl shadow-indigo-200 hover:bg-indigo-700 hover:-translate-y-1 active:scale-95 transition-all">
-        실시간 민심 분석 시작하기 🚀
-      </button>
-    </div>
-
-    <div class="flex flex-col sm:flex-row items-center justify-center gap-5 pb-8">
-      <button @click="router.back()" class="w-full sm:w-auto px-12 py-5 bg-white hover:bg-slate-50 text-slate-900 font-black rounded-full border border-slate-200 transition-all active:scale-95 shadow-md">
-        이전으로
-      </button>
-      <router-link :to="{ name: 'Board', params: { boardId }}" class="w-full sm:w-auto px-12 py-5 bg-slate-950 hover:bg-black text-white font-black rounded-full transition-all active:scale-95 shadow-lg">
-        게시판 메인
-      </router-link>
-    </div>
-  </div>
+      <div v-else class="surface analysis-empty"><span class="badge mb-4">AI 분석</span><h2>아직 분석된 내용이 없습니다</h2><p class="page-description">댓글에 담긴 서로 다른 생각을<br />AI가 읽기 쉽게 정리해 드립니다.</p><button type="button" class="ui-button mt-6" :disabled="boardStore.isAnalysisLoading" @click="handleStartAnalysis">여론 분석 시작하기</button></div>
+    </AsyncState>
+    <nav class="analysis-navigation" aria-label="분석 화면 이동"><button type="button" class="ui-button ui-button-secondary" @click="router.back()">이전 화면</button><router-link :to="{name:'Board', params:{boardId}}" class="ui-button ui-button-secondary">게시판으로</router-link></nav>
+  </section>
 </template>
-
 <script setup>
-import { ref, onMounted, computed, watch, nextTick } from 'vue';
+import { ref, onUnmounted, computed, watch, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useBoardStore } from '@/stores/board';
-import Chart from 'chart.js/auto';
+import AsyncState from '@/components/ui/AsyncState.vue';
+import { normalizeAnalysisResults } from '@/utils/analysis';
+import { useTheme } from '@/composables/useTheme';
 
 const route = useRoute();
 const router = useRouter();
 const boardStore = useBoardStore();
+const { resolvedTheme } = useTheme();
 
 const boardId = computed(() => route.params.boardId);
 const voteSessionId = computed(() => route.params.voteSessionId);
 
 const chartCanvas = ref(null);
 let chartInstance = null;
+let chartVersion = 0;
+let disposed = false;
+const chartError = ref('');
 
 const analysisData = computed(() => boardStore.opinionAnalysis);
 
 // 지지율(supportRate) 내림차순 정렬
-const sortedResults = computed(() => {
-  if (!analysisData.value?.results) return [];
-  return [...analysisData.value.results].sort((a, b) => b.supportRate - a.supportRate);
-});
+const sortedResults = computed(() => normalizeAnalysisResults(analysisData.value?.results));
 
 // 계산 기반 보조 인사이트
 const insightData = computed(() => {
@@ -201,15 +55,15 @@ const insightData = computed(() => {
   const second = results[1];
 
   const gap = (first.supportRate - second.supportRate).toFixed(1);
-  const ratio = second.supportRate === 0 
-                ? '압도적으로' 
+  const ratio = second.supportRate === 0
+                ? '압도적으로'
                 : `약 ${(first.supportRate / second.supportRate).toFixed(1)}배`;
 
   return {
     topCandidate: first.label,
     gap: gap,
     ratio: ratio,
-    isCloseMatch: parseFloat(gap) < 7.0, 
+    isCloseMatch: parseFloat(gap) < 7.0,
   };
 });
 
@@ -217,32 +71,28 @@ const insightData = computed(() => {
  * 최대 10개까지 대응하는 테마 컬러
  */
 const getCandidateTheme = (idx) => {
-  const themes = [
-    { main: '#4F46E5', bg: '#F5F3FF', border: '#EDE9FE' }, // Indigo
-    { main: '#E11D48', bg: '#FFF1F2', border: '#FFE4E6' }, // Rose
-    { main: '#D97706', bg: '#FFFBEB', border: '#FEF3C7' }, // Amber
-    { main: '#059669', bg: '#ECFDF5', border: '#D1FAE5' }, // Emerald
-    { main: '#7C3AED', bg: '#F5F3FF', border: '#EDE9FE' }, // Violet
-    { main: '#0891B2', bg: '#ECFEFF', border: '#CFFAFE' }, // Cyan
-    { main: '#C026D3', bg: '#FDF4FF', border: '#FAE8FF' }, // Fuchsia
-    { main: '#65A30D', bg: '#F7FEE7', border: '#ECFCCB' }, // Lime
-    { main: '#0284C7', bg: '#F0F9FF', border: '#E0F2FE' }, // Sky
-    { main: '#EA580C', bg: '#FFF7ED', border: '#FFEDD5' }, // Orange
-  ];
-  return themes[idx % themes.length];
+  return { main: getComputedStyle(document.documentElement).getPropertyValue(`--ui-chart-${idx % 10 + 1}`).trim() };
 };
 
 /**
  * 차트 초기화 (세로 막대 차트로 변경)
  */
 const initChart = async () => {
+  const version = ++chartVersion;
+  chartInstance?.destroy();
+  chartInstance = null;
+  chartError.value = '';
   await nextTick();
-  if (!chartCanvas.value || !analysisData.value) return;
-  if (chartInstance) chartInstance.destroy();
-
+  if (disposed || !chartCanvas.value || !analysisData.value || boardStore.isAnalysisLoading) return;
+  let Chart;
+  try { ({ Chart } = await import('@/services/barChart')); }
+  catch { if (!disposed && version === chartVersion) chartError.value = '그래프를 표시하지 못했습니다. 아래 결과 목록에서 수치를 확인해 주세요.'; return; }
+  if (disposed || version !== chartVersion || !chartCanvas.value || boardStore.isAnalysisLoading) return;
   const ctx = chartCanvas.value.getContext('2d');
   const results = sortedResults.value;
-  
+  const colors = getComputedStyle(document.documentElement);
+  const color = name => colors.getPropertyValue(`--ui-${name}`).trim();
+
   chartInstance = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -264,7 +114,9 @@ const initChart = async () => {
         legend: { display: false },
         tooltip: {
           enabled: true,
-          backgroundColor: '#0f172a',
+          backgroundColor: color('tooltip'),
+          titleColor: color('tooltip-text'),
+          bodyColor: color('tooltip-text'),
           padding: 15,
           cornerRadius: 15,
           callbacks: {
@@ -278,26 +130,26 @@ const initChart = async () => {
         y: {
           beginAtZero: true,
           max: 100,
-          grid: { 
-            color: '#f1f5f9',
-            drawBorder: false 
+          grid: {
+            color: color('divider'),
+            drawBorder: false
           },
-          ticks: { 
-            color: '#94a3b8', 
+          ticks: {
+            color: color('text-muted'),
             font: { weight: 'bold' },
             callback: (value) => value + '%'
           }
         },
         x: {
           grid: { display: false, drawBorder: false },
-          ticks: { 
-            color: '#475569', 
+          ticks: {
+            color: color('text-muted'),
             font: { weight: 'bold' }
           }
         }
       },
       animation: {
-        duration: 2000,
+        duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 500,
         easing: 'easeOutQuart'
       }
     }
@@ -308,21 +160,25 @@ const handleStartAnalysis = async () => {
   await boardStore.startOpinionAnalysis(boardId.value, voteSessionId.value);
 };
 
-onMounted(async () => {
-  await boardStore.fetchOpinionAnalysis(boardId.value, voteSessionId.value);
-  if (boardStore.opinionAnalysis) initChart();
-});
-
-watch(() => boardStore.opinionAnalysis, () => initChart(), { deep: true });
+watch([boardId, voteSessionId], () => {
+  boardStore.opinionAnalysis = null;
+  boardStore.fetchOpinionAnalysis(boardId.value, voteSessionId.value);
+}, { immediate: true });
+watch([chartCanvas, sortedResults, resolvedTheme, () => boardStore.isAnalysisLoading], initChart, { flush: 'post' });
+onUnmounted(() => { disposed = true; chartVersion++; chartInstance?.destroy(); chartInstance = null; });
 </script>
-
 <style scoped>
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-.font-sans {
-  word-break: keep-all;
-  letter-spacing: -0.025em;
-}
+.analysis-layout { display:grid; gap:20px; align-items:start; }
+.analysis-chart { position:relative; width:100%; height:280px; min-width:0; }
+.analysis-results { display:grid; gap:14px; margin-top:24px; border-top:1px solid var(--ui-border); padding-top:20px; }
+.analysis-results li { display:flex; align-items:flex-start; gap:10px; font-size:14px; line-height:1.7; }
+.analysis-results strong { flex:0 0 auto; font-weight:700; font-variant-numeric:tabular-nums; }
+.analysis-dot { flex:0 0 auto; width:10px; height:10px; margin-top:7px; border-radius:50%; }
+.analysis-summary { font-size:16px; line-height:1.85; white-space:pre-wrap; color:var(--ui-secondary); }
+.analysis-insight { margin-top:24px; padding:16px; border:1px solid var(--ui-primary-border); border-radius:12px; background:var(--ui-primary-soft); color:var(--ui-secondary); font-size:14px; line-height:1.8; }
+.analysis-notice { margin-top:24px; padding-top:16px; border-top:1px solid var(--ui-border); color:var(--ui-text-muted); font-size:12px; line-height:1.75; }
+.analysis-empty { padding:48px 20px; text-align:center; }
+.analysis-empty h2 { font-size:22px; font-weight:700; }
+.analysis-navigation { display:flex; flex-wrap:wrap; justify-content:center; gap:12px; margin-top:28px; }
+@media(min-width:1024px) { .analysis-layout { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:24px; } .analysis-chart { height:320px; } }
 </style>

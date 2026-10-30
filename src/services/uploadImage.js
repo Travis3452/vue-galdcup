@@ -1,13 +1,9 @@
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_PUBLIC_KEY
-)
+import { validateImage } from '../utils/image.js'
 
 export async function uploadImage(file) {
-  // 확장자 추출
-  const ext = file.name.split('.').pop()
+  const ext = validateImage(file)
+  const { getSupabase } = await import('../supabase.js')
+  const supabase = getSupabase()
   // 안전한 파일명 생성 (UUID + 확장자)
   const safeName = `${Date.now()}_${crypto.randomUUID()}.${ext}`
 
