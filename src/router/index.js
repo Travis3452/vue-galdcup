@@ -26,6 +26,12 @@ const router = createRouter({
 
   routes: [
     {
+      path: '/admin/monitoring',
+      name: 'AdminMonitoring',
+      component: () => import('@/views/admin/MonitoringView.vue'),
+      meta: { requiresAuth: true, adminOnly: true }
+    },
+    {
       path: '/',
       name: 'home',
       component: HomeView
