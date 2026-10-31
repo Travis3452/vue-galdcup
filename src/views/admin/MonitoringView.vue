@@ -1,5 +1,6 @@
 <template>
   <div class="monitoring-page">
+    <AdminNav />
     <header class="monitoring-heading">
       <div><p class="monitoring-eyebrow">ADMIN · 운영 관리</p><h1>서비스 모니터링</h1><p class="monitoring-description">서비스 연결 상태와 API·Redis 성능을 한눈에 확인하세요.</p></div>
       <button type="button" class="ui-button ui-button-secondary" :disabled="loading" @click="refresh">
@@ -71,6 +72,7 @@ import { getErrorMessage, isCanceled } from '@/utils/request'
 import { MONITORING_RANGES, formatMetric, formatBytes, statusLabel } from '@/utils/monitoring'
 import AppIcon from '@/components/ui/AppIcon.vue'
 import MetricChart from '@/components/monitoring/MetricChart.vue'
+import AdminNav from '@/components/admin/AdminNav.vue'
 
 const store = useUserStore()
 const router = useRouter()

@@ -20,6 +20,9 @@ import { onMounted, onUnmounted, watch } from 'vue'
 import AppNotifications from '@/components/ui/AppNotifications.vue'
 import { notify } from '@/services/notifications'
 import { writeStorage } from '@/utils/storage'
+import { useUserActivity } from '@/composables/useUserActivity'
+
+useUserActivity()
 
 const $route = useRoute()
 const router = useRouter()

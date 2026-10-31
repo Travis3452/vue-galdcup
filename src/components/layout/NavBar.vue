@@ -47,6 +47,7 @@
               <div class="dropdown-heading"><span class="block text-xs muted">내 계정</span><span class="block mt-1 font-semibold break-words">{{ nickname }}</span></div>
               <button type="button" class="account-menu-item" @click="handleMyPage"><AppIcon name="user" :size="18" />내 정보</button>
               <router-link v-if="store.isAdmin" to="/admin/monitoring" class="account-menu-item" @click="closeMenus"><AppIcon name="monitor" :size="18" />서비스 모니터링</router-link>
+              <router-link v-if="store.isAdmin" to="/admin/statistics" class="account-menu-item" @click="closeMenus"><AppIcon name="trend" :size="18" />서비스 통계</router-link>
               <button type="button" class="account-menu-item account-menu-danger" :disabled="store.isLoggingOut" @click="logout">로그아웃</button>
             </div>
           </transition>
