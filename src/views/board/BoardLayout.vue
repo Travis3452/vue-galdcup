@@ -148,9 +148,9 @@ onUnmounted(() => boardStore.clearBoardDetails())
 .recent-visits { margin-bottom:24px; border-bottom:1px solid var(--ui-border); background:transparent; font-size:12px; }
 .recent-visits-header { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:5px 10px; }
 .recent-label { flex:0 0 auto; color:var(--ui-text-muted); font-size:11px; }
-.recent-toggle { display:flex; align-items:center; gap:3px; min-height:32px; color:var(--ui-primary); font-size:11px; font-weight:650; }
-.recent-toggle:hover { color:var(--ui-primary); }
-.recent-clear { min-height:32px; padding-inline:4px; color:var(--ui-text-muted); font-size:11px; font-weight:650; text-decoration:underline; text-underline-offset:2px; }
+.recent-toggle { display:flex; align-items:center; gap:3px; min-height:32px; padding:4px 8px; border:1px solid var(--ui-control-border); border-radius:6px; background:var(--ui-surface); color:var(--ui-primary); font-size:11px; font-weight:650; }
+.recent-toggle:hover { background:var(--ui-primary-soft); border-color:var(--ui-primary); }
+.recent-clear { min-height:32px; padding:4px 8px; border:1px solid var(--ui-danger); border-radius:6px; background:var(--ui-danger-soft); color:var(--ui-danger); font-size:11px; font-weight:650; text-decoration:none; }
 .recent-clear:hover { color:var(--ui-danger); }
 .recent-board-list { padding:0 8px 8px; }
 .recent-empty { padding-block:2px; color:var(--ui-text-muted); font-size:11px; font-style:italic; }
@@ -158,7 +158,7 @@ onUnmounted(() => boardStore.clearBoardDetails())
 .recent-board-item:hover { border-color:var(--ui-primary-border); }
 .recent-board-link { display:block; min-height:28px; max-width:112px; overflow:hidden; color:var(--ui-secondary); font-size:11px; line-height:28px; font-weight:650; text-overflow:ellipsis; white-space:nowrap; }
 .recent-board-link:hover { color:var(--ui-primary); }
-.recent-remove { display:grid; place-items:center; min-width:28px; min-height:28px; color:var(--ui-text-muted); border-radius:50%; font-size:14px; }
+.recent-remove { display:grid; place-items:center; min-width:28px; min-height:28px; color:var(--ui-secondary); border:1px solid var(--ui-control-border); background:var(--ui-surface-subtle); border-radius:6px; font-size:14px; }
 .recent-remove:hover { color:var(--ui-danger); background:var(--ui-danger-soft); }
 .recent-visits-compact { margin-bottom:16px; }
 .recent-visits-compact:not(.recent-open) #recent-board-list { display:none; }

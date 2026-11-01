@@ -1,13 +1,13 @@
 <template>
   <section class="surface panel-padding vote-panel" aria-label="갈드컵 투표">
     <div class="section-heading"><h2>갈드컵 투표</h2><span v-if="voteSession" class="badge" :class="voteStatus === 'LIVE' ? 'badge-danger' : 'badge-neutral'">{{ voteStatus === 'LIVE' ? '진행 중' : voteStatus === 'UPCOMING' ? '시작 예정' : voteStatus === 'FINISHED' ? '종료' : '확인 필요' }}</span></div>
-    <p v-if="boardStore.voteError" role="alert" class="field-error">{{ boardStore.voteError }} <button type="button" class="underline" @click="boardStore.fetchActiveVoteSession(boardId)">다시 시도</button></p>
+    <p v-if="boardStore.voteError" role="alert" class="field-error">{{ boardStore.voteError }} <button type="button" class="ui-button ui-button-secondary ui-button-small" @click="boardStore.fetchActiveVoteSession(boardId)">다시 시도</button></p>
     <p v-if="liveError" role="status" class="field-help mb-4">{{ liveError }}</p>
     <template v-if="voteSession">
       <div class="vote-content" :class="{ 'vote-content-collapsed': !isExpanded }">
         <div class="vote-intro">
           <h3 class="vote-topic">{{ voteSession.topic }}</h3><p v-if="voteSession.description" class="vote-description">{{ voteSession.description }}</p>
-          <div class="vote-facts"><span>{{ (voteSession.totalVotes || 0).toLocaleString() }}명 참여</span><button type="button" :aria-expanded="isExpanded" @click="isExpanded = !isExpanded">{{ isExpanded ? '상세 접기' : '상세 보기' }}<span aria-hidden="true">{{ isExpanded ? ' −' : ' ＋' }}</span></button></div>
+          <div class="vote-facts"><span>{{ (voteSession.totalVotes || 0).toLocaleString() }}명 참여</span><button type="button" class="ui-button ui-button-secondary ui-button-small" :aria-expanded="isExpanded" @click="isExpanded = !isExpanded">{{ isExpanded ? '상세 접기' : '상세 보기' }}<span aria-hidden="true">{{ isExpanded ? ' −' : ' ＋' }}</span></button></div>
           <dl v-show="isExpanded" class="vote-dates"><div><dt>시작</dt><dd>{{ formatDateTime(voteSession.startTime) }}</dd></div><div><dt>종료</dt><dd>{{ formatDateTime(voteSession.endTime) }}</dd></div></dl>
         </div>
         <div v-show="isExpanded" class="vote-choices">
@@ -15,7 +15,7 @@
             <div v-for="(option, index) in voteSession.options" :key="option.id ?? index" class="vote-option">
               <img :src="option.imageUrl || '/images/option-placeholder.svg'" :alt="option.label" loading="lazy" width="240" height="240" />
               <div class="min-w-0"><p class="option-label" :class="{ 'option-label-clamp': expandedTextIndex !== index }">{{ option.label }}</p>
-                <button v-if="option.label?.length > 30" type="button" class="option-expand" :aria-expanded="expandedTextIndex === index" @click="toggleTextExpand(index)">{{ expandedTextIndex === index ? '접기' : '더보기' }}</button>
+                <button v-if="option.label?.length > 30" type="button" class="option-expand ui-button ui-button-secondary ui-button-small" :aria-expanded="expandedTextIndex === index" @click="toggleTextExpand(index)">{{ expandedTextIndex === index ? '접기' : '더보기' }}</button>
                 <p v-if="voteStatus === 'FINISHED'" class="option-result">{{ (option.count || 0).toLocaleString() }}표 · {{ calculatePercentage(option.count).toFixed(0) }}%</p>
               </div>
             </div>
@@ -25,10 +25,10 @@
       </div>
       <div class="vote-footer">
         <button type="button" class="ui-button vote-submit" :disabled="voteStatus !== 'LIVE'" @click="onVoteClick">{{ voteStatus === 'UPCOMING' ? '시작 전입니다' : voteStatus === 'FINISHED' ? '종료된 투표입니다' : voteStatus === 'LIVE' ? '투표 참여하기' : '참여할 수 없습니다' }}</button>
-        <nav class="vote-links" aria-label="투표 더 보기"><router-link :to="{ name:'OpinionAnalysis', params:{ boardId, voteSessionId:voteSession.id } }">AI 여론 분석<span aria-hidden="true">›</span></router-link><router-link :to="{ name:'VoteHistory', params:{ boardId } }">지난 투표 결과<span aria-hidden="true">›</span></router-link></nav>
+        <nav class="vote-links" aria-label="투표 더 보기"><router-link class="ui-button ui-button-secondary ui-button-small" :to="{ name:'OpinionAnalysis', params:{ boardId, voteSessionId:voteSession.id } }">AI 여론 분석<span aria-hidden="true">›</span></router-link><router-link class="ui-button ui-button-secondary ui-button-small" :to="{ name:'VoteHistory', params:{ boardId } }">지난 투표 결과<span aria-hidden="true">›</span></router-link></nav>
       </div>
     </template>
-    <div v-else class="vote-empty"><p class="font-semibold">아직 진행 중인 투표가 없습니다</p><p class="field-help">게시글에서 의견을 나누거나<br />지난 투표 결과를 확인해 보세요.</p><router-link :to="{ name:'VoteHistory', params:{ boardId } }" class="ui-button ui-button-secondary mt-5">지난 투표 보기</router-link></div>
+    <div v-else class="vote-empty"><p class="font-semibold">아직 진행 중인 투표가 없습니다</p><p class="field-help">게시글에서 의견을 나누거나<br />지난 투표 결과를 확인해 보세요.</p><router-link class="ui-button ui-button-secondary mt-5" :to="{ name:'VoteHistory', params:{ boardId } }">지난 투표 보기</router-link></div>
     <Teleport to="body"><VoteModal v-if="isVoteModalOpen" :board-id="boardId" :vote-session-id="voteSession?.id" @close="isVoteModalOpen = false" @voted="boardStore.fetchActiveVoteSession(boardId)" /></Teleport>
   </section>
 </template>
@@ -183,13 +183,13 @@ onUnmounted(() => { disposed = true; disconnectWebSocket(); });
 .vote-topic { font-size:20px; line-height:1.5; font-weight:750; letter-spacing:-.025em; }
 .vote-description { margin-top:10px; color:var(--ui-text-muted); font-size:14px; line-height:1.7; white-space:pre-line; }
 .vote-facts { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; margin-block:12px; font-size:12px; color:var(--ui-text-muted); }
-.vote-facts button { min-height:44px; color:var(--ui-primary); padding-inline:6px; }
+
 .vote-options-duel { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
 .vote-option { min-width:0; padding:12px; border:1px solid var(--ui-border); border-radius:10px; background:var(--ui-surface-subtle); }
 .vote-option img { display:block; width:100%; aspect-ratio:4/3; height:auto; max-height:160px; border-radius:6px; object-fit:cover; background:var(--ui-surface); }
 .option-label { margin-top:10px; font-size:14px; line-height:1.65; font-weight:650; overflow-wrap:anywhere; }
 .option-label-clamp { display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
-.option-expand { min-height:44px; font-size:12px; color:var(--ui-primary); }
+.option-expand { margin-top:6px; }
 .option-result { margin-top:6px; color:var(--ui-primary); font-size:13px; font-weight:650; }
 .vote-options-list { display:grid; gap:12px; }
 .vote-options-list .vote-option { display:grid; grid-template-columns:56px minmax(0,1fr); gap:12px; align-items:center; }
@@ -200,7 +200,7 @@ onUnmounted(() => { disposed = true; disconnectWebSocket(); });
 .vote-dates dt { color:var(--ui-text-muted); }
 .vote-footer { display:flex; flex-wrap:wrap; align-items:center; gap:12px 24px; margin-top:24px; padding-top:20px; border-top:1px solid var(--ui-border); }
 .vote-submit { width:100%; }
-.vote-links { display:flex; flex:1; flex-wrap:wrap; gap:8px 24px; }
+.vote-links { display:flex; flex:1; flex-wrap:wrap; gap:8px; }
 .vote-links a { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:44px; padding-block:10px; color:var(--ui-secondary); font-size:13px; }
 .vote-links a:hover { color:var(--ui-primary); }
 .vote-empty { padding-block:16px; text-align:center; font-size:14px; }

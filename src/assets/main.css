@@ -126,13 +126,18 @@ input[type="checkbox"],input[type="radio"] { accent-color:var(--ui-primary); }
 .ui-button:active:not(:disabled) { box-shadow:inset 0 2px 4px rgb(0 0 0 / 12%); }
 .ui-button.ui-button-secondary { background:var(--ui-surface); border-color:var(--ui-control-border); color:var(--ui-secondary); }
 .ui-button.ui-button-secondary:hover:not(:disabled) { background:var(--ui-surface-subtle); border-color:var(--ui-secondary); }
-.ui-button.ui-button-quiet { background:transparent; color:var(--ui-text-muted); }
-.ui-button.ui-button-quiet:hover:not(:disabled) { background:var(--ui-primary-soft); color:var(--ui-primary); }
+.ui-button.ui-button-quiet { background:var(--ui-surface-subtle); border-color:var(--ui-control-border); color:var(--ui-secondary); }
+.ui-button.ui-button-quiet:hover:not(:disabled) { background:var(--ui-primary-soft); border-color:var(--ui-primary); color:var(--ui-primary); }
 .ui-button.ui-button-danger { background:var(--ui-danger); color:var(--ui-on-primary); }
 .ui-button.ui-button-danger:hover:not(:disabled) { background:var(--ui-danger-hover); }
-.ui-button:disabled { opacity:.5; }
-.icon-button { display:inline-flex; flex:0 0 auto; align-items:center; justify-content:center; width:44px; height:44px; border-radius:var(--ui-radius-control); color:var(--ui-text-muted); background:transparent; }
-.icon-button:hover:not(:disabled) { background:var(--ui-surface-subtle); color:var(--ui-text); }
+.ui-button.ui-button-small { min-height:36px; padding:6px 11px; gap:6px; font-size:13px; }
+.ui-button.ui-button-danger-outline { background:var(--ui-danger-soft); border-color:var(--ui-danger); color:var(--ui-danger); }
+.ui-button.ui-button-danger-outline:hover:not(:disabled) { background:var(--ui-danger-soft); border-color:var(--ui-danger-hover); color:var(--ui-danger-hover); box-shadow:inset 0 0 0 1px var(--ui-danger-hover); }
+.ui-button:disabled { opacity:.5; box-shadow:none; }
+@media(pointer:coarse) { .ui-button.ui-button-small { min-height:44px; } }
+.icon-button { display:inline-flex; flex:0 0 auto; align-items:center; justify-content:center; width:44px; height:44px; border:1px solid var(--ui-control-border); border-radius:var(--ui-radius-control); color:var(--ui-secondary); background:var(--ui-surface-subtle); }
+.icon-button:hover:not(:disabled) { background:var(--ui-primary-soft); border-color:var(--ui-primary); color:var(--ui-primary); }
+.icon-button:disabled { opacity:.45; }
 .form-control { display:block; width:100%; min-width:0; min-height:48px; padding:11px 13px; border:1px solid var(--ui-control-border); border-radius:var(--ui-radius-control); background:var(--ui-surface); color:var(--ui-text); font-size:16px; line-height:1.5; transition:border-color .15s,box-shadow .15s; }
 .form-control::placeholder { color:var(--ui-text-muted); font-weight:400; opacity:1; }
 .form-control:hover:not(:disabled) { border-color:var(--ui-secondary); }
@@ -160,7 +165,7 @@ textarea.form-control { resize:vertical; min-height:120px; }
 .state-spinner { display:inline-block; flex:0 0 auto; width:22px; height:22px; border:2px solid var(--ui-primary-border); border-top-color:var(--ui-primary); border-radius:50%; animation:state-spin .8s linear infinite; }
 @keyframes state-spin { to { transform:rotate(360deg); } }
 .pagination { display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:6px; margin-block:24px 8px; }
-.pagination button { display:inline-flex; align-items:center; justify-content:center; min-width:44px; min-height:44px; padding:8px; border:1px solid var(--ui-border); border-radius:7px; color:var(--ui-secondary); background:var(--ui-surface); font-size:14px; font-weight:650; }
+.pagination button { display:inline-flex; align-items:center; justify-content:center; min-width:44px; min-height:44px; padding:8px; border:1px solid var(--ui-control-border); border-radius:7px; color:var(--ui-secondary); background:var(--ui-surface); font-size:14px; font-weight:650; }
 .pagination button[aria-current="page"] { color:var(--ui-on-primary); background:var(--ui-primary); border-color:var(--ui-primary); }
 .pagination button:hover:not(:disabled):not([aria-current]) { border-color:var(--ui-primary); background:var(--ui-primary-soft); }
 .pagination button:disabled { opacity:.4; }

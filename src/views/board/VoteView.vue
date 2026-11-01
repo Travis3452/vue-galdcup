@@ -33,7 +33,7 @@
             </button>
           </form>
         </AsyncState>
-        <button type="button" :disabled="isSubmitting" class="mt-4 min-h-11 w-full text-sm font-semibold text-slate-600" @click="closePopup">닫기</button>
+        <button type="button" :disabled="isSubmitting" class="ui-button ui-button-secondary mt-4 w-full" @click="closePopup">닫기</button>
       </section>
     </div>
   </Teleport>

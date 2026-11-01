@@ -1,7 +1,7 @@
 <template>
   <footer class="site-footer">
     <div class="footer-inner">
-      <div><router-link to="/" class="footer-brand"><BrandMark :size="24" /><span>갈드컵</span></router-link><p class="footer-description">비교하면 갈리고, 투표하면 갈드컵.</p></div>
+      <div><router-link to="/" class="footer-brand"><BrandMark :size="32" /><span>갈드컵</span></router-link><p class="footer-description">비교하면 갈리고, 투표하면 갈드컵.</p></div>
       <nav aria-label="서비스 정보" class="footer-links">
         <router-link to="/terms">이용약관</router-link><router-link to="/privacy">개인정보처리방침</router-link>
         <a href="mailto:your-email@example.com">의견·신고</a>

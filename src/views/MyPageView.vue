@@ -633,8 +633,9 @@ const requestRole = withPending(requestRoleAction)
 .account-profile { padding:24px 18px; border-top:3px solid var(--ui-primary); }
 .account-profile h2 { font-size:18px; font-weight:700; }
 .account-tabs { display:flex; gap:6px; width:100%; overflow-x:auto; padding:4px; }
-.account-tab { display:flex; flex:0 0 auto; align-items:center; gap:8px; min-height:44px; padding:10px 12px; border:0; border-radius:8px; background:var(--ui-surface-subtle); color:var(--ui-secondary); font-size:14px; font-weight:550; text-align:left; }
-.account-tab[aria-pressed="true"] { background:var(--ui-primary-soft); color:var(--ui-primary); font-weight:650; }
+.account-tab { display:flex; flex:0 0 auto; align-items:center; gap:8px; min-height:44px; padding:10px 12px; border:1px solid var(--ui-control-border); border-radius:8px; background:var(--ui-surface-subtle); color:var(--ui-secondary); font-size:14px; font-weight:550; text-align:left; }
+.account-tab:hover { border-color:var(--ui-primary); }
+.account-tab[aria-pressed="true"] { border-color:var(--ui-primary); background:var(--ui-primary-soft); color:var(--ui-primary); font-weight:650; }
 .account-content-panel { min-height:400px; }
 .account-content-panel h1 { font-size:24px; line-height:1.4; letter-spacing:-.03em; }
 .account-content-panel h1 span { color:var(--ui-text); }

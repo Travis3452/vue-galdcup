@@ -7,7 +7,7 @@
     <div class="post-list-toolbar"><div class="post-tabs" role="group" aria-label="게시글 정렬">
       <button type="button" :aria-pressed="currentTab === 'latest'" @click="changeTab('latest')">최신글</button><button type="button" :aria-pressed="currentTab === 'popular'" @click="changeTab('popular')">인기글</button>
     </div><p v-if="!isLoading && !error" class="post-count" role="status">총 <strong>{{ totalElements.toLocaleString() }}</strong>개<span v-if="totalPages > 0"> · {{ currentPage + 1 }} / {{ totalPages }}페이지</span></p></div>
-    <p v-if="categoryError" role="alert" class="field-error">{{ categoryError }} <button type="button" class="underline" @click="fetchCategories">다시 시도</button></p>
+    <p v-if="categoryError" role="alert" class="field-error">{{ categoryError }} <button type="button" class="ui-button ui-button-secondary ui-button-small" @click="fetchCategories">다시 시도</button></p>
     <div class="category-filter" role="group" aria-label="게시글 카테고리"><button type="button" class="chip" :aria-pressed="selectedCategoryId === null" @click="selectCategory(null)">전체</button>
       <button v-for="category in categories" :key="category.id" type="button" class="chip" :aria-pressed="selectedCategoryId === category.id" @click="selectCategory(category.id)">{{ category.name }}</button>
     </div>
@@ -15,7 +15,7 @@
     <AsyncState :loading="isLoading" :error="error" :empty="posts.length === 0" empty-message="조건에 맞는 게시글이 없습니다. 다른 검색어나 카테고리로 찾아보세요." @retry="fetchPosts">
       <div class="post-rows">
         <router-link v-for="post in posts" :key="post.id" :to="{ path: `/boards/${boardId}/posts/${post.id}`, query: { page: currentPage, tab: currentTab, categoryId: selectedCategoryId, searchMode: searchMode, searchKeyword: searchKeyword } }" class="post-row" :class="{ 'post-row-selected': String(post.id) === String(selectedPostId) }" :aria-current="String(post.id) === String(selectedPostId) ? 'page' : undefined">
-          <div class="post-row-main"><div class="post-title-line"><span class="badge badge-neutral">{{ post.categoryName || '일반' }}</span><h3>{{ post.title }}</h3><span v-if="isNewPost(post.createdAt)" class="new-mark"><span class="sr-only">새 글</span>N</span></div>
+          <div class="post-row-main"><div class="post-title-line"><span class="badge badge-neutral">{{ post.categoryName || '일반' }}</span><AiContentBadge :source="post.creationSource" /><h3>{{ post.title }}</h3><span v-if="isNewPost(post.createdAt)" class="new-mark"><span class="sr-only">새 글</span>N</span></div>
             <div class="post-meta"><span class="post-author">{{ post.authorNickname }}</span><span>{{ formatDate(post.createdAt) }}</span><span>조회 {{ post.viewCount || 0 }}</span><span v-if="post.likeCount">추천 {{ post.likeCount }}</span></div>
           </div>
           <span class="post-row-arrow" aria-hidden="true">›</span>
@@ -31,6 +31,7 @@
   </div>
 </template>
 <script setup>
+import AiContentBadge from '@/components/ui/AiContentBadge.vue'
 import { nextTick, ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '@/axios'
@@ -213,9 +214,10 @@ watch(() => [props.boardId, route.query.page, route.query.tab, route.query.categ
 .post-count strong { color:var(--ui-text); font-weight:650; }
 .post-search-summary { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; padding:8px 12px; margin-bottom:12px; border-radius:10px; background:var(--ui-primary-soft); font-size:13px; }
 .post-search-summary p { min-width:0; overflow-wrap:anywhere; }
-.post-tabs { display:flex; gap:20px; align-self:stretch; }
-.post-tabs button { min-height:44px; border-bottom:2px solid transparent; padding:8px 2px; color:var(--ui-text-muted); font-weight:650; font-size:16px; }
-.post-tabs button[aria-pressed="true"] { border-color:var(--ui-primary); color:var(--ui-primary); }
+.post-tabs { display:flex; gap:8px; align-self:stretch; }
+.post-tabs button { min-height:44px; border:1px solid var(--ui-control-border); border-radius:var(--ui-radius-control); background:var(--ui-surface); padding:8px 14px; color:var(--ui-secondary); font-weight:650; font-size:16px; }
+.post-tabs button:hover { background:var(--ui-primary-soft); border-color:var(--ui-primary); }
+.post-tabs button[aria-pressed="true"] { background:var(--ui-primary-soft); border-color:var(--ui-primary); color:var(--ui-primary); }
 .post-list-heading { margin-bottom:20px; }
 .category-filter { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; }
 .post-row { display:flex; align-items:center; gap:12px; padding:20px 8px; border-bottom:1px solid var(--ui-divider); border-radius:4px; }

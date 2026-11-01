@@ -112,8 +112,9 @@ h1 { font-size:28px; font-weight:800; margin:0; letter-spacing:-.04em; } .statis
 .coverage-notice { display:flex; gap:8px; align-items:flex-start; color:var(--ui-warning); background:var(--ui-warning-soft); padding:12px 14px; border-radius:8px; font-size:12px; line-height:1.8; margin-top:12px; }
 .coverage-notice .ui-icon { margin-top:2px; }
 .range-buttons { display:flex; gap:4px; padding:4px; border-radius:9px; background:var(--ui-surface-muted); }
-.range-buttons button { min-width:48px; min-height:44px; padding:8px 12px; border-radius:6px; font-size:13px; color:var(--ui-text-muted); }
-.range-buttons button[aria-pressed="true"] { color:var(--ui-primary); background:var(--ui-surface); box-shadow:var(--ui-shadow-panel); font-weight:700; }
+.range-buttons button { min-width:48px; min-height:44px; padding:8px 12px; border:1px solid var(--ui-control-border); border-radius:6px; background:var(--ui-surface); font-size:13px; color:var(--ui-secondary); }
+.range-buttons button:hover { border-color:var(--ui-primary); }
+.range-buttons button[aria-pressed="true"] { border-color:var(--ui-primary); color:var(--ui-primary); background:var(--ui-surface); box-shadow:var(--ui-shadow-panel); font-weight:700; }
 .signup-layout { display:grid; grid-template-columns:minmax(0,2.3fr) minmax(230px,1fr); gap:16px; }
 .signup-summary { display:flex; flex-direction:column; align-items:flex-start; } .signup-summary .stat-number { font-size:40px; } .signup-summary .stat-caption { margin-top:12px; }
 dl { margin:20px 0 0; padding-top:16px; border-top:1px solid var(--ui-border); width:100%; font-size:12px; line-height:1.8; } dt { color:var(--ui-text-muted); } dd { margin:4px 0 0; }

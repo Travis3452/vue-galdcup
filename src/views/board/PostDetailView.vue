@@ -3,13 +3,13 @@
     <AsyncState :loading="isLoading" :error="error" @retry="fetchPost(route.params.postId)">
       <article v-if="post" class="surface">
         <header class="post-detail-header">
-          <router-link :to="`/boards/${route.params.boardId}`" class="back-to-list">← 게시글 목록</router-link>
+          <router-link :to="`/boards/${route.params.boardId}`" class="back-to-list ui-button ui-button-secondary ui-button-small">← 게시글 목록</router-link>
           <span class="badge badge-neutral">{{ post.categoryName || '일반' }}</span>
-          <h1>{{ post.title }}</h1>
+          <h1><AiContentBadge :source="post.creationSource" />{{ post.title }}</h1>
           <div class="post-byline"><span class="post-byline-author">{{ post.authorNickname }}</span><time>{{ formatDate(post.createdAt) }}</time><span v-if="post.updatedAt && post.updatedAt !== post.createdAt">수정됨</span><span>조회 {{ post.viewCount || post.view || 0 }}</span></div>
           <div v-if="store.id && post.authorId === store.id || boardStore.isBoardManager || boardStore.isSubManager" class="post-owner-actions">
-            <template v-if="store.id && post.authorId === store.id"><button type="button" class="ui-button ui-button-quiet" :disabled="pending" @click="editPost">수정</button><button type="button" class="ui-button ui-button-quiet" :disabled="pending" @click="deletePost">삭제</button></template>
-            <button v-if="boardStore.isBoardManager || boardStore.isSubManager" type="button" class="ui-button ui-button-quiet" :disabled="pending" @click="adminDeletePost">관리자 삭제</button>
+            <template v-if="store.id && post.authorId === store.id"><button type="button" class="ui-button ui-button-secondary ui-button-small" :disabled="pending" @click="editPost">수정</button><button type="button" class="ui-button ui-button-danger-outline ui-button-small" :disabled="pending" @click="deletePost">삭제</button></template>
+            <button v-if="boardStore.isBoardManager || boardStore.isSubManager" type="button" class="ui-button ui-button-danger-outline ui-button-small" :disabled="pending" @click="adminDeletePost">관리자 삭제</button>
           </div>
         </header>
         <div class="reading-content post-body" v-html="safeContent"></div>
@@ -24,6 +24,7 @@
   </div>
 </template>
 <script setup>
+import AiContentBadge from '@/components/ui/AiContentBadge.vue'
 import { ref, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
@@ -103,10 +104,11 @@ watch(() => route.params.postId, id => { if (id) { reacted.value = false; post.v
 .post-detail-header { position:relative; padding:24px 20px; border-bottom:1px solid var(--ui-border); text-align:left; }
 .back-to-list { display:flex; align-items:center; width:fit-content; min-height:44px; margin-bottom:12px; color:var(--ui-text-muted); font-size:13px; }
 .back-to-list:hover { color:var(--ui-primary); }
+.post-detail-header h1 :deep(.ai-content-badge) { margin-inline-end:8px; vertical-align:middle; letter-spacing:normal; }
 .post-detail-header h1 { margin-block:18px; font-size:clamp(24px,3vw,36px); font-weight:800; line-height:1.4; letter-spacing:-.045em; }
 .post-byline { display:flex; flex-wrap:wrap; gap:6px 16px; font-size:12px; color:var(--ui-text-muted); }
 .post-byline-author { color:var(--ui-secondary); font-weight:600; }
-.post-owner-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; margin-top:12px; }
+.post-owner-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; margin-top:12px; }
 .post-body { width:100%; max-width:none; margin:0; min-height:240px; padding:24px 20px; text-align:left; }
 .post-body :deep(:is(p, h1, h2, h3, h4, h5, h6, li, blockquote, pre, div)) { text-align:left !important; }
 .post-reactions { margin-inline:20px; padding:20px 0 28px; border-top:1px solid var(--ui-divider); text-align:center; }

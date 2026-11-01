@@ -7,18 +7,18 @@
         <li v-for="comment in comments" :key="comment.id" class="comment-thread">
           <article>
             <header class="comment-meta"><strong>{{ comment.authorNickname }}</strong><time>{{ formatDate(comment.createdAt) }}</time><span v-if="comment.updatedAt && comment.updatedAt !== comment.createdAt">수정됨</span>
-              <div v-if="store.id && comment.authorId === store.id && editingId !== comment.id" class="comment-actions"><button type="button" :disabled="isSaving" @click="startEdit(comment.id, comment.content)">수정</button><button type="button" :disabled="isSaving" @click="deleteComment(comment.id)">삭제</button></div>
+              <div v-if="store.id && comment.authorId === store.id && editingId !== comment.id" class="comment-actions"><button type="button" class="ui-button ui-button-secondary ui-button-small" :disabled="isSaving" @click="startEdit(comment.id, comment.content)">수정</button><button type="button" class="ui-button ui-button-danger-outline ui-button-small" :disabled="isSaving" @click="deleteComment(comment.id)">삭제</button></div>
             </header>
             <form v-if="editingId === comment.id" class="comment-editor" @submit.prevent="saveEdit(comment.id)"><textarea v-model="editContent" class="form-control" aria-label="댓글 수정 내용" rows="3" :disabled="isSaving"></textarea><div class="comment-editor-actions"><button type="button" class="ui-button ui-button-quiet" :disabled="isSaving" @click="cancelEdit">취소</button><button type="submit" class="ui-button" :disabled="isSaving || !editContent.trim()">저장</button></div></form>
-            <p v-else class="comment-content">{{ comment.content }}</p>
+            <p v-else class="comment-content"><AiContentBadge v-if="!comment.isDeleted" :source="comment.creationSource" />{{ comment.content }}</p>
             <ol v-if="comment.childrenComments?.length" class="reply-list"><li v-for="reply in comment.childrenComments" :key="reply.id">
               <header class="comment-meta"><span class="reply-mark" aria-hidden="true">↳</span><strong>{{ reply.authorNickname }}</strong><time>{{ formatDate(reply.createdAt) }}</time>
-                <div v-if="store.id && reply.authorId === store.id && editingId !== reply.id" class="comment-actions"><button type="button" :disabled="isSaving" @click="startEdit(reply.id, reply.content)">수정</button><button type="button" :disabled="isSaving" @click="deleteComment(reply.id)">삭제</button></div>
+                <div v-if="store.id && reply.authorId === store.id && editingId !== reply.id" class="comment-actions"><button type="button" class="ui-button ui-button-secondary ui-button-small" :disabled="isSaving" @click="startEdit(reply.id, reply.content)">수정</button><button type="button" class="ui-button ui-button-danger-outline ui-button-small" :disabled="isSaving" @click="deleteComment(reply.id)">삭제</button></div>
               </header>
               <form v-if="editingId === reply.id" class="comment-editor" @submit.prevent="saveEdit(reply.id)"><textarea v-model="editContent" class="form-control" aria-label="대댓글 수정 내용" rows="3" :disabled="isSaving"></textarea><div class="comment-editor-actions"><button type="button" class="ui-button ui-button-quiet" :disabled="isSaving" @click="cancelEdit">취소</button><button type="submit" class="ui-button" :disabled="isSaving || !editContent.trim()">저장</button></div></form>
-              <p v-else class="comment-content">{{ reply.content }}</p>
+              <p v-else class="comment-content"><AiContentBadge v-if="!reply.isDeleted" :source="reply.creationSource" />{{ reply.content }}</p>
             </li></ol>
-            <button v-if="editingId !== comment.id" type="button" class="reply-toggle" :disabled="isSaving" :aria-expanded="activeReplyBox === comment.id" @click="toggleReplyBox(comment.id)">{{ activeReplyBox === comment.id ? '답글 닫기' : '답글 달기' }}</button>
+            <button v-if="editingId !== comment.id" type="button" class="reply-toggle ui-button ui-button-secondary ui-button-small" :disabled="isSaving" :aria-expanded="activeReplyBox === comment.id" @click="toggleReplyBox(comment.id)">{{ activeReplyBox === comment.id ? '답글 닫기' : '답글 달기' }}</button>
             <form v-if="activeReplyBox === comment.id" class="comment-editor reply-editor" @submit.prevent="createReply(comment.id)"><textarea v-model="newReplies[comment.id]" class="form-control" aria-label="대댓글 내용" rows="3" placeholder="어떤 생각이 드셨나요?" :disabled="isSaving"></textarea><div class="comment-editor-actions"><button type="submit" class="ui-button" :disabled="isSaving || !newReplies[comment.id]?.trim()">답글 등록</button></div></form>
           </article>
         </li>
@@ -32,6 +32,7 @@
   </section>
 </template>
 <script setup>
+import AiContentBadge from '@/components/ui/AiContentBadge.vue'
 import { ref, watch } from 'vue'
 import { useUserStore } from '@/stores/user'
 import api from '@/axios'
@@ -152,16 +153,17 @@ watch(() => props.postId, () => {
 .comment-thread { padding-block:20px; border-bottom:1px solid var(--ui-border); }
 .comment-meta { display:flex; flex-wrap:wrap; align-items:center; gap:4px 10px; font-size:12px; color:var(--ui-text-muted); }
 .comment-meta strong { font-size:13px; color:var(--ui-secondary); font-weight:650; overflow-wrap:anywhere; }
-.comment-actions { display:flex; gap:8px; margin-left:auto; }
+.comment-actions { display:flex; flex-wrap:wrap; gap:6px; margin-left:auto; }
 .comment-actions button { min-width:36px; min-height:36px; border-radius:6px; }
-.comment-actions button:hover { color:var(--ui-primary); background:var(--ui-primary-soft); }
+
+.comment-content :deep(.ai-content-badge) { margin-inline-end:6px; vertical-align:middle; }
 .comment-content { margin-top:10px; font-size:15px; line-height:1.8; white-space:pre-wrap; overflow-wrap:anywhere; }
 .reply-list { margin-top:16px; padding:4px 14px; border-left:2px solid var(--ui-primary-border); border-radius:0 10px 10px 0; background:var(--ui-surface-subtle); }
 .reply-list li { padding-block:14px; }
 .reply-list li + li { border-top:1px solid var(--ui-border); }
 .reply-mark { color:var(--ui-primary); }
-.reply-toggle { min-height:44px; margin-top:6px; padding:8px 4px; color:var(--ui-text-muted); font-size:13px; }
-.reply-toggle:hover { color:var(--ui-primary); }
+.reply-toggle { margin-top:10px; }
+
 .comment-editor { margin-top:12px; }
 .reply-editor { padding:16px; border-radius:12px; background:var(--ui-surface-subtle); }
 .comment-editor-actions { display:flex; justify-content:flex-end; flex-wrap:wrap; gap:8px; margin-top:12px; }

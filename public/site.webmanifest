@@ -1,0 +1,24 @@
+{
+  "name": "갈드컵",
+  "short_name": "갈드컵",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "browser",
+  "background_color": "#19191F",
+  "theme_color": "#19191F",
+  "icons": [
+    {
+      "src": "images/galdcup-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "images/galdcup-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

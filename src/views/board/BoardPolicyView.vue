@@ -64,7 +64,7 @@
               <p class="text-xs font-semibold text-slate-500 uppercase tracking-widest px-1">현재 서브 매니저</p>
               <div v-for="sm in boardPolicy?.subManagers" :key="sm.id" class="flex justify-between items-center p-4 border border-slate-100 rounded-xl md:rounded-2xl hover:bg-slate-50 transition">
                 <span class="font-bold text-slate-700 text-sm">🛡️ {{ sm.nickname }}</span>
-                <button @click="handleRemoveSubManager(sm.nickname)" class="ui-button ui-button-secondary">해임</button>
+                <button @click="handleRemoveSubManager(sm.nickname)" class="ui-button ui-button-danger-outline">해임</button>
               </div>
             </div>
           </section>
@@ -106,7 +106,7 @@
                       <div class="flex justify-end items-center gap-1">
                         <template v-if="deletingCategoryId !== cat.id">
                           <button v-if="isMainManager" @click="openEditPrompt(cat)" class="ui-button ui-button-secondary">수정</button>
-                          <button v-if="getType(cat) === 'CUSTOM' && isMainManager" @click="deletingCategoryId = cat.id" class="ui-button ui-button-secondary">삭제</button>
+                          <button v-if="getType(cat) === 'CUSTOM' && isMainManager" @click="deletingCategoryId = cat.id" class="ui-button ui-button-danger-outline">삭제</button>
                         </template>
                         <template v-else>
                           <div class="flex items-center gap-1 animate-fadeIn">
@@ -114,8 +114,8 @@
                               <option value="" disabled>이관 선택</option>
                               <option v-for="dest in getMoveDestinations(cat.id)" :key="dest.id" :value="dest.id">{{ dest.name }}</option>
                             </select>
-                            <button @click="handleConfirmDelete(cat)" :disabled="pending || !selectedMoveToId" class="ui-button ui-button-danger">OK</button>
-                            <button @click="deletingCategoryId = null" class="icon-button">✕</button>
+                            <button @click="handleConfirmDelete(cat)" :disabled="pending || !selectedMoveToId" class="ui-button ui-button-danger">이관 후 삭제</button>
+                            <button @click="deletingCategoryId = null" aria-label="카테고리 삭제 취소" class="icon-button">✕</button>
                           </div>
                         </template>
                       </div>
@@ -150,7 +150,7 @@
                   <span class="text-sm font-semibold text-slate-800">👤 {{ user.nickname }}</span>
                   <span class="text-xs text-slate-500 font-bold">이 유저에게 모든 권한을 넘깁니다.</span>
                 </div>
-                <button @click="handleDelegateManager(user.nickname)" class="ui-button ui-button-secondary">위임하기</button>
+                <button @click="handleDelegateManager(user.nickname)" class="ui-button ui-button-danger-outline">위임하기</button>
               </div>
             </div>
           </section>
@@ -372,8 +372,9 @@ watch(isMainManager, () => { activeTab.value = isMainManager.value ? 'threshold'
 .policy-dialog { position:relative; z-index:1; display:flex; flex-direction:column; width:100%; max-width:920px; height:min(720px,calc(100dvh - 24px)); overflow:hidden; border:1px solid var(--ui-border); border-radius:20px; background:var(--ui-surface); box-shadow:var(--ui-shadow-overlay); }
 .policy-sidebar { flex:0 0 auto; min-width:0; padding:12px; border-bottom:1px solid var(--ui-border); background:var(--ui-surface-subtle); }
 .policy-tabs { display:flex; flex-wrap:wrap; gap:6px; }
-.policy-tab { display:flex; align-items:center; gap:6px; min-height:44px; padding:10px 12px; border-radius:10px; color:var(--ui-secondary); font-size:13px; font-weight:550; text-align:left; }
-.policy-tab[aria-pressed="true"] { color:var(--ui-primary); background:var(--ui-primary-soft); }
+.policy-tab { display:flex; align-items:center; gap:6px; min-height:44px; padding:10px 12px; border:1px solid var(--ui-control-border); background:var(--ui-surface); border-radius:10px; color:var(--ui-secondary); font-size:13px; font-weight:550; text-align:left; }
+.policy-tab:hover { border-color:var(--ui-primary); background:var(--ui-primary-soft); }
+.policy-tab[aria-pressed="true"] { border-color:var(--ui-primary); color:var(--ui-primary); background:var(--ui-primary-soft); }
 .policy-main { display:flex; flex:1; flex-direction:column; min-height:0; min-width:0; overflow:hidden; }
 .policy-main > header { min-height:64px; height:auto; padding:12px 20px; border-bottom:1px solid var(--ui-border); }
 .policy-body { flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; padding:20px; }

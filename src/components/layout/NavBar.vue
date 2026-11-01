@@ -225,7 +225,7 @@ onUnmounted(() => {
 .search-icon { position: absolute; top: 14px; left: 13px; color: var(--ui-text-muted); pointer-events: none; }
 .header-controls { grid-area:account; display:flex; align-items:center; gap:8px; min-width:0; }
 .header-account { position:relative; min-width:0; }
-.account-trigger { display: flex; align-items: center; gap: 8px; min-height: 44px; border-radius: 10px; padding: 4px 8px; }
+.account-trigger { display: flex; align-items: center; gap: 8px; min-height: 44px; border: 1px solid var(--ui-control-border); background:var(--ui-surface); border-radius: 10px; padding: 4px 8px; }
 .account-trigger:hover { background: var(--ui-surface-subtle); }
 .account-avatar { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--ui-primary-soft); color: var(--ui-primary); font-size: 14px; font-weight: 700; }
 .account-name { display: none; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 600; }
