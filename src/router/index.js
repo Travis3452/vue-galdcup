@@ -85,6 +85,18 @@ const router = createRouter({
       props: true,
       children: [
         {
+          path: 'manage', name: 'BoardManagement',
+          component: () => import('@/views/board/BoardManagementView.vue'),
+          meta: { requiresAuth: true },
+          beforeEnter: async to => {
+            const { useBoardStore } = await import('@/stores/board');
+            const board = useBoardStore();
+            try { await board.fetchBoardDetails(to.params.boardId); }
+            catch { return '/boards/' + to.params.boardId; }
+            return board.isBoardManager || board.isSubManager ? true : '/boards/' + to.params.boardId;
+          }
+        },
+        {
           path: '',
           name: 'Board',
           component: () => import('@/views/board/BoardView.vue'),

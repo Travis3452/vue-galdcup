@@ -1,7 +1,7 @@
 <template>
   <div class="post-list">
     <div class="section-heading post-list-heading">
-      <div><h2 ref="listHeading" tabindex="-1">게시글</h2><p class="section-subtitle">투표에 대한 생각과 이야기를 나눠 보세요.</p></div>
+      <div><h2 ref="listHeading" tabindex="-1">게시글</h2></div>
       <router-link :to="`/boards/${boardId}/posts/create`" class="ui-button"><span aria-hidden="true">＋</span>글쓰기</router-link>
     </div>
     <div class="post-list-toolbar"><div class="post-tabs" role="group" aria-label="게시글 정렬">
@@ -12,11 +12,12 @@
       <button v-for="category in categories" :key="category.id" type="button" class="chip" :aria-pressed="selectedCategoryId === category.id" @click="selectCategory(category.id)">{{ category.name }}</button>
     </div>
     <div v-if="searchKeyword" class="post-search-summary"><p><strong>“{{ searchKeyword }}”</strong> 검색 결과</p><button type="button" class="ui-button ui-button-quiet" @click="clearSearch">검색 초기화</button></div>
+    <div class="post-columns" aria-hidden="true"><span class="post-column-title">제목</span><div class="post-meta"><span>작성일</span><span>조회수</span><span>추천수</span></div></div>
     <AsyncState :loading="isLoading" :error="error" :empty="posts.length === 0" empty-message="조건에 맞는 게시글이 없습니다. 다른 검색어나 카테고리로 찾아보세요." @retry="fetchPosts">
       <div class="post-rows">
         <router-link v-for="post in posts" :key="post.id" :to="{ path: `/boards/${boardId}/posts/${post.id}`, query: { page: currentPage, tab: currentTab, categoryId: selectedCategoryId, searchMode: searchMode, searchKeyword: searchKeyword } }" class="post-row" :class="{ 'post-row-selected': String(post.id) === String(selectedPostId) }" :aria-current="String(post.id) === String(selectedPostId) ? 'page' : undefined">
           <div class="post-row-main"><div class="post-title-line"><span class="badge badge-neutral">{{ post.categoryName || '일반' }}</span><AiContentBadge :source="post.creationSource" /><h3>{{ post.title }}</h3><span v-if="isNewPost(post.createdAt)" class="new-mark"><span class="sr-only">새 글</span>N</span></div>
-            <div class="post-meta"><span class="post-author">{{ post.authorNickname }}</span><span>{{ formatDate(post.createdAt) }}</span><span>조회 {{ post.viewCount || 0 }}</span><span v-if="post.likeCount">추천 {{ post.likeCount }}</span></div>
+            <div class="post-bottom-line"><p class="post-author" :title="post.authorNickname">{{ post.authorNickname }}</p><div class="post-meta"><span>{{ formatDate(post.createdAt) }}</span><span>조회 {{ post.viewCount ?? 0 }}</span><span>추천 {{ post.likeCount ?? 0 }}</span></div></div>
           </div>
           <span class="post-row-arrow" aria-hidden="true">›</span>
         </router-link>
@@ -64,7 +65,7 @@ const searchKeyword = ref('')
 const searchInputMode = ref('TITLE_CONTENT') 
 const searchInputKeyword = ref('')
 
-const size = 10
+const size = 20
 
 const { loading: isLoading, error, load: loadPosts } = useResource('게시글을 불러오지 못했습니다.')
 const { error: categoryError, load: loadCategories } = useResource('카테고리를 불러오지 못했습니다.')
@@ -208,8 +209,7 @@ watch(() => [props.boardId, route.query.page, route.query.tab, route.query.categ
 </script>
 <style scoped>
 .post-list-heading h2 { scroll-margin-top:24px; }
-.post-list-heading .section-subtitle { margin-top:6px; }
-.post-list-toolbar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 16px; margin-bottom:16px; border-bottom:1px solid var(--ui-border); }
+.post-list-toolbar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 16px; padding-bottom:12px; margin-bottom:16px; border-bottom:1px solid var(--ui-border); }
 .post-count { padding-block:8px; color:var(--ui-text-muted); font-size:12px; }
 .post-count strong { color:var(--ui-text); font-weight:650; }
 .post-search-summary { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; padding:8px 12px; margin-bottom:12px; border-radius:10px; background:var(--ui-primary-soft); font-size:13px; }
@@ -220,18 +220,32 @@ watch(() => [props.boardId, route.query.page, route.query.tab, route.query.categ
 .post-tabs button[aria-pressed="true"] { background:var(--ui-primary-soft); border-color:var(--ui-primary); color:var(--ui-primary); }
 .post-list-heading { margin-bottom:20px; }
 .category-filter { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; }
-.post-row { display:flex; align-items:center; gap:12px; padding:20px 8px; border-bottom:1px solid var(--ui-divider); border-radius:4px; }
+.post-row { display:flex; align-items:center; gap:12px; padding:8px 8px; border-bottom:1px solid var(--ui-divider); border-radius:4px; }
 .post-row:hover, .post-row-selected { background:var(--ui-surface-subtle); }
-.post-row-main { flex:1; min-width:0; }
+.post-row-main { flex:1; min-width:0; display:flex; flex-direction:column; gap:4px; }
 .post-title-line { display:flex; flex-wrap:wrap; align-items:center; gap:8px; min-width:0; }
-.post-title-line h3 { flex:1; min-width:0; font-size:16px; font-weight:650; line-height:1.65; word-break:normal; }
+.post-title-line h3 { flex:1; min-width:0; font-size:16px; font-weight:650; line-height:1.45; text-align:left; overflow-wrap:anywhere; }
 .post-row:hover h3 { color:var(--ui-primary); }
 .new-mark { color:var(--ui-danger); font-size:11px; font-weight:750; }
-.post-meta { display:flex; flex-wrap:wrap; gap:4px 12px; margin-top:8px; color:var(--ui-text-muted); font-size:12px; }
-.post-author { max-width:180px; overflow-wrap:anywhere; }
-.post-row-arrow { color:var(--ui-text-muted); font-size:24px; }
+.post-meta { display:grid; grid-template-columns:minmax(0,1.2fr) repeat(2,minmax(0,1fr)); align-items:center; width:228px; max-width:100%; color:var(--ui-text-muted); font-size:12px; text-align:center; font-variant-numeric:tabular-nums; }
+.post-meta > span { min-width:0; padding-inline:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.post-meta > span + span { border-left:1px solid var(--ui-border); }
+.post-bottom-line { display:flex; align-items:center; gap:8px; min-width:0; }
+.post-bottom-line .post-meta, .post-columns .post-meta { flex:0 1 228px; max-width:80%; margin-left:auto; }
+.post-columns { display:flex; align-items:center; gap:8px; padding:10px 36px 10px 8px; border-bottom:1px solid var(--ui-border); background:var(--ui-surface-subtle); color:var(--ui-text-muted); font-size:12px; }
+.post-column-title { flex:1; min-width:0; }
+.post-author { flex:1; min-width:0; margin:0; color:var(--ui-text-muted); font-size:12px; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.post-row-arrow { flex:0 0 16px; text-align:center; color:var(--ui-text-muted); font-size:24px; }
 .post-search { display:grid; grid-template-columns:104px minmax(0,1fr); gap:8px; margin-top:24px; }
 .post-search button { grid-column:1 / -1; }
-.post-search select { padding-inline:8px; font-size:14px; }
+.post-search select { padding-left:12px; padding-right:32px; background-position:right 8px center; font-size:14px; }
 @media(min-width:640px) { .post-search { grid-template-columns:120px minmax(0,1fr) auto; } .post-search button { grid-column:auto; } }
+@media(max-width:767px) {
+  .post-columns { display:none; }
+  .post-bottom-line .post-meta, .post-columns .post-meta { flex:0 1 156px; max-width:65%; font-size:11px; }
+  .post-meta > span { padding-inline:2px; }
+  .post-title-line { flex-wrap:nowrap; }
+  .post-title-line h3 { flex:1; max-width:none; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .post-title-line > :not(h3) { flex-shrink:0; }
+}
 </style>

@@ -107,7 +107,7 @@ const loadBoardData = async (id) => {
 watch(boardId, (newId) => {
   if (newId) {
     loadBoardData(newId)
-    isRecentExpanded.value = false // 게시판 이동 시 히스토리 창은 다시 접어줌 (UX 고려)
+    isRecentExpanded.value = false // 갈드컵 이동 시 히스토리 창은 다시 접어줌 (UX 고려)
   }
 }, { immediate: true })
 

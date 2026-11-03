@@ -7,11 +7,17 @@
           <span class="badge badge-neutral">{{ post.categoryName || '일반' }}</span>
           <h1><AiContentBadge :source="post.creationSource" />{{ post.title }}</h1>
           <div class="post-byline"><span class="post-byline-author">{{ post.authorNickname }}</span><time>{{ formatDate(post.createdAt) }}</time><span v-if="post.updatedAt && post.updatedAt !== post.createdAt">수정됨</span><span>조회 {{ post.viewCount || post.view || 0 }}</span></div>
-          <div v-if="store.id && post.authorId === store.id || boardStore.isBoardManager || boardStore.isSubManager" class="post-owner-actions">
+          <div v-if="store.accessToken || boardStore.isBoardManager || boardStore.isSubManager" class="post-owner-actions">
+            <button v-if="store.accessToken" type="button" class="ui-button ui-button-secondary ui-button-small post-report-button" :disabled="pending" :aria-expanded="showReport" aria-controls="post-report-form" @click="showReport=!showReport"><span aria-hidden="true">🚨</span>신고</button>
+            <div v-if="store.id && post.authorId === store.id || boardStore.isBoardManager || boardStore.isSubManager" class="post-management-actions">
             <template v-if="store.id && post.authorId === store.id"><button type="button" class="ui-button ui-button-secondary ui-button-small" :disabled="pending" @click="editPost">수정</button><button type="button" class="ui-button ui-button-danger-outline ui-button-small" :disabled="pending" @click="deletePost">삭제</button></template>
             <button v-if="boardStore.isBoardManager || boardStore.isSubManager" type="button" class="ui-button ui-button-danger-outline ui-button-small" :disabled="pending" @click="adminDeletePost">관리자 삭제</button>
+            </div>
           </div>
         </header>
+        <div v-if="store.accessToken && showReport" class="panel-padding">
+          <form id="post-report-form" @submit.prevent="submitReport"><label><span class="sr-only">신고 사유 (필수)</span><textarea placeholder="신고 사유를 입력해 주세요 (필수)" v-model="reportReason" class="form-control" maxlength="500" rows="3" required></textarea></label><button class="ui-button ui-button-danger-outline mt-4" :disabled="pending">신고 접수</button></form>
+        </div>
         <div class="reading-content post-body" v-html="safeContent"></div>
         <footer class="post-reactions">
           <p v-if="!store.accessToken" class="field-help mb-4">로그인 후 좋아요·싫어요를 남길 수 있습니다.</p>
@@ -47,6 +53,14 @@ const post = ref(null)
 const { loading: isLoading, error, load } = useResource('게시글을 불러오지 못했습니다.')
 const pending = ref(false)
 const reacted = ref(false)
+const showReport=ref(false),reportReason=ref('')
+async function submitReport(){
+ if(pending.value||!reportReason.value.trim())return
+ pending.value=true
+ try{await api.post('/boards/'+route.params.boardId+'/posts/'+post.value.id+'/reports',{reason:reportReason.value.trim()});showReport.value=false;reportReason.value='';notify('신고가 접수되었습니다.')}
+ catch(e){notify(getErrorMessage(e,'신고를 접수하지 못했습니다.'),'error')}
+ finally{pending.value=false}
+}
 const safeContent = computed(() => DOMPurify.sanitize(post.value?.content || ''))
 
 function formatDate(dateStr) {
@@ -62,7 +76,7 @@ function formatDate(dateStr) {
 
 function fetchPost(postId) {
   return load(signal => api.get(`/posts/${postId}`, { signal }), response => {
-    if (response.data.boardId != null && String(response.data.boardId) !== String(route.params.boardId)) throw new Error('다른 게시판의 게시글입니다.')
+    if (response.data.boardId != null && String(response.data.boardId) !== String(route.params.boardId)) throw new Error('다른 갈드컵의 게시글입니다.')
     post.value = response.data
   })
 }
@@ -98,7 +112,7 @@ async function reactToPost(type) {
   } catch (error) { notify(getErrorMessage(error, '의견을 반영하지 못했습니다.'), 'error') }
   finally { pending.value = false }
 }
-watch(() => route.params.postId, id => { if (id) { reacted.value = false; post.value = null; fetchPost(id) } }, { immediate: true })
+watch(() => route.params.postId, id => { if (id) { reacted.value = false; showReport.value=false; reportReason.value=''; post.value = null; fetchPost(id) } }, { immediate: true })
 </script>
 <style scoped>
 .post-detail-header { position:relative; padding:24px 20px; border-bottom:1px solid var(--ui-border); text-align:left; }
@@ -108,7 +122,8 @@ watch(() => route.params.postId, id => { if (id) { reacted.value = false; post.v
 .post-detail-header h1 { margin-block:18px; font-size:clamp(24px,3vw,36px); font-weight:800; line-height:1.4; letter-spacing:-.045em; }
 .post-byline { display:flex; flex-wrap:wrap; gap:6px 16px; font-size:12px; color:var(--ui-text-muted); }
 .post-byline-author { color:var(--ui-secondary); font-weight:600; }
-.post-owner-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; margin-top:12px; }
+.post-owner-actions { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:12px; }
+.post-management-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; margin-left:auto; }
 .post-body { width:100%; max-width:none; margin:0; min-height:240px; padding:24px 20px; text-align:left; }
 .post-body :deep(:is(p, h1, h2, h3, h4, h5, h6, li, blockquote, pre, div)) { text-align:left !important; }
 .post-reactions { margin-inline:20px; padding:20px 0 28px; border-top:1px solid var(--ui-divider); text-align:center; }
@@ -116,4 +131,5 @@ watch(() => route.params.postId, id => { if (id) { reacted.value = false; post.v
 .reaction-buttons button { min-width:116px; }
 .reaction-buttons strong { margin-left:4px; color:var(--ui-primary); }
 @media(min-width:768px) { .post-detail-header { padding:28px 32px; } .post-body { padding:32px; } }
+
 </style>

@@ -95,8 +95,8 @@
               <div class="space-y-4 md:space-y-5 relative z-10">
                 <!-- Gemini API 키 -->
                 <div class="space-y-1.5">
-                  <label class="block text-xs md:text-sm font-bold text-slate-700">Gemini API Key <span class="text-rose-500">*</span></label>
-                  <input v-model="aiAgentForm.apiKey" aria-label="Gemini API 키" type="password" autocomplete="off" spellcheck="false" placeholder="AIzaSy..." class="form-control" />
+                  <label class="sr-only">Gemini API 키 (필수)</label>
+                  <input v-model="aiAgentForm.apiKey" aria-label="Gemini API 키" type="password" autocomplete="off" spellcheck="false" placeholder="Gemini API 키 입력 (필수)" class="form-control" />
                 </div>
 
                 <!-- ✨ 대상 게시판 검색 및 선택 -->
@@ -118,7 +118,7 @@
                       <input
                         v-model="boardSearchQuery" aria-label="활동 대상 갈드컵 검색"
                         @keyup.enter="searchBoards"
-                        placeholder="게시판 주제를 검색하세요..."
+                        placeholder="갈드컵 주제를 검색하세요..."
                         class="form-control"
                       />
                       <button @click="searchBoards" class="ui-button ui-button-secondary">검색</button>
@@ -151,13 +151,11 @@
 
                 <!-- ✨ 페르소나 프롬프트 (500자 제한) -->
                 <div class="space-y-1.5">
-                  <label class="block text-xs md:text-sm font-bold text-slate-700 flex justify-between">
-                    <span>AI 페르소나 프롬프트 <span class="text-rose-500">*</span></span>
-                  </label>
+                  <label class="sr-only">AI 페르소나 프롬프트 (필수)</label>
                   <textarea
                     v-model="aiAgentForm.persona" aria-label="AI 페르소나"
                     rows="4" maxlength="500"
-                    placeholder="예: 너는 짜장면을 세상에서 제일 좋아하는 열혈 중식 매니아다. 짬뽕을 고른 사람들을 논리적으로 반박해라."
+                    placeholder="AI 페르소나 (필수) · 예: 너는 짜장면을 세상에서 제일 좋아하는 열혈 중식 매니아다. 짬뽕을 고른 사람들을 논리적으로 반박해라."
                     class="form-control"
                   ></textarea>
                   <div class="flex justify-end">
@@ -379,7 +377,7 @@ async function searchBoards() {
 // 게시판 선택
 function selectBoard(board) {
   aiAgentForm.targetBoardId = board.id
-  selectedBoardName.value = board.topic || board.title || '게시판'
+  selectedBoardName.value = board.topic || board.title || '갈드컵'
   boardSearchResults.value = []
   boardSearchQuery.value = ''
 }
@@ -387,7 +385,7 @@ function selectBoard(board) {
 // 게시판 선택 초기화
 function resetBoardSelection() {
   if (isAgentRunning.value) {
-    alert('작전 수행 중에는 대상 게시판을 변경할 수 없습니다.')
+    alert('작전 수행 중에는 대상 갈드컵을 변경할 수 없습니다.')
     return
   }
   aiAgentForm.targetBoardId = null
@@ -437,7 +435,7 @@ async function startAiAgentAction() {
     await api.post('/ai-agents', payload)
     aiAgentForm.apiKey = ''
 
-    addAgentLog(`[게시판 #${aiAgentForm.targetBoardId}] 접속 승인 완료`, 'success')
+    addAgentLog(`[갈드컵 #${aiAgentForm.targetBoardId}] 접속 승인 완료`, 'success')
     addAgentLog(`설정된 페르소나로 ${aiAgentForm.agentMode === 'COMMENT' ? '댓글' : '게시글'} 기반 백그라운드 활동을 시작합니다.`, 'success')
 
   } catch (err) {

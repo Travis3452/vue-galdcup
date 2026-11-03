@@ -3,8 +3,8 @@
     <div class="page-heading"><div><p class="eyebrow">{{ boardTitle }}</p><h1>새로운 투표 만들기</h1><p class="page-description">함께 선택하고 싶은 주제를 정해 주세요.<br />선택지는 2~10개까지, 각 선택지에는 이미지가 필요합니다.</p></div><button type="button" class="ui-button ui-button-secondary" :disabled="isAiButtonDisabled" @click="fetchAiRecommendation">{{ cooldownText }}</button></div>
     <form class="surface panel-padding" @submit.prevent="createVoteSession">
       <div class="form-section"><h2 class="form-section-title">어떤 주제로 이야기할까요?</h2>
-        <div><label for="vote-topic" class="field-label">투표 주제 <span class="muted">(필수)</span></label><input id="vote-topic" v-model="topic" class="form-control" maxlength="100" :disabled="isSubmitting || isAiLoading" placeholder="예: 민트초코, 당신의 선택은?" required /><p class="field-help">{{ topic.length }} / 100자</p></div>
-        <div><label for="vote-description" class="field-label">투표 설명 <span class="muted">(선택)</span></label><textarea id="vote-description" v-model="description" class="form-control" maxlength="1000" :disabled="isSubmitting || isAiLoading" rows="3" placeholder="참여자가 알아야 할 배경이나 선택 기준을 적어주세요."></textarea></div>
+        <div><label for="vote-topic" class="sr-only">투표 주제 <span class="muted">(필수)</span></label><input id="vote-topic" v-model="topic" class="form-control" maxlength="100" :disabled="isSubmitting || isAiLoading" placeholder="투표 주제 (필수 · 예: 민트초코, 당신의 선택은?)" required /><p class="field-help">{{ topic.length }} / 100자</p></div>
+        <div><label for="vote-description" class="sr-only">투표 설명 <span class="muted">(선택)</span></label><textarea id="vote-description" v-model="description" class="form-control" maxlength="1000" :disabled="isSubmitting || isAiLoading" rows="3" placeholder="투표 설명 (선택): 참여자가 알아야 할 배경이나 선택 기준을 적어주세요."></textarea></div>
       </div>
       <div class="form-section"><div><h2 class="form-section-title">언제 투표할까요?</h2><p class="field-help">날짜와 시간은 한국 시간(KST) 기준입니다.</p></div>
         <div class="vote-date-fields"><div><label for="vote-start" class="field-label">시작 시간 <span class="muted">(필수)</span></label><input id="vote-start" v-model="startTime" class="form-control" type="datetime-local" :disabled="isSubmitting || isAiLoading" required /></div><div><label for="vote-end" class="field-label">종료 시간 <span class="muted">(필수)</span></label><input id="vote-end" v-model="endTime" class="form-control" type="datetime-local" :disabled="isSubmitting || isAiLoading" required /></div></div>
@@ -15,7 +15,7 @@
           <button v-if="options.length > 2" type="button" class="icon-button option-remove" :disabled="isSubmitting || isAiLoading" :aria-label="`선택지 ${index + 1} 삭제`" @click="removeOption(index)">×</button>
           <div class="option-edit-content"><div><input type="file" :accept="IMAGE_ACCEPT" class="sr-only" :ref="el => setFileInput(option.id, el)" :aria-label="`선택지 ${index + 1} 이미지`" :tabindex="-1" @change="handleImageChange($event, index)" />
             <button type="button" class="image-picker" :disabled="isSubmitting || isAiLoading || option.uploading" :aria-label="`선택지 ${index + 1} 이미지 선택`" @click="triggerFileInput(index)"><img v-if="optionPreviews[index]" :src="optionPreviews[index]" :alt="`선택지 ${index + 1} 미리보기`" /><template v-else><span aria-hidden="true" class="text-xl">＋</span><span>이미지</span></template><span v-if="option.uploading" class="image-upload-state" role="status">업로드 중…</span></button>
-          </div><div class="min-w-0"><label :for="`vote-option-${option.id}`" class="field-label">선택지 내용 <span class="muted">(필수)</span></label><input :id="`vote-option-${option.id}`" v-model="option.label" class="form-control" :disabled="isSubmitting || isAiLoading" placeholder="선택할 내용을 입력해 주세요" required /><p v-if="option.error" role="alert" class="field-error">{{ option.error }}</p></div></div>
+          </div><div class="min-w-0"><label :for="`vote-option-${option.id}`" class="sr-only">선택지 내용 <span class="muted">(필수)</span></label><input :id="`vote-option-${option.id}`" v-model="option.label" class="form-control" :disabled="isSubmitting || isAiLoading" placeholder="선택지 내용 (필수)" required /><p v-if="option.error" role="alert" class="field-error">{{ option.error }}</p></div></div>
         </fieldset></div>
         <button type="button" class="ui-button ui-button-secondary w-full" :disabled="options.length >= 10 || isSubmitting || isAiLoading" @click="addOption">＋ 선택지 추가 <span class="muted">({{ options.length }} / 10)</span></button>
       </div>
@@ -44,7 +44,7 @@ const { options, uploading, add: addOption, remove: removeOption, reset: resetOp
 const optionPreviews = computed(() => options.value.map(row => row.preview))
 const optionImages = computed(() => options.value.map(row => row.imageUrl))
 const isSubmitting = ref(false), isAiLoading = ref(false), errorMessage = ref('')
-const boardTitle = computed(() => boardStore.currentBoard?.topic || '게시판')
+const boardTitle = computed(() => boardStore.currentBoard?.topic || '갈드컵')
 const cooldownRemaining = ref(0)
 let cooldownTimer, disposed = false, completed = false
 const controller = new AbortController()

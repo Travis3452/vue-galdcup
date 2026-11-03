@@ -16,7 +16,7 @@
       </div>
       <div v-else class="surface analysis-empty"><span class="badge mb-4">AI 분석</span><h2>아직 분석된 내용이 없습니다</h2><p class="page-description">댓글에 담긴 서로 다른 생각을<br />AI가 읽기 쉽게 정리해 드립니다.</p><button type="button" class="ui-button mt-6" :disabled="boardStore.isAnalysisLoading" @click="handleStartAnalysis">여론 분석 시작하기</button></div>
     </AsyncState>
-    <nav class="analysis-navigation" aria-label="분석 화면 이동"><button type="button" class="ui-button ui-button-secondary" @click="router.back()">이전 화면</button><router-link :to="{name:'Board', params:{boardId}}" class="ui-button ui-button-secondary">게시판으로</router-link></nav>
+    <nav class="analysis-navigation" aria-label="분석 화면 이동"><button type="button" class="ui-button ui-button-secondary" @click="router.back()">이전 화면</button><router-link :to="{name:'Board', params:{boardId}}" class="ui-button ui-button-secondary">갈드컵으로</router-link></nav>
   </section>
 </template>
 <script setup>

@@ -36,7 +36,7 @@
         <div class="metrics-grid">
           <article v-for="metric in apiCards" :key="metric.label" class="metric-card"><h3>{{ metric.label }}</h3><p class="metric-value">{{ formatMetric(metric.value, metric.digits ?? 1) }}<span>{{ metric.unit }}</span></p><p class="metric-description">{{ metric.description }}</p></article>
         </div>
-        <div class="section-heading chart-heading"><h3>성능 추이</h3><label class="range-select">조회 기간<select v-model="range" class="form-control"><option v-for="option in MONITORING_RANGES" :key="option.value" :value="option.value">{{ option.label }}</option></select></label></div>
+        <div class="section-heading chart-heading"><h3>성능 추이</h3><label class="range-select"><span class="sr-only">조회 기간</span><select v-model="range" class="form-control"><option v-for="option in MONITORING_RANGES" :key="option.value" :value="option.value">{{ option.label }}</option></select></label></div>
         <div class="charts-grid" :aria-busy="loading">
           <MetricChart id="rps" title="초당 API 요청량" unit="RPS" :points="history?.series?.rps || []" :available="history?.available ?? false" />
           <MetricChart id="latency" title="평균 응답 시간" unit="ms" :points="history?.series?.averageMs || []" :available="history?.available ?? false" />
@@ -169,7 +169,7 @@ h2 { font-size:18px; font-weight:750; letter-spacing:-.02em; margin:0; } h3 { ma
 .metric-card { min-width:0; padding:20px; background:var(--ui-surface); border:1px solid var(--ui-border); border-radius:var(--ui-radius-panel); }
 .metric-card h3 { color:var(--ui-text-muted); font-size:13px; } .metric-value { margin:12px 0 8px; font-size:29px; font-weight:750; letter-spacing:-.04em; overflow-wrap:anywhere; font-variant-numeric:tabular-nums; line-height:1.4; }
 .metric-value span { font-size:12px; color:var(--ui-text-muted); font-weight:500; margin-left:6px; letter-spacing:0; } .metric-description { color:var(--ui-text-muted); font-size:12px; margin:0; line-height:1.6; overflow-wrap:anywhere; }
-.chart-heading { margin-top:24px; } .range-select { display:flex; align-items:center; gap:10px; color:var(--ui-text-muted); font-size:12px; } .range-select select { width:auto; min-height:44px; font-size:13px; }
+.chart-heading { margin-top:24px; } .range-select { display:flex; align-items:center; gap:10px; color:var(--ui-text-muted); font-size:12px; } .range-select select { width:auto; min-width:130px; height:44px; min-height:44px; padding-top:9px; padding-bottom:9px; font-size:14px; }
 .charts-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; } .redis-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
 .monitoring-note { color:var(--ui-text-muted); font-size:12px; line-height:1.8; margin:12px 0 0; }
 .alerts-panel { background:var(--ui-surface); border:1px solid var(--ui-border); border-radius:var(--ui-radius-panel); padding:22px; }

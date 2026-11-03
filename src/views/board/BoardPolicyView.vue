@@ -1,19 +1,16 @@
 <template>
-  <Teleport to="body">
-  <div class="dialog-overlay">
-    <div class="absolute inset-0 bg-[var(--ui-overlay)] transition-opacity" @click="closeDialog"></div>
+  <div class="policy-page">
 
-    <div ref="dialog" role="dialog" aria-modal="true" aria-labelledby="board-settings-title" tabindex="-1" class="policy-dialog">
+    <div aria-labelledby="board-settings-title" class="policy-dialog">
       
       <aside class="policy-sidebar">
         <div class="hidden md:block p-8 pb-4">
           <h3 class="text-xl font-semibold text-indigo-600 flex items-center gap-2">
             <span>⚙️</span> 설정
           </h3>
-          <p class="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Board Settings</p>
         </div>
 
-        <nav class="policy-tabs" aria-label="게시판 설정 메뉴">
+        <nav class="policy-tabs" aria-label="갈드컵 설정 메뉴">
           <button 
             v-for="tab in filteredTabs" :key="tab.id"
             @click="activeTab = tab.id" :aria-pressed="activeTab === tab.id" :disabled="pending"
@@ -29,7 +26,7 @@
       <div class="policy-main">
         <header class="h-14 md:h-20 flex items-center justify-between px-6 md:px-10 border-b border-slate-50 shrink-0">
           <h4 id="board-settings-title" class="text-base md:text-lg font-semibold text-slate-800">{{ currentTabLabel }}</h4>
-          <button aria-label="게시판 설정 닫기" :disabled="pending" @click="closeDialog" class="icon-button">✕</button>
+          <button aria-label="갈드컵 설정 닫기" :disabled="pending" @click="closeDialog" class="icon-button">✕</button>
         </header>
 
         <div class="policy-body">
@@ -133,7 +130,7 @@
             <div class="bg-red-50 border border-red-100 rounded-2xl p-6 md:p-8">
               <h5 class="text-red-600 font-semibold text-lg mb-2">⚠️ 권한 위임 주의사항</h5>
               <ul class="text-red-500 text-xs md:text-sm font-bold space-y-1.5 list-disc pl-4 leading-relaxed">
-                <li>게시판 관리자 권한을 다른 유저에게 완전히 넘깁니다.</li>
+                <li>갈드컵 관리자 권한을 다른 유저에게 완전히 넘깁니다.</li>
                 <li>이 작업은 취소할 수 없으며, 권한이 위임되면 즉시 일반 사용자로 전환됩니다.</li>
               </ul>
             </div>
@@ -159,7 +156,7 @@
       </div>
     </div>
   </div>
-  </Teleport>
+
 </template>
 
 <script setup>
@@ -168,7 +165,7 @@ import { useRoute } from 'vue-router'
 import api from '@/axios'
 import { useBoardStore } from '@/stores/board'
 import { useUserStore } from '@/stores/user'
-import { useDialog } from '@/composables/useDialog'
+
 import { getErrorMessage } from '@/utils/request'
 
 const route = useRoute()
@@ -177,11 +174,11 @@ const userStore = useUserStore()
 const emit = defineEmits(['close'])
 
 const activeTab = ref('categories')
-const dialog = ref(null)
+
 const pending = ref(false)
 const errorMessage = ref('')
 function closeDialog() { if (!pending.value) emit('close') }
-useDialog(dialog, () => true, closeDialog)
+
 const boardId = computed(() => route.params.boardId)
 const boardPolicy = computed(() => boardStore.currentPolicy)
 const categories = computed(() => boardStore.categories)
@@ -369,7 +366,7 @@ const openEditPrompt = withPending(openEditPromptAction)
 watch(isMainManager, () => { activeTab.value = isMainManager.value ? 'threshold' : 'categories' }, { immediate: true })
 </script>
 <style scoped>
-.policy-dialog { position:relative; z-index:1; display:flex; flex-direction:column; width:100%; max-width:920px; height:min(720px,calc(100dvh - 24px)); overflow:hidden; border:1px solid var(--ui-border); border-radius:20px; background:var(--ui-surface); box-shadow:var(--ui-shadow-overlay); }
+.policy-dialog { position:relative; z-index:1; display:flex; flex-direction:column; width:100%; max-width:none; min-height:480px; overflow:hidden; border:1px solid var(--ui-border); border-radius:20px; background:var(--ui-surface); box-shadow:var(--ui-shadow-overlay); }
 .policy-sidebar { flex:0 0 auto; min-width:0; padding:12px; border-bottom:1px solid var(--ui-border); background:var(--ui-surface-subtle); }
 .policy-tabs { display:flex; flex-wrap:wrap; gap:6px; }
 .policy-tab { display:flex; align-items:center; gap:6px; min-height:44px; padding:10px 12px; border:1px solid var(--ui-control-border); background:var(--ui-surface); border-radius:10px; color:var(--ui-secondary); font-size:13px; font-weight:550; text-align:left; }

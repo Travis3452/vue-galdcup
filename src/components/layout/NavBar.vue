@@ -3,7 +3,7 @@
     <div class="header-inner">
       <router-link to="/" class="brand" aria-label="갈드컵 홈">
         <BrandMark />
-        <span>갈드컵<span class="brand-caption">비교와 논쟁의 커뮤니티</span></span>
+        <span>갈드컵<span class="brand-caption">끝나지 않는 서열 논쟁</span></span>
       </router-link>
       <div ref="searchContainerRef" class="header-search">
         <div class="relative">

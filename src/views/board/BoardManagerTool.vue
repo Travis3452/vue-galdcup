@@ -1,29 +1,28 @@
 <template>
-  <details v-if="isBoardManager" class="surface manager-panel">
+  <details v-if="isBoardManager || boardStore.isSubManager" class="surface manager-panel">
     <summary><span class="manager-summary-icon" aria-hidden="true">⚙</span><span><strong>매니저 도구</strong><span class="manager-description">투표와 갈드컵 설정을 관리합니다.</span></span><span class="manager-toggle" aria-hidden="true">⌄</span></summary>
     <div class="manager-tools">
-      <section><h3>투표 관리</h3><p class="field-help">{{ isVoteActive ? '진행 중인 투표를 마감하고 결과를 공개할 수 있습니다.' : '새로운 주제로 투표를 만들어 보세요.' }}</p><button v-if="isVoteActive" type="button" class="ui-button ui-button-secondary mt-4" :disabled="pending" @click="handleFinishVote">현재 투표 마감</button><button v-else type="button" class="ui-button mt-4" :disabled="pending" @click="handleCreateVote">새 투표 만들기</button></section>
-      <section><h3>갈드컵 설정</h3><p class="field-help">정책, 매니저, 카테고리를 관리할 수 있습니다.</p><div class="flex flex-wrap gap-2 mt-4"><button type="button" class="ui-button ui-button-secondary" @click="showPolicyModal = true">설정 열기</button><button type="button" class="ui-button ui-button-danger-outline" :disabled="pending" @click="confirmDeleteBoard">갈드컵 삭제</button></div></section>
+      <section v-if="isBoardManager"><h3>투표 관리</h3><p class="field-help">{{ isVoteActive ? '진행 중인 투표를 마감하고 결과를 공개할 수 있습니다.' : '새로운 주제로 투표를 만들어 보세요.' }}</p><button v-if="isVoteActive" type="button" class="ui-button ui-button-secondary mt-4" :disabled="pending" @click="handleFinishVote">현재 투표 마감</button><button v-else type="button" class="ui-button mt-4" :disabled="pending" @click="handleCreateVote">새 투표 만들기</button></section>
+      <section><h3>갈드컵 설정</h3><p class="field-help">정책, 매니저, 카테고리를 관리할 수 있습니다.</p><div class="flex flex-wrap gap-2 mt-4"><router-link :to="`/boards/${boardId}/manage`" class="ui-button ui-button-secondary">갈드컵 관리</router-link><button v-if="isBoardManager" type="button" class="ui-button ui-button-danger-outline" :disabled="pending" @click="confirmDeleteBoard">갈드컵 삭제</button></div></section>
     </div>
-    <BoardPolicyModal v-if="showPolicyModal" @close="showPolicyModal = false" />
+
   </details>
 </template>
 <script setup>
-import { computed, ref, defineAsyncComponent } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/axios' 
 import { useBoardStore } from '@/stores/board'
 import { useClock } from '@/composables/useClock'
 import { notify } from '@/services/notifications'
 import { getErrorMessage } from '@/utils/request'
-const BoardPolicyModal = defineAsyncComponent(() => import('@/views/board/BoardPolicyView.vue'))
 
 const router = useRouter()
 const pending = ref(false)
 const now = useClock()
 const boardStore = useBoardStore()
 
-const showPolicyModal = ref(false)
+
 
 const board = computed(() => boardStore.currentBoard)
 const boardId = computed(() => boardStore.currentBoard?.id)
@@ -61,10 +60,10 @@ async function deleteBoard() {
   pending.value = true
   try {
     await api.delete(`/boards/${boardId.value}`)
-    notify('게시판이 삭제되었습니다.')
+    notify('갈드컵이 삭제되었습니다.')
     router.push('/')
   } catch (err) {
-    notify(getErrorMessage(err, '게시판을 삭제하지 못했습니다.'), 'error')
+    notify(getErrorMessage(err, '갈드컵을 삭제하지 못했습니다.'), 'error')
   } finally { pending.value = false }
 }
 

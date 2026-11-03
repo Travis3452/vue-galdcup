@@ -29,7 +29,7 @@ export function usePostForm({ boardId, postId, onSaved }) {
       ])
       if (disposed || !editorRef.value) return
       const post = postResponse?.data
-      if (post && post.boardId != null && String(post.boardId) !== String(boardId)) throw new Error('다른 게시판의 게시글입니다.')
+      if (post && post.boardId != null && String(post.boardId) !== String(boardId)) throw new Error('다른 갈드컵의 게시글입니다.')
       categories.value = categoryResponse.data || []
       title.value = post?.title || ''
       selectedCategoryId.value = post?.categoryId ?? categories.value.find(category => (category.categoryType || category.type) === 'GENERAL')?.id ?? null

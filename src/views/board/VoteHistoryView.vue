@@ -1,6 +1,6 @@
 <template>
   <section>
-    <div class="page-heading"><div><p class="eyebrow">선택이 쌓인 기록</p><h1>지난 투표 결과</h1><p class="page-description">종료된 투표와 우리 커뮤니티의 선택을 확인해 보세요.</p></div><router-link :to="`/boards/${boardId}`" class="ui-button ui-button-secondary">게시판으로</router-link></div>
+    <div class="page-heading"><div><p class="eyebrow">선택이 쌓인 기록</p><h1>지난 투표 결과</h1><p class="page-description">종료된 투표와 우리 커뮤니티의 선택을 확인해 보세요.</p></div><router-link :to="`/boards/${boardId}`" class="ui-button ui-button-secondary">갈드컵으로</router-link></div>
     <AsyncState :loading="loading" :error="error" :empty="historyList.length === 0" empty-message="아직 종료된 투표가 없습니다. 진행 중인 투표에 참여해 보세요." @retry="fetchHistory(currentPage)">
       <div class="history-list"><article v-for="session in historyList" :key="session.id" class="surface panel-padding">
         <div class="history-heading"><div class="min-w-0"><span class="badge badge-neutral">투표 종료</span><h2>{{ session.topic }}</h2><p v-if="session.description" class="page-description">{{ session.description }}</p></div><span class="history-participants">{{ getTotalVotes(session.options) }}명 참여</span></div>

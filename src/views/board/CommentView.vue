@@ -26,7 +26,7 @@
     </AsyncState>
     <AppPagination :current-page="currentPage" :total-pages="totalPages" :disabled="loading || isSaving" label="댓글 페이지" @change="goToPage" />
     <form class="new-comment" @submit.prevent="createComment">
-      <label for="new-comment-content" class="field-label">댓글 작성</label><textarea id="new-comment-content" v-model="newComment" rows="3" class="form-control" :disabled="!store.accessToken || isSaving" :placeholder="store.accessToken ? '당신의 생각을 들려주세요.' : '로그인 후 댓글을 작성할 수 있습니다.'"></textarea>
+      <label for="new-comment-content" class="sr-only">댓글 작성</label><textarea id="new-comment-content" v-model="newComment" rows="3" class="form-control" :disabled="!store.accessToken || isSaving" :placeholder="store.accessToken ? '댓글 작성: 당신의 생각을 들려주세요.' : '로그인 후 댓글을 작성할 수 있습니다.'"></textarea>
       <div class="comment-editor-actions"><button type="submit" class="ui-button" :disabled="isSaving || !store.accessToken || !newComment.trim()">{{ isSaving ? '저장 중…' : '댓글 등록' }}</button></div>
     </form>
   </section>

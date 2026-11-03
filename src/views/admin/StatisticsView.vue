@@ -57,7 +57,7 @@ const guard = createRequestGuard()
 const updatedTime = computed(() => new Date(data.value.generatedAt).toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul' }))
 const totalCards = computed(() => [
   { label: '전체 회원', value: data.value.totals.users, unit: '명', icon: 'user', description: '현재 가입된 회원' },
-  { label: '전체 게시판', value: data.value.totals.boards, unit: '개', icon: 'vote', description: '폐쇄된 게시판 포함' },
+  { label: '전체 갈드컵', value: data.value.totals.boards, unit: '개', icon: 'vote', description: '폐쇄된 갈드컵 포함' },
   { label: '전체 게시글', value: data.value.totals.posts, unit: '개', icon: 'document', description: '삭제되지 않은 게시글' },
   { label: '전체 댓글', value: data.value.totals.comments, unit: '개', icon: 'message', description: '삭제된 댓글 제외' },
 ])

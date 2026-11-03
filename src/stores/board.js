@@ -52,7 +52,7 @@ export const useBoardStore = defineStore('board', {
         if (!request.isCurrent()) return null;
         const data = response.data;
         if (!data?.board || String(data.board.id) !== String(boardId)) {
-          throw new Error('게시판 응답이 일치하지 않습니다.');
+          throw new Error('갈드컵 응답이 일치하지 않습니다.');
         }
         
         this.currentBoard = data.board;
@@ -62,7 +62,7 @@ export const useBoardStore = defineStore('board', {
         return data;
       } catch (error) {
         if (!request.isCurrent() || isCanceled(error)) return null;
-        this.error = getErrorMessage(error, '게시판 정보를 불러오지 못했습니다.');
+        this.error = getErrorMessage(error, '갈드컵 정보를 불러오지 못했습니다.');
         throw error;
       } finally {
         if (request.isCurrent()) this.isLoading = false;
