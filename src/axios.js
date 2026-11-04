@@ -2,6 +2,7 @@ import axios from "axios";
 import { useUserStore } from "./stores/user.js";
 import { API_BASE_URL } from './services/authClient.js';
 import { normalizePage } from './utils/pagination.js';
+import { getBoardBanMessage } from './utils/request.js';
 
 const expiredNotifications = new WeakMap();
 
@@ -34,6 +35,11 @@ api.interceptors.response.use(
     return res;
   },
   async (err) => {
+    const banMessage = getBoardBanMessage(err);
+    if (banMessage) {
+      if (typeof window !== 'undefined') window.alert(banMessage);
+      return Promise.reject(err);
+    }
     const store = useUserStore();
     const originalRequest = err.config;
 

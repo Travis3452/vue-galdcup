@@ -1,3 +1,19 @@
+export function getBoardBanMessage(error) {
+  if (error?.response?.status !== 403 || error.response.data?.error !== 'BOARD_BANNED') return null
+  const ban = error.response.data.ban || {}
+  const formatDate = value => {
+    const date = value ? new Date(value) : null
+    if (!date || Number.isNaN(date.getTime())) return '확인 불가'
+    return new Intl.DateTimeFormat('ko-KR', {
+      timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+    }).format(date)
+  }
+  const reason = typeof ban.reason === 'string' && ban.reason.trim() ? ban.reason : '사유가 등록되지 않았습니다.'
+  const period = ban.permanent === true ? '영구 차단' : formatDate(ban.startsAt) + ' ~ ' + formatDate(ban.expiresAt) + ' (한국 시간)'
+  return ['게시판에서 차단된 사용자입니다.', '사유: ' + reason, '차단 기간: ' + period].join('\n')
+}
+
 export function isCanceled(error) {
   return error?.code === 'ERR_CANCELED' || error?.name === 'AbortError'
 }
@@ -5,6 +21,8 @@ export function isCanceled(error) {
 export function getErrorMessage(error, fallback = '요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.') {
   const status = error?.response?.status
   if (status === 401) return '로그인이 필요하거나 로그인 시간이 만료되었습니다.'
+  const banMessage = getBoardBanMessage(error)
+  if (banMessage) return banMessage
   if (status === 403) return '이 작업을 수행할 권한이 없습니다.'
   if (status === 404) return '요청한 내용을 찾을 수 없습니다.'
   if (status >= 500) return '서버에 일시적인 문제가 있습니다. 잠시 후 다시 시도해 주세요.'
