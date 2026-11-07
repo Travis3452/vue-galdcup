@@ -2,7 +2,7 @@
   <section ref="commentsSection" aria-labelledby="comments-title" class="comments-section">
     <div class="section-heading"><h2 id="comments-title">댓글</h2><span class="section-subtitle">서로의 취향을 존중해 주세요.</span></div>
     <p v-if="mutationError" role="alert" class="field-error">{{ mutationError }}</p><p v-if="isSaving" role="status" class="field-help mb-4">저장하는 중입니다…</p>
-    <AsyncState :loading="loading" :error="error" :empty="comments.length === 0" empty-message="첫 번째 댓글을 남겨보세요. 다른 생각도 환영합니다." @retry="fetchComments">
+    <AsyncState :loading="loading" :error="error" :empty="comments.length === 0" empty-message="첫 번째 댓글을 남겨보세요." @retry="fetchComments">
       <ol class="comment-list">
         <li v-for="comment in comments" :key="comment.id" class="comment-thread">
           <article>
@@ -26,7 +26,7 @@
     </AsyncState>
     <AppPagination :current-page="currentPage" :total-pages="totalPages" :disabled="loading || isSaving" label="댓글 페이지" @change="goToPage" />
     <form class="new-comment" @submit.prevent="createComment">
-      <label for="new-comment-content" class="sr-only">댓글 작성</label><textarea id="new-comment-content" v-model="newComment" rows="3" class="form-control" :disabled="!store.accessToken || isSaving" :placeholder="store.accessToken ? '댓글 작성: 당신의 생각을 들려주세요.' : '로그인 후 댓글을 작성할 수 있습니다.'"></textarea>
+      <label for="new-comment-content" class="sr-only">댓글 작성</label><textarea id="new-comment-content" v-model="newComment" rows="3" class="form-control" :disabled="!store.accessToken || isSaving" :placeholder="store.accessToken ? '댓글을 작성하세요.' : '로그인 후 댓글을 작성할 수 있습니다.'"></textarea>
       <div class="comment-editor-actions"><button type="submit" class="ui-button" :disabled="isSaving || !store.accessToken || !newComment.trim()">{{ isSaving ? '저장 중…' : '댓글 등록' }}</button></div>
     </form>
   </section>

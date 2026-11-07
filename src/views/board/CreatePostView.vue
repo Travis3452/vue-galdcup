@@ -3,8 +3,8 @@
     <div class="page-heading"><div><p class="eyebrow">우리의 생각을 나누는 공간</p><h1>게시글 작성</h1><p class="page-description">다른 취향도 존중하며 자유롭게 이야기해 주세요.</p></div></div>
     <form class="surface panel-padding" @submit.prevent="createPost">
       <div class="post-form-fields">
-        <div><label for="post-category" class="field-label">카테고리 <span class="muted">(필수)</span></label><select id="post-category" v-model="selectedCategoryId" class="form-control" :disabled="submitting || loading" required><option :value="null" disabled>선택해 주세요</option><option v-for="category in categories" :key="category.id" :value="category.id">{{ category.name }}</option></select></div>
-        <div class="min-w-0"><label for="post-title" class="field-label">제목 <span class="muted">(필수)</span></label><input id="post-title" v-model="title" class="form-control" maxlength="50" :disabled="submitting || loading" required placeholder="제목 (필수): 어떤 이야기를 나누고 싶으신가요?" aria-describedby="post-title-help" @input="errorMessage = ''" /><p id="post-title-help" class="field-help">{{ title.length }} / 50자</p></div>
+        <div><label for="post-category" class="field-label">카테고리</label><select id="post-category" v-model="selectedCategoryId" class="form-control" :disabled="submitting || loading" required><option :value="null" disabled>선택해 주세요</option><option v-for="category in categories" :key="category.id" :value="category.id">{{ category.name }}</option></select></div>
+        <div class="min-w-0"><label for="post-title" class="field-label">제목</label><input id="post-title" v-model="title" class="form-control" maxlength="50" :disabled="submitting || loading" required placeholder="제목" aria-describedby="post-title-help" @input="errorMessage = ''" /><p id="post-title-help" class="field-help title-count">{{ title.length }} / 50자</p></div>
       </div>
       <div class="mt-6"><p class="field-label">본문 <span class="muted">(필수)</span></p>
         <p v-if="loading || uploading" role="status" class="field-help mb-3">{{ uploading ? '이미지를 업로드하고 있습니다…' : '작성 화면을 준비하고 있습니다…' }}</p>
@@ -39,5 +39,6 @@ const { title, categories, selectedCategoryId, editorRef, submitting, loading, r
 <style scoped>
 .post-form-page { max-width:944px; margin-inline:auto; min-width:0; }
 .post-form-fields { display:grid; grid-template-columns:minmax(0,1fr); gap:20px; }
+.title-count { text-align: right; }
 @media(min-width:768px) { .post-form-fields { grid-template-columns:180px minmax(0,1fr); } }
 </style>
